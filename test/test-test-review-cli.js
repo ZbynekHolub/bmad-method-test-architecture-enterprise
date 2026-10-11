@@ -6123,10 +6123,12 @@ async function runTests() {
         'build-prompt states both install gates, defaulting to false when none are passed',
       );
       assert(
-        defaultConfigPrompt.includes('when H10 turns on whether a static type checker') &&
-          defaultConfigPrompt.includes('read the CI workflow files (.github/workflows)') &&
+        defaultConfigPrompt.includes('when H10 turns on whether a static') &&
+          defaultConfigPrompt.includes('(.github/workflows), scripts they invoke') &&
+          defaultConfigPrompt.includes('checker configuration') &&
+          defaultConfigPrompt.includes('effective file scope') &&
           defaultConfigPrompt.includes('not open package.json for them'),
-        "build-prompt lets the agent read the CI workflow for H10 while the install gates stay the CLI's to state",
+        "build-prompt lets the agent resolve H10 checker scope while the install gates stay the CLI's to state",
       );
       const installedPrompt = buildPrompt({
         skillRoot,
