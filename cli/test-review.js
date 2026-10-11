@@ -287,7 +287,9 @@ function boundedAgentOutputTail(value) {
     .split(/\r?\n/)
     .slice(-AGENT_OUTPUT_TAIL_LINES)
     .join('\n');
-  return byLines.length > AGENT_OUTPUT_TAIL_CHARS ? byLines.slice(-AGENT_OUTPUT_TAIL_CHARS) : byLines;
+  const tail = byLines.length > AGENT_OUTPUT_TAIL_CHARS ? byLines.slice(-AGENT_OUTPUT_TAIL_CHARS) : byLines;
+  // The Actions runner recognizes legacy ##[ commands anywhere in a log line.
+  return tail.replaceAll('##[', '# #[').replaceAll('::', ': :');
 }
 
 function printMissingReportDiagnostics(agentResult, agent) {

@@ -4035,6 +4035,29 @@ async function runTests() {
       assert(!staleRun.stdout.includes('"recommendation": "Block"'), 'stale pre-placed report is never parsed', staleRun.stdout);
       assert(!fs.existsSync(staleOut), 'stale pre-placed report is deleted before the agent runs', staleOut);
 
+      for (const mode of ['workflow-injection-fail', 'workflow-injection-missing']) {
+        const injected = runCli(
+          [
+            '--files',
+            'tests/checkout.spec.ts',
+            '--project-root',
+            fixtureProject,
+            '--output',
+            path.join(tmpRoot, mode, 'test-review.md'),
+            '--agent-cmd',
+            stubAgent,
+            '--no-isolate',
+            ...stubPass('STUB_MODE'),
+          ],
+          { STUB_MODE: mode },
+        );
+        assert(
+          injected.status === 3 && !injected.stderr.includes('##[error]') && !/(^|\n)\s*::error::/m.test(injected.stderr),
+          `${mode} cannot inject GitHub Actions annotations through CLI diagnostics`,
+          `status=${injected.status} stderr=${injected.stderr}`,
+        );
+      }
+
       const staleCopyOut = path.join(tmpRoot, 'stale-copy-run', 'test-review.md');
       const oldReport = path.join(tmpRoot, 'stale-copy-run', 'old-report.md');
       fs.mkdirSync(path.dirname(oldReport), { recursive: true });

@@ -155,6 +155,12 @@ if (mode === 'quota') {
   return;
 }
 
+if (mode === 'workflow-injection-fail' || mode === 'workflow-injection-missing') {
+  process.stdout.write('agent output ##[error]forged annotation\n::error::forged annotation\n');
+  process.exitCode = mode === 'workflow-injection-fail' ? 2 : 0;
+  return;
+}
+
 if (mode === 'nothing') {
   console.log('stub-agent: exited successfully without writing the requested report');
   console.error('stub-agent: success-path stderr before missing report');
