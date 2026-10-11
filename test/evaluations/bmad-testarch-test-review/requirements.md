@@ -27,7 +27,7 @@ Agent prose in free-text fields is never evidence.
 
 ## Interfaces and resources in scope
 
-A small adopter-owned wrapper, `test/fixtures/test-review-evaluation/review-fixture.mjs`, builds a disposable git repository from a probe's base and pull-request trees, commits both, and runs `node cli/test-review.js --agent codex --model gpt-5.6-sol --skill-root skills/bmad-testarch-test-review --base <base>` against it, passing the CLI's exit code and stdout through unchanged.
+A small adopter-owned wrapper, `test/fixtures/test-review-evaluation/review-fixture.mjs`, builds a disposable git repository from a probe's base and pull-request trees, commits both, and runs `node cli/test-review.js --agent codex --model gpt-6.1-sol --skill-root skills/bmad-testarch-test-review --base <base>` against it, passing the CLI's exit code and stdout through unchanged.
 The review skill under test is this repository's working copy of `skills/bmad-testarch-test-review/`.
 The agent may read the disposable repository and the skill; the CLI's own isolation stays on.
 Fixture repositories are synthetic.
@@ -46,7 +46,7 @@ One full-file probe carries 12 seeded defects across rows and severities, mirror
 ## Operational constraints
 
 Live legs run through the local Codex CLI on the owner's account, with no API key.
-The wrapper pins the Test Review CLI's current default Codex model, recorded in `policy/evaluator-conditions.json`.
+The wrapper pins the after-evaluation Codex model recorded in `policy/evaluator-conditions.json`.
 Three trials per probe.
 Each review gets the CLI's own timeout for a one or two file set.
 Estimated live time: about 6 hours for the full corpus, development and held-out partitions together.

@@ -117,7 +117,7 @@ const cliArgs = [
   '--agent',
   'codex',
   '--model',
-  'gpt-5.6-sol',
+  'gpt-6.1-sol',
   '--skill-root',
   join(repoRoot, 'skills', 'bmad-testarch-test-review'),
   '--project-root',

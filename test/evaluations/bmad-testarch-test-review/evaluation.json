@@ -3,7 +3,7 @@
   "evaluationId": "bmad-testarch-test-review",
   "requirements": {
     "path": "requirements.md",
-    "digest": "sha256:13c1190d08a3d5ecc2333268c5351b1df167445b329a24a9462468f6befc64fc"
+    "digest": "sha256:c8c8d6a66b8a3f962bab4d3bd024e6355ed2d205a21f9fe6e336493b1be9ad65"
   },
   "targetKind": "test-review-mechanism",
   "interface": "cli",
@@ -24,9 +24,9 @@
       "infrastructureExitCodes": [2, 3],
       "egress": [
         {
-          "host": "api.anthropic.com",
+          "host": "chatgpt.com",
           "port": 443,
-          "addresses": ["160.79.104.10", "2607:6bc0::10"]
+          "addresses": ["104.18.32.47", "172.64.155.209", "2a06:98c1:3101::6812:202f", "2606:4700:4408::ac40:9bd1"]
         }
       ]
     }
