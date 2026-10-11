@@ -46,7 +46,7 @@ One full-file probe carries 12 seeded defects across rows and severities, mirror
 ## Operational constraints
 
 Live legs run through the local Codex CLI on the owner's account, with no API key.
-The wrapper pins the after-evaluation Codex model recorded in `policy/evaluator-conditions.json`.
+The wrapper pins `gpt-6.1-sol` and records it in `policy/evaluator-conditions.json`.
 Three trials per probe.
 Each review gets the CLI's own timeout for a one or two file set.
 Estimated live time: about 6 hours for the full corpus, development and held-out partitions together.
