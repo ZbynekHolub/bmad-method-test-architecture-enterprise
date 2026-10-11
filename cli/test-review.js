@@ -80,6 +80,7 @@ const {
 const { computeConventionBaseline } = require('./lib/convention-baseline');
 const { loadRegistryRowSeverities } = require('./lib/registry-rows');
 const { runAgent } = require('./lib/run-agent');
+const { neutralizeWorkflowCommands } = require('./lib/safe-log');
 const { AGENT_ADAPTERS, resolveModel, resolvedModelFromAnswer, agentAnswerText } = require('./lib/agent-adapters');
 const { withIsolation, selectBackend } = require('./lib/isolate');
 const { resolveTeaConfig, PACT_MCP_VALUES, EXECUTION_MODE_VALUES } = require('./lib/resolve-tea-config');
@@ -288,8 +289,7 @@ function boundedAgentOutputTail(value) {
     .slice(-AGENT_OUTPUT_TAIL_LINES)
     .join('\n');
   const tail = byLines.length > AGENT_OUTPUT_TAIL_CHARS ? byLines.slice(-AGENT_OUTPUT_TAIL_CHARS) : byLines;
-  // The Actions runner recognizes legacy ##[ commands anywhere in a log line.
-  return tail.replaceAll('##[', '# #[').replaceAll('::', ': :');
+  return neutralizeWorkflowCommands(tail);
 }
 
 function printMissingReportDiagnostics(agentResult, agent) {

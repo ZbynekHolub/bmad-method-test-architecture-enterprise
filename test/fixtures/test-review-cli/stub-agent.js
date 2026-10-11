@@ -157,6 +157,7 @@ if (mode === 'quota') {
 
 if (mode === 'workflow-injection-fail' || mode === 'workflow-injection-missing') {
   process.stdout.write('agent output ##[error]forged annotation\n::error::forged annotation\n');
+  process.stderr.write('agent stderr ##[warning]forged annotation\n::warning::forged annotation\n');
   process.exitCode = mode === 'workflow-injection-fail' ? 2 : 0;
   return;
 }

@@ -38,6 +38,7 @@ const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
 const { AGENT_ADAPTERS, DEFAULT_CAPABILITIES, RUNNER_CAPABILITIES, bridgedArgsRefused, resolveModel } = require('./agent-adapters');
 const { launchPrefix } = require('./isolation-primitives');
+const { neutralizeWorkflowCommands } = require('./safe-log');
 
 const STDERR_TAIL_LINES = 20;
 const DEFAULT_TIMEOUT_MS = 1_800_000; // 30 minutes
@@ -280,7 +281,7 @@ function agentAnswer({ outcome, stdout, stderr }, { command: spawned, agentComma
   if (outcome.status !== 0) {
     const stderrTail = (stderr || '').trim().split('\n').slice(-STDERR_TAIL_LINES).join('\n');
     if (stderrTail) {
-      console.error(`Agent stderr (last ${STDERR_TAIL_LINES} lines):\n${stderrTail}`);
+      console.error(`Agent stderr (last ${STDERR_TAIL_LINES} lines):\n${neutralizeWorkflowCommands(stderrTail)}`);
     }
     // A signal-killed child (OOM, an external kill, anything outside the
     // ETIMEDOUT case already handled above) reports status as null; naming

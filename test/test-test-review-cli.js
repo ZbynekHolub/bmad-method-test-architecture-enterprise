@@ -4052,7 +4052,10 @@ async function runTests() {
           { STUB_MODE: mode },
         );
         assert(
-          injected.status === 3 && !injected.stderr.includes('##[error]') && !/(^|\n)\s*::error::/m.test(injected.stderr),
+          injected.status === 3 &&
+            !injected.stderr.includes('##[error]') &&
+            !injected.stderr.includes('##[warning]') &&
+            !/(^|\n)\s*::(?:error|warning)::/m.test(injected.stderr),
           `${mode} cannot inject GitHub Actions annotations through CLI diagnostics`,
           `status=${injected.status} stderr=${injected.stderr}`,
         );
