@@ -151,7 +151,8 @@ if (mode === 'quota') {
   process.stdout.write(
     `${JSON.stringify({ type: 'result', is_error: true, api_error_status: 429, api_error: 'usage_limit_reached', result: 'Weekly limit reached; try again after reset.' })}\n`,
   );
-  process.exit(1);
+  process.exitCode = 1;
+  return;
 }
 
 if (mode === 'nothing') {
