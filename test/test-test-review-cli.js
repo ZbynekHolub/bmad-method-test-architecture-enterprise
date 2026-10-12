@@ -4047,6 +4047,8 @@ async function runTests() {
             '--agent-cmd',
             stubAgent,
             '--no-isolate',
+            '--retries',
+            '0',
             ...stubPass('STUB_MODE'),
           ],
           { STUB_MODE: mode },
