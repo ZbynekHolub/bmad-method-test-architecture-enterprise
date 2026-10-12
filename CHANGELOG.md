@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replaced four Evaluate how-to guides (bringing an existing suite, putting an evaluation in CI, comparing runs and accepting a baseline, and reading and fixing gaps) with bottom-line-up-front summaries and skill-led walkthroughs.
+- Updated Skill, MCP, and HTTP API Evaluate guides to use plain commands with printed invocation IDs instead of piping through `tee` and `sed`, and clarified that only `score` produces contract verdicts while a successful `run` records trials.
 - Restructured the Evaluate explanation page to lead with its bottom line and answer five core questions about behavioral contracts, target execution and confinement, evidence trustworthiness, error stops, and pass semantics.
 - The eight Evaluate how-to guides now keep the agent-led path and reader decisions in view, with shorter troubleshooting passages and links to CLI details.
 - Each Evaluate how-to guide now opens with the action, the reader's decisions, and the result. The openings explain that the coding agent normally handles the detailed steps.
