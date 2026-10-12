@@ -137,18 +137,20 @@ Next, run the trials and inspect the score.
 ### 5. Run and Score
 
 ```bash
-RUN=$(npm exec --prefix evals -- tea-evaluate run --evaluation evals/grader-tool-server 2>&1 | tee /dev/stderr | sed -n 's/.*score --run \([^ ]*\) .*/\1/p')
-SCORE=$(npm exec --prefix evals -- tea-evaluate score --evaluation evals/grader-tool-server --run "$RUN" 2>&1 | tee /dev/stderr | sed -n 's#.*runs/.*/scores/\([^ ]*\) (exit .*#\1#p')
+npm exec --prefix evals -- tea-evaluate run --evaluation evals/grader-tool-server
 ```
-
-`RUN` and `SCORE` capture the IDs printed by these commands; later examples use them to read your result.
-If either is empty, read the command's output and resolve the failure before continuing.
 
 ```text
 tea-evaluate run: clean: trial 1 of 3
 ...
 tea-evaluate run: mutated:M-001: trial 3 of 3
 tea-evaluate run: 2 trial set(s) of 3 trial(s) sealed over clean, mutated:M-001; score them with tea-evaluate score --run 20261007T091047070Z-ef078a64 (exit 0, /work/app/evals/grader-tool-server/runs/20261007T091047070Z-ef078a64)
+```
+
+After a successful run, copy the printed run ID to score the run:
+
+```bash
+npm exec --prefix evals -- tea-evaluate score --evaluation evals/grader-tool-server --run <runId>
 ```
 
 ```text
@@ -160,8 +162,10 @@ tea-evaluate score: strength aggregate: eval-quality aggregate-strength exited 0
 
 ### 6. Read the Result
 
+Replace `<runId>` and `<scoreId>` with the IDs printed by `run` and `score`:
+
 ```bash
-(cd evals/grader-tool-server/runs/$RUN/scores/$SCORE &&
+(cd evals/grader-tool-server/runs/<runId>/scores/<scoreId> &&
   grep -o '"contractVerdict":"[A-Z]*"\|"rule":"[a-z-]*"' P-*/evidence-artifact.json &&
   grep -o '"state":"[a-z-]*"' P-001/evidence-artifact.json | sort -u &&
   grep -o '"state":"[a-z-]*"' P-002/evidence-artifact.json | sort -u)

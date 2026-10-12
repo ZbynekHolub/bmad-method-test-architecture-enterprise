@@ -190,12 +190,8 @@ Next, run the trials and read the score.
 ### 5. Run and Score
 
 ```bash
-RUN=$(npm exec --prefix evals -- tea-evaluate run --evaluation evals/stub-skill-preflight 2>&1 | tee /dev/stderr | sed -n 's/.*score --run \([^ ]*\) .*/\1/p')
-SCORE=$(npm exec --prefix evals -- tea-evaluate score --evaluation evals/stub-skill-preflight --run "$RUN" 2>&1 | tee /dev/stderr | sed -n 's#.*runs/.*/scores/\([^ ]*\) (exit .*#\1#p')
+npm exec --prefix evals -- tea-evaluate run --evaluation evals/stub-skill-preflight
 ```
-
-`RUN` and `SCORE` capture the IDs printed by these commands; later examples use them to read your result.
-If either is empty, read the command's output and resolve the failure before continuing.
 
 `run` repeats the preflight, qualifies each seeded defect and the clean control, then runs every arm as a set of trials in fresh copies.
 This folder holds one clean control and one trial:
@@ -204,6 +200,12 @@ This folder holds one clean control and one trial:
 tea-evaluate run: probes/P-001.probe.json: qualified; its baseline passed
 tea-evaluate run: clean: trial 1 of 1
 tea-evaluate run: 1 trial set(s) of 1 trial(s) sealed over clean; score them with tea-evaluate score --run 20261007T112821798Z-9c1c180d (exit 0, /work/app/evals/stub-skill-preflight/runs/20261007T112821798Z-9c1c180d)
+```
+
+After a successful run, copy the printed run ID to score the run:
+
+```bash
+npm exec --prefix evals -- tea-evaluate score --evaluation evals/stub-skill-preflight --run <runId>
 ```
 
 `score` hands each probe to eval-quality and prints its exit:
@@ -218,11 +220,11 @@ A folder with seeded defects adds a `mutated:<id>` set of trials for each one, a
 
 ### 6. Read the Run
 
-Both commands exit 0 for a PASS, a WAIVED or a CONCERNS verdict.
-Read the verdict and the outcome states from the evidence artifacts in the score invocation folder:
+Only `score` produces a PASS, WAIVED, or CONCERNS verdict; a successful `run` means trials were recorded. Both exit 0 when successful.
+Read the verdict and the outcome states from the evidence artifacts in the score invocation folder, replacing `<runId>` and `<scoreId>` with the printed IDs:
 
 ```bash
-(cd evals/stub-skill-preflight/runs/$RUN/scores/$SCORE &&
+(cd evals/stub-skill-preflight/runs/<runId>/scores/<scoreId> &&
   grep -o '"contractVerdict":"[A-Z]*"' P-*/evidence-artifact.json &&
   grep -o '"state":"[a-z-]*"' P-001/evidence-artifact.json | sort -u)
 ```
@@ -240,7 +242,7 @@ The CONCERNS verdict lists coverage gaps that still need probes.
 Then read what the run executed under:
 
 ```bash
-grep -A8 '"confinement"' evals/stub-skill-preflight/runs/$RUN/run.json
+grep -A8 '"confinement"' evals/stub-skill-preflight/runs/<runId>/run.json
 ```
 
 ```text

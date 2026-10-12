@@ -5,43 +5,87 @@ description: Use an AgentEvals or promptfoo suite as the evaluation layer, or le
 
 # How to Bring an Existing Suite into Evaluate with TEA
 
-Tell Evaluate in your coding agent to use the suite you already have, such as AgentEvals or promptfoo.
-Confirm the framework and version; the skill wraps it and uses your checks to grade repeatable trials, including planted defects and held-out probes.
-You get an Evaluate score and a clear failure if the installed framework changes.
-The files and commands below show what your agent normally handles and let you repeat its work.
+**Bottom line:** Reuse the checks you trust. Ask Evaluate to connect your suite to TEA's captured observations, map its results to the contract and verify that it accepts a clean control and catches a planted defect. TEA ships starter wrappers for AgentEvals trajectory matching and a restricted set of promptfoo assertions. Other suites need an adapter that you or the skill author and test. Naming a framework does not install or qualify an integration.
 
-The wrapper is a `command` evaluator: an executable in the evaluation folder, plus three files that make its use repeatable.
-This guide also covers a framework Evaluate has not met before.
+## Start with the Evaluate Skill
 
-## When to Use This
+Use this guide when you already have useful assertions, trajectory checks or grading code and want TEA's repeated trials, qualified defects, held-out probes and scored evidence around them. You do not need to rewrite working checks simply to adopt Evaluate.
 
-- You own AgentEvals trajectory checks and want them scored against planted defects
-- You own promptfoo assertions and want the same
-- You want to use another framework and need Evaluate to learn it from its documentation
-- A run stopped with `the installed frameworks do not meet evaluator/frameworks.json`
+Start with an evaluation folder whose contract, oracles and registry pass `check` and `preflight`, as [Evaluate a Skill or Agent](/docs/how-to/evaluate/evaluate-a-skill-or-agent.md) describes. Have the existing suite, its installed version and primary documentation available. The CLI needs Node.js 22.20 or later; the suite may have its own runtime requirements.
 
-## Prerequisites
-
-- An evaluation folder whose contract, oracles and registry pass `check` and `preflight`, as [How to Evaluate a Skill or Agent](/docs/how-to/evaluate/evaluate-a-skill-or-agent.md) produces
-- Node.js 22.20 or later
-- The framework's primary documentation, which the skill reads
-- A framework that grades without a model, to keep the evaluation in the `pr` tier
-
-## Steps
-
-### 1. Ask the Skill to Wrap the Framework
+Start or resume Evaluate:
 
 - **Claude Code / Cursor / Windsurf:** `/bmad-testarch-evaluate`
 - **Codex:** `$bmad-testarch-evaluate`
 - **Inside a `/bmad-tea` chat:** `EV`
 
 ```text
-Use AgentEvals as the evaluator for evals/calling-agent-tool-use.
+Reuse our AgentEvals trajectory checks for evals/calling-agent-tool-use.
+Show which checks match the contract, what evidence they need,
+and what cannot be reused. Verify the adapter on a known pass,
+a known fail and a framework error before running target trials.
 ```
 
-For AgentEvals and promptfoo the skill starts from a shipped wrapper.
-For another framework it learns the framework first, as step 6 describes.
-Either way it writes the same set of files under `evaluator/` and sets `evaluator.kind` to `command` in `evaluation.json`:
+Substitute your framework and evaluation folder. The skill investigates and authors the adapter; you approve the requirements, expected results, dependency versions and any model use. The CLI validates and executes the setup; `eval-quality` produces the formal verdicts.
+
+## 1. Choose What to Reuse
+
+First decide who runs the target and who grades its output.
+
+- **Use `command` when you want TEA to run the target and your code to grade the observations.** A wrapper runs once per trial, reads `{ "sealedBrief", "observations" }` on standard input and prints `{ "rows": [...] }`. This is the usual choice for existing assertions or framework grading APIs.
+- **Consider `records` when your harness already runs and grades the target.** It must produce TEA-compatible sealed records, configuration bindings and evidence. An aggregate score, JUnit report or ordinary framework result file is not a sealed-record import. The runtime checks bindings but does not prove the harness executed its scorer or tie imported records to the target's current state.
+- **Keep `deterministic` if TEA's built-in checks already cover the requirements.** You may not need a framework adapter. Use `sealed-brief-agent` when the evaluator must choose its own calls, rather than simply consume your suite's results.
+
+These are the four supported evaluator kinds. A framework is an implementation behind `command`, not another kind. See [Choose an Evaluator and Calibrate a Judge](/docs/how-to/evaluate/choose-an-evaluator-and-calibrate-a-judge.md).
+
+Map only checks that answer a contract requirement and have the needed evidence. Keep unrelated tests in their existing suite. Identify missing channels or incompatible assertions before building the wrapper.
+
+## 2. Match a Starter to Your Checks
+
+### AgentEvals trajectory checks
+
+The shipped AgentEvals wrapper compares a captured trajectory with a committed reference, using strict trajectory matching and exact tool-argument matching. It is not an adapter for every AgentEvals evaluator.
+
+The default reference is `evaluator/reference/trajectory.json`. The target must print its JSON trajectory after the `trajectory:` prefix on stdout. The skill can configure another reference under `evaluator/reference/` or another prefix. Exactly one observation must match the prefix; ambiguous or missing observations stop the evaluator.
+
+Review the reference against the requirement. A reference that merely copies the target's current behavior can preserve a bug.
+
+### promptfoo assertions
+
+The shipped promptfoo wrapper grades captured stdout with assertions in `evaluator/asserts.yaml`. Give each assertion a distinct `metric` matching its key in `mapping.json`:
+
+```yaml
+- type: contains
+  value: apples
+  metric: required-apples
+- type: not-contains
+  value: shellfish
+  metric: forbidden-shellfish
+```
+
+The starter admits `contains`, `icontains`, `contains-all`, `contains-any`, `icontains-all`, `icontains-any`, `equals`, `starts-with`, `regex` and `is-json`, including their `not-` forms. It rejects other assertion types, including `javascript` and model-graded assertions such as `llm-rubric`.
+
+It also rejects result configurations that can hide crashes or grade altered output, including executable value references, templates, transforms, invalid regexes and zero-weight assertions. These are result-admission checks, not a promise that arbitrary promptfoo configuration is safe to execute. Review the assertions first.
+
+Use a command evaluator you own for checks outside that supported subset. The wrapper requires every mapped assertion exactly once, even if assertions are reordered. Its stdout selector must identify one observation. The installed CLI removes one final line feed when grading captured output, so use another evaluator for a byte-exact trailing-newline requirement.
+
+## 3. Review the Adapter and Its Mapping
+
+A command integration normally includes:
+
+```text
+evaluator/
+  trajectory.mjs
+  mapping.json
+  frameworks.json
+  installed-version.mjs
+  LEARNED.md
+  reference/trajectory.json
+```
+
+The wrapper name and input files depend on your suite. A promptfoo integration uses its assertions file instead of a trajectory reference. Track every required file under `evaluator/`; in a Git repository, untracked files are outside the evaluator's recorded tree.
+
+Review the wiring the skill adds to `evaluation.json`. This is a merge fragment, not a complete file:
 
 ```json
 {
@@ -53,181 +97,79 @@ Either way it writes the same set of files under `evaluator/` and sets `evaluato
 }
 ```
 
-### 2. Install the Framework at the Version You Declare
-
-Install the framework as a dependency of the evaluations folder, at one exact version:
-
-```bash
-npm install --prefix evals --save-dev --save-exact agentevals@0.0.7
-```
-
-Track `evals/package.json` and its lockfile, so a clean install or CI resolves the same release.
-The framework must sit in a `node_modules` in the evaluation folder or above it.
-
-### 3. Read the Files the Skill Wrote
-
-An AgentEvals evaluator holds these files:
-
-```text
-evaluator/
-  trajectory.mjs
-  mapping.json
-  frameworks.json
-  installed-version.mjs
-  LEARNED.md
-  reference/weather.json
-```
-
-`trajectory.mjs` is the wrapper.
-It reads `{ "sealedBrief", "observations" }` as JSON on standard input, runs the framework over what the target printed, and prints `{ "rows": [...] }`.
-In this example, `reference/weather.json` holds the tool-call sequence the agent should produce.
-
-`mapping.json` binds each row key the wrapper prints to a contract oracle and behavior:
+For AgentEvals, the mapping can bind the wrapper's stable result key to an oracle and behavior that already exist in the contract:
 
 ```json
 {
   "schemaVersion": 1,
   "keys": {
-    "trajectory_strict_match": { "oracleId": "O-001", "behaviorId": "B-001" }
-  }
-}
-```
-
-`frameworks.json` declares the framework, the one version the evaluation expects and a probe that reads the installed version:
-
-```json
-{
-  "schemaVersion": 1,
-  "frameworks": [
-    {
-      "package": "agentevals",
-      "version": "0.0.7",
-      "probe": { "command": "evaluator/installed-version.mjs", "args": ["agentevals"] }
+    "trajectory_strict_match": {
+      "oracleId": "O-001",
+      "behaviorId": "B-001"
     }
-  ]
-}
-```
-
-`LEARNED.md` records the installed `package@version`, the primary sources the wrapper relies on, and a known pass and a known fail that were executed.
-
-`run` checks that the installed version matches the declared one throughout the trials.
-A missing or changed package stops the run before its results count.
-
-### 4. Check Version Drift
-
-`check` holds `LEARNED.md` and `frameworks.json` to the same version.
-If it reports a mismatch, ask Evaluate to reconcile those files with the installed version.
-If `run` cannot find the framework, ask the skill to install the declared version.
-
-Install the declared version, or upgrade on purpose.
-An upgrade is a deliberate change, including the one that `npm install` at the `latest` spec makes.
-Read the new version's release notes, run the known pass and the known fail again, update `LEARNED.md` and `frameworks.json` together, commit both and run again.
-
-### 5. Wrap promptfoo Assertions
-
-A promptfoo evaluator holds the assertions in `evaluator/asserts.yaml`:
-
-```yaml
-- type: contains
-  value: apples
-  metric: required-apples
-- type: contains
-  value: pears
-  metric: required-pears
-- type: not-contains
-  value: shellfish
-  metric: forbidden-shellfish
-```
-
-Each assertion carries a `metric` equal to one row key in `mapping.json`.
-The metric stays the assertion's identity when you reorder the file.
-An assertion with no metric, or with a metric that `mapping.json` does not name, stops the trial with `promptfoo returned missing, unknown, or repeated assertion metadata`.
-`mapping.json` names one row key for each assertion:
-
-```json
-{
-  "schemaVersion": 1,
-  "keys": {
-    "required-apples": { "oracleId": "O-001", "behaviorId": "B-001" },
-    "required-pears": { "oracleId": "O-002", "behaviorId": "B-002" },
-    "forbidden-shellfish": { "oracleId": "O-003", "behaviorId": "B-003" }
   }
 }
 ```
 
-The wrapper runs promptfoo over the target's captured output and maps each graded assertion to a `pass` or `fail` row.
-It admits assertion types that run no adopter code and call no model: `contains`, `icontains`, `contains-all`, `contains-any`, `icontains-all`, `icontains-any`, `equals`, `starts-with`, `regex` and `is-json`, each also with a `not-` prefix.
-Any other type stops the trial.
-If you use a `javascript` assertion, ask Evaluate to put that code in a `command` evaluator you own.
-The promptfoo wrapper accepts only the model-free assertion types listed above.
+A `pass` or `fail` row answers an oracle. Every row cites observed evidence; a failure also quotes the observed channel and supplies confidence and a comment. Numeric rubric results use `score` rows mapped to an existing criterion's anchored levels. A framework's aggregate score cannot replace these bindings.
 
-### 6. Learn a Framework the Skill Has Not Met
+Unknown or duplicate row keys, off-scale scores and malformed answers stop the evaluator. Missing judgments must not become passes: an unanswered oracle is `not-attempted`; an unanswered rubric criterion can become an Invalid result.
 
-For a framework with no starter, the skill learns it before it writes the wrapper:
+## 4. Pin the Framework and Verify the Adapter
 
-1. It reads primary sources only: the framework's documentation, repository, API reference, examples and changelog, and it records a URL or commit for every fact it uses.
-2. It installs the version you use and declares the package, version and a version probe in `evaluator/frameworks.json`.
-3. It executes a minimal example against a known pass and a known fail with that installed version.
-4. It adds a third case the framework cannot grade, such as a malformed assertion or a missing credential, and records how that result arrives.
-5. It fills `evaluator/LEARNED.md` with the installed version, each fact with its source, the executed output and any claim that execution contradicted.
-6. It maps each framework result to a row key in `evaluator/mapping.json` and writes the wrapper.
+Ask the skill to install the version you intend to use, then commit the evaluation package manifest and lockfile. It records:
 
-For example, the skill verifies that autoevals `ExactMatch` scores one known pass as 1 and one known fail as 0.
-It records the executable check and its output in `LEARNED.md` for you to review.
+- `frameworks.json`: each framework's exact version and an executable probe that reads the installed version
+- `LEARNED.md`: the installed versions, primary sources, executed examples and unresolved contradictions
+- The wrapper, mapping and reference or assertion files that determine judgments
 
-A framework result that carries no grade says only that the framework could not judge the output.
-The wrapper writes no row for it and exits non-zero, so the run stops with exit 12 and a framework error does not count against the target.
+Declare judgment-producing plugins and dependencies too. When a top-level version does not capture local patches or dependency changes, use `installState` with a tree or lockfile source; see [The evaluation layer](/docs/reference/tea-evaluate-cli.md#the-evaluation-layer).
 
-The wrapper is ready once the version matches and the known pass and fail produce the expected grades.
-Next, run the target trials and read the score.
+For an unfamiliar framework, the skill should first inspect its documented inputs, outputs, runtime, license and model requirements, then execute three small cases against the installed version:
 
-### 7. Run and Score
+1. A known pass returns the expected grade.
+2. A known fail returns a failing grade supported by the observed output.
+3. A case the framework cannot grade stops as an evaluator error, rather than inventing a target failure.
 
-```bash
-RUN=$(npm exec --prefix evals -- tea-evaluate run --evaluation evals/pantry-summary 2>&1 | tee /dev/stderr | sed -n 's/.*score --run \([^ ]*\) .*/\1/p')
-SCORE=$(npm exec --prefix evals -- tea-evaluate score --evaluation evals/pantry-summary --run "$RUN" 2>&1 | tee /dev/stderr | sed -n 's#.*runs/.*/scores/\([^ ]*\) (exit .*#\1#p')
-```
+A nonzero wrapper exit, timeout, malformed answer or missing framework stops `run` with exit 12 and no record for that trial. Inspect `runs/<invocationId>/evaluator/<arm>/trial-<n>.stderr`. A grader failure is not evidence that the target failed.
 
-`RUN` and `SCORE` capture the IDs printed by these commands; later examples use them to read your result.
-If either is empty, read the command's output and resolve the failure before continuing.
+`check` validates the version declarations against `LEARNED.md`. During execution, `run` checks installed versions before trials, before evaluator launches and after trials. A mismatch stops the affected evidence from counting. On an intentional upgrade, repeat the examples and update the declarations and learning record together.
 
-```text
-tea-evaluate run: 6 trial set(s) of 3 trial(s) sealed over clean, mutated:M-001, mutated:M-002; score them with tea-evaluate score --run 20261007T090533030Z-498d99b8 (exit 0, /work/app/evals/pantry-summary/runs/20261007T090533030Z-498d99b8)
-tea-evaluate score: eval-quality score ran for 6 probe(s) of run 20261007T090533030Z-498d99b8; each call's diagnostics and evidence are in runs/20261007T090533030Z-498d99b8/scores/20261007T090543074Z-c212cfd9 (exit 0, /work/app/evals/pantry-summary/runs/20261007T090533030Z-498d99b8)
-```
+## 5. Calibrate Any Rubric
 
-Read the verdicts as [How to Evaluate a Skill or Agent](/docs/how-to/evaluate/evaluate-a-skill-or-agent.md) shows:
+Skip this step if the contract has no rubric. Otherwise, framework ownership of the score does not remove calibration.
+
+Have the skill prepare labeled examples for every criterion and anchored level. Approve those labels and `judgeCalibration.minimumAgreement`, then run calibration through the configured scorer. For a `command` evaluator, rubric scores come from your wrapper; TEA does not add its separate judge. Omit the unused separate `judge` blocks.
+
+For `records`, your harness must also supply bound `calibration-judgments.json`. TEA computes agreement from those answers but cannot prove or replay the harness's scorer execution. The combination of `records`, rubrics and a `partitionPlan` is currently refused. Use `command` when TEA must execute the scorer or you need that partitioned rubric setup. Follow the [judge calibration guide](/docs/how-to/evaluate/choose-an-evaluator-and-calibrate-a-judge.md) for the full gate.
+
+## 6. Run the Evaluation and Inspect the Score
+
+Ask the skill to run these commands, or repeat them yourself:
 
 ```bash
-(cd evals/pantry-summary/runs/$RUN/scores/$SCORE &&
-  grep -o '"contractVerdict":"[A-Z]*"' P-*/evidence-artifact.json)
+npm exec --prefix evals -- tea-evaluate check --evaluation evals/calling-agent-tool-use
+npm exec --prefix evals -- tea-evaluate preflight --evaluation evals/calling-agent-tool-use --partition development
+npm exec --prefix evals -- tea-evaluate run --evaluation evals/calling-agent-tool-use --partition development
 ```
 
-```text
-P-001/evidence-artifact.json:"contractVerdict":"PASS"
-P-002/evidence-artifact.json:"contractVerdict":"PASS"
-P-003/evidence-artifact.json:"contractVerdict":"PASS"
-P-004/evidence-artifact.json:"contractVerdict":"PASS"
-P-005/evidence-artifact.json:"contractVerdict":"PASS"
-P-006/evidence-artifact.json:"contractVerdict":"PASS"
+Stop at the first nonzero exit. After a successful run, use its printed invocation ID:
+
+```bash
+npm exec --prefix evals -- tea-evaluate score --evaluation evals/calling-agent-tool-use --run <invocationId>
 ```
 
-## How You Know It Worked
+A zero `run` exit means records were sealed. Review the score evidence for `passed-clean-control` on the known pass and `caught` on the qualified seeded defect. Adapter examples alone do not establish this end-to-end result. Run held-out probes after development review.
 
-- `check` prints `has no authoring defects`, which includes the match between `LEARNED.md` and `frameworks.json`
-- The framework's known pass reads `passed-clean-control` and its known fail reads `caught` after `score`
-- `run` exits 0 without a framework error in `evaluator/<arm>/trial-<n>.stderr`
-- The installed version equals the declared version
+Once the evidence is sound, [compare runs and approve a baseline](/docs/how-to/evaluate/compare-runs-and-accept-a-baseline.md). For CI, [keep model-free replay on pull requests and live evaluation on suitable tiers](/docs/how-to/evaluate/put-an-evaluation-in-ci.md). A model-free assertion does not remove the cost or credentials of an LLM target.
 
 ## Related Guides
 
-- [How to Choose an Evaluator and Calibrate a Judge](/docs/how-to/evaluate/choose-an-evaluator-and-calibrate-a-judge.md): Compare the four evaluator kinds
-- [How to Compare Runs and Accept a Baseline](/docs/how-to/evaluate/compare-runs-and-accept-a-baseline.md): Keep the scored result as the baseline
-- [How to Read the Gaps and Fix Them](/docs/how-to/evaluate/read-the-gaps-and-fix-them.md): Interpret a weak result
+- [How to Read the Gaps and Fix Them](/docs/how-to/evaluate/read-the-gaps-and-fix-them.md): Interpret a weak scored result
+- [How Evaluate Works](/docs/explanation/how-evaluate-works.md): Fixed conditions and the limits of a pass
 
 ## Reference
 
-- [tea-evaluate CLI](/docs/reference/tea-evaluate-cli.md): Every command, option and exit code
+- [tea-evaluate CLI](/docs/reference/tea-evaluate-cli.md): Fields, import requirements and evidence
 - [run](/docs/reference/tea-evaluate-cli.md#run)
 - [Exit codes](/docs/reference/tea-evaluate-cli.md#exit-codes)
-- [How Evaluate Works](/docs/explanation/how-evaluate-works.md): Why a framework is a fixed condition of every run
