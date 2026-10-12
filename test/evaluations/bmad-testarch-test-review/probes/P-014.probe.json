@@ -1,0 +1,12 @@
+{
+  "probeId": "P-014",
+  "probeClass": "zero-action",
+  "behaviorId": "B-012",
+  "expectedClean": true,
+  "rationale": "[boundary] Clean control: the covariance test added in a repository whose CI runs mypy over shop alone is a High H10 finding.",
+  "defects": [],
+  "qualification": {
+    "route": "clean-control",
+    "noKnownDefectStatement": "No known defect at this revision."
+  }
+}

@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `tea-test-review` now shows the agent's bounded output when a review agent exits with an error.
+- `tea-test-review` neutralizes workflow commands in agent output before printing failure diagnostics in CI logs.
+- `tea-test-review` lets the reviewer read type-checker configuration when CI runs a checker without file targets, so H10 reflects whether the checker covers the reviewed test.
 - Trace keeps published reports after failed reruns, updates command JSON on publication errors, and rejects live evidence if Git HEAD changes.
 - Trace accepts compact priority-labeled matrix headings, honors explicit priorities in criterion text, rejects non-collected contract-static reports, and ignores malformed or duplicate live failures when counting fresh failures.
 - Trace merges matching criterion claims and skips unrelated source labels and matrix examples. Mapping cites final outcome assertions once, source references use numbered lines, and coverage totals are checked against mapped rows before the gate. The gate uses execution reports when available.
