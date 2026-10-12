@@ -158,6 +158,7 @@ tea-evaluate score: scoring run 20261007T091047070Z-ef078a64
 tea-evaluate score: P-001: eval-quality score exited 0
 tea-evaluate score: P-002: eval-quality score exited 0
 tea-evaluate score: strength aggregate: eval-quality aggregate-strength exited 0
+tea-evaluate score: eval-quality score ran for 2 probe(s) of run 20261007T091047070Z-ef078a64; each call's diagnostics and evidence are in runs/20261007T091047070Z-ef078a64/scores/20261007T091054789Z-3c4d5e6f (exit 0, /work/app/evals/grader-tool-server/runs/20261007T091047070Z-ef078a64)
 ```
 
 ### 6. Read the Result

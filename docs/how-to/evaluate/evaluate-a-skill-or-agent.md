@@ -214,6 +214,7 @@ npm exec --prefix evals -- tea-evaluate score --evaluation evals/stub-skill-pref
 tea-evaluate score: scoring run 20261007T112821798Z-9c1c180d
 tea-evaluate score: P-001: eval-quality score exited 0
 tea-evaluate score: strength aggregate: eval-quality aggregate-strength exited 0
+tea-evaluate score: eval-quality score ran for 1 probe(s) of run 20261007T112821798Z-9c1c180d; each call's diagnostics and evidence are in runs/20261007T112821798Z-9c1c180d/scores/20261007T112829281Z-36dd5e16 (exit 0, /work/app/evals/stub-skill-preflight/runs/20261007T112821798Z-9c1c180d)
 ```
 
 A folder with seeded defects adds a `mutated:<id>` set of trials for each one, as [How to Read the Gaps and Fix Them](/docs/how-to/evaluate/read-the-gaps-and-fix-them.md) shows.

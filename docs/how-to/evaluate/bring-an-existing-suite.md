@@ -131,7 +131,9 @@ For an unfamiliar framework, the skill should first inspect its documented input
 2. A known fail returns a failing grade supported by the observed output.
 3. A case the framework cannot grade stops as an evaluator error, rather than inventing a target failure.
 
-A nonzero wrapper exit, timeout, malformed answer or missing framework stops `run` with exit 12 and no record for that trial. Inspect `runs/<invocationId>/evaluator/<arm>/trial-<n>.stderr`. A grader failure is not evidence that the target failed.
+A missing framework or version mismatch stops `run` with exit 12 before any trial executes; inspect `runs/<invocationId>/framework-versions.json` for declared versus observed versions and failed probe diagnostics.
+
+During trial execution, a nonzero wrapper exit, timeout or malformed answer also stops `run` with exit 12 and seals no record for that trial. Inspect `runs/<invocationId>/evaluator/<arm>/trial-<n>.stderr` to diagnose wrapper execution failures. A grader failure is not evidence that the target failed.
 
 `check` validates the version declarations against `LEARNED.md`. During execution, `run` checks installed versions before trials, before evaluator launches and after trials. A mismatch stops the affected evidence from counting. On an intentional upgrade, repeat the examples and update the declarations and learning record together.
 
