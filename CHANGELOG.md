@@ -13,12 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Evaluate authoring workers use a compact isolated context when the host supports it, and the authoring log records the context mode alongside model and usage.
 - Evaluate records whole-run and phase timing. Progress treats incomplete trial usage as unknown trial cost and keeps reported usage as a subtotal; full-run cost remains unknown because qualification and preflight costs are not fully captured. Shared arms count once in trial totals. Progress reports no verdict or ETA.
 - Evaluate can delegate bounded authoring research and candidate drafting to the latest available Haiku or Luna subagent tier. Its parent keeps artifact ownership and scoring decisions, records authoring time and reported usage, and resolves any adopter-requested latest target tier before a new baseline while preserving each run's exact target and judge conditions.
 
 ### Fixed
 
 - Enforce Darwin evaluation file-read grants in the kernel so dropped audit diagnostics cannot expose ungranted host files. Run Git confinement fixtures through the selected executable without its Xcode shim cache. Preflight preserves observed denial paths and setup guidance when a blocked runner fails its verdict.
+- Evaluate live status names the active scored trial as soon as it starts and marks completed trials during handoff.
 - Removed redundant ATDD and CI skill entries so TEA exposes eight direct workflows. Automate handles red acceptance tests and Framework handles CI setup. The Murat agent keeps its `AT` and `CI` menu shortcuts.
 - Restored Git and Prettier coverage for the tracked Evaluate authoring spec so the repository quality gate passes.
 - Corrected stale Evaluate guide claim metadata and clarified the records evaluator's rubric partition restriction.
