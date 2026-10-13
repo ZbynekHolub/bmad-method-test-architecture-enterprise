@@ -193,7 +193,7 @@ Note: CI setup is typically a one-time task per repo and can be run any time aft
 ### Workflow Dependencies
 
 - [ ] Existing or newly created framework validated against the agreed contract in this run (CI-only existing; both-scope new or reused)
-- [ ] Can proceed to `atdd` workflow after CI setup
+- [ ] Can proceed to Automate red mode after CI setup
 - [ ] Can proceed to `automate` workflow
 - [ ] CI integrates with `gate` workflow
 
@@ -224,7 +224,7 @@ Note: CI setup is typically a one-time task per repo and can be run any time aft
 
 **Recommended next workflows:**
 
-1. [ ] Run `atdd` workflow for test generation
+1. [ ] Run Automate in red mode for acceptance test generation
 2. [ ] Run `automate` workflow for coverage expansion
 3. [ ] Run `gate` workflow for quality gates
 

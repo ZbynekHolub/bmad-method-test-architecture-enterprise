@@ -59,7 +59,7 @@
     "pipeline-quality-gates": {
       "expectedAction": "route",
       "expectedMenuCode": "CI",
-      "expectedWorkflow": "bmad-testarch-ci",
+      "expectedWorkflow": "bmad-testarch-framework",
       "decidingTokens": ["pipeline", "quality gate"],
       "scopeTokens": [],
       "candidateCodes": [],
@@ -68,7 +68,7 @@
     "acceptance-tests-before-code": {
       "expectedAction": "route",
       "expectedMenuCode": "AT",
-      "expectedWorkflow": "bmad-testarch-atdd",
+      "expectedWorkflow": "bmad-testarch-automate",
       "decidingTokens": ["acceptance criteria", "failing"],
       "scopeTokens": ["12.3"],
       "candidateCodes": [],

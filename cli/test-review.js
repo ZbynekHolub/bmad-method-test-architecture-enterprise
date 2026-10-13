@@ -80,6 +80,7 @@ const {
 const { computeConventionBaseline } = require('./lib/convention-baseline');
 const { loadRegistryRowSeverities } = require('./lib/registry-rows');
 const { runAgent } = require('./lib/run-agent');
+const { neutralizeWorkflowCommands } = require('./lib/safe-log');
 const { AGENT_ADAPTERS, resolveModel, resolvedModelFromAnswer, agentAnswerText } = require('./lib/agent-adapters');
 const { withIsolation, selectBackend } = require('./lib/isolate');
 const { resolveTeaConfig, PACT_MCP_VALUES, EXECUTION_MODE_VALUES } = require('./lib/resolve-tea-config');
@@ -287,7 +288,8 @@ function boundedAgentOutputTail(value) {
     .split(/\r?\n/)
     .slice(-AGENT_OUTPUT_TAIL_LINES)
     .join('\n');
-  return byLines.length > AGENT_OUTPUT_TAIL_CHARS ? byLines.slice(-AGENT_OUTPUT_TAIL_CHARS) : byLines;
+  const tail = byLines.length > AGENT_OUTPUT_TAIL_CHARS ? byLines.slice(-AGENT_OUTPUT_TAIL_CHARS) : byLines;
+  return neutralizeWorkflowCommands(tail);
 }
 
 function printMissingReportDiagnostics(agentResult, agent) {
@@ -300,6 +302,11 @@ function printMissingReportDiagnostics(agentResult, agent) {
       console.error(`Agent ${label} before missing report (bounded tail):\n${tail}`);
     }
   }
+}
+
+function printAgentFailureDiagnostics(error, agent) {
+  const tail = boundedAgentOutputTail(agentAnswerText(agent, error.stdout));
+  if (tail) console.error(`Agent stdout on failure (bounded tail):\n${tail}`);
 }
 
 /**
@@ -1801,6 +1808,7 @@ async function runReview(session) {
         fail(EXIT.AGENT_OR_PARSE_ERROR, error.message);
       }
       if (error.code === 'AGENT_FAILED' || error.code === 'REPORT_MISSING' || error.code === 'REPORT_UNPARSEABLE') {
+        if (error.code === 'AGENT_FAILED') printAgentFailureDiagnostics(error, options.agent);
         if (attempt < retries) {
           console.error(`tea-test-review: ${error.message}`);
           const retryNotice = `attempt ${attempt + 1} of ${retries + 1} failed (exit 3); retrying.`;

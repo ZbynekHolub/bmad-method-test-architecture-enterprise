@@ -425,7 +425,7 @@ Execute generated tests during Create.
 
 **Setup question:** `Run generated tests during Create? true (recommended) or false to report generation without execution.`
 
-**Affects skills:** `automate` in red and expand modes, including the ATDD entry.
+**Affects skills:** `automate` in red and expand modes.
 
 Set `"false"` to generate tests without executing them, matching the generation-only behavior of version 2.0.0.
 Repair requires execution, so this also disables repairs for the run.
@@ -444,7 +444,7 @@ Repair confirmed defects in generated tests after execution while preserving acc
 
 **Setup question:** `Repair confirmed defects in generated tests after running them? true (recommended) or false to report failures without repairs. Acceptance criteria and real product defects are preserved.`
 
-**Affects skills:** `automate` Create in red and expand modes, including the ATDD entry.
+**Affects skills:** `automate` Create in red and expand modes.
 
 Requires `auto_validate` to be enabled. Set `"false"` to execute tests and report failures without repairs.
 
@@ -462,7 +462,7 @@ Maximum repair and rerun rounds after the initial execution, from 0 to 3.
 
 **Setup question:** `How many repair rounds may generated tests use? 0 to 3, with 3 recommended.`
 
-**Affects skills:** `automate` Create and Resume in red and expand modes, including the ATDD entry.
+**Affects skills:** `automate` Create and Resume in red and expand modes.
 
 Set `"0"` to execute tests once and report failures without repairs. Resume retains rounds already used.
 
@@ -480,7 +480,7 @@ Use available browser evidence tools to diagnose generated browser test failures
 
 **Setup question:** `Use available browser evidence tools to diagnose generated browser test failures? true (recommended) or false to use source, runner reports and traces.`
 
-**Affects skills:** `automate` Create in red and expand modes, including the ATDD entry.
+**Affects skills:** `automate` Create in red and expand modes.
 
 Test execution and repairs also work without MCP. Set `"false"` to diagnose failures from source, runner reports, and traces.
 
@@ -526,7 +526,7 @@ With `"auto"`, TEA scans for `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfil
 Any other value skips detection.
 Earlier releases stored this key with the module config; a value there is no longer read.
 
-**Affects skills:** `framework` when CI is included, including the `ci` compatibility entry.
+**Affects skills:** `framework` when CI is included.
 
 An explicit `ci_platform` override in `_bmad/custom/bmad-testarch-framework.toml` or its `.user.toml` wins, including an explicit `"auto"`.
 Otherwise, existing `_bmad/custom/bmad-testarch-ci.toml` and `.user.toml` values supply the CI setting. The default remains `"auto"`.
@@ -546,7 +546,7 @@ ci_platform = "github-actions"
 
 ## Automate Run and Heal
 
-`bmad-testarch-automate` supports `red` and `expand` modes selected by your prompt. The existing ATDD command and `AT` menu code default to red; automate and `TA` default to expand in interactive and unattended runs. Unattended runs state the selected mode in the summary. Resume continues interrupted ATDD or automate progress. A new unattended run starts over by default.
+`bmad-testarch-automate` supports `red` and `expand` modes selected by your prompt. The command and `TA` menu code default to expand when no task mode is given; ask for acceptance tests before implementation to select red. Unattended runs state the selected mode in the summary. Resume continues interrupted red or expand progress. A new unattended run starts over by default.
 
 Each mode keeps its existing customization file: `_bmad/custom/bmad-testarch-atdd.toml` for red and `_bmad/custom/bmad-testarch-automate.toml` for expand, including their `.user.toml` layers. Only the selected mode's activation hooks, persistent facts, and completion hook run. No customization migration is required.
 

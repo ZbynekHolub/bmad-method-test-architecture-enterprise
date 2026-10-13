@@ -1,114 +1,170 @@
 ---
 title: 'How to Compare Runs and Accept a Baseline with TEA'
-description: Compare a scored run with the accepted baseline, read the three outcomes and accept a new baseline through a reviewed pull request
+description: Compare compatible scored runs, review changes and limitations, and preserve a chosen measurement as a baseline in a reviewed pull request
 ---
 
 # How to Compare Runs and Accept a Baseline with TEA
 
-Ask Evaluate to compare a scored run with the baseline you previously accepted.
-It shows whether the evaluation got stronger, weaker, or changed too much for a fair comparison.
-You review the result, decide whether to accept a new baseline, and commit it in a reviewed pull request so CI can replay it.
-The commands below show what your agent normally runs and let you repeat the comparison.
+**Bottom line:** Use this guide after scoring a run, either to compare it with an existing baseline or to preserve the first one. Ask the Evaluate skill to explain the evidence and any limits on comparison. You decide whether to retain the result, then accept and commit it through review. **Accepting a baseline preserves a measurement; it does not approve the target's quality or certify that the evaluation is strong.**
 
-## When to Use This
+## Start with the Evaluate Skill
 
-- You scored a run and want to know how it relates to the accepted result
-- The evaluation has no baseline yet and you want to accept the first one
-- You changed the target, the corpus, the contract or the scoring policy and want to record the new result
-- `compare` printed `refused` and you need to know why
+Have a completed, scored run from [How to Evaluate a Skill or Agent](/docs/how-to/evaluate/evaluate-a-skill-or-agent.md) or the equivalent guide for your target. For acceptance, the measured changes must be committed and the run must record `dirty: false`.
 
-## Prerequisites
+- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-evaluate`
+- **Codex:** `$bmad-testarch-evaluate`
+- **Inside a `/bmad-tea` chat:** `EV`
 
-- A run that completed and was scored, as [How to Evaluate a Skill or Agent](/docs/how-to/evaluate/evaluate-a-skill-or-agent.md) describes
-- A git repository that tracks the evaluation folder, since `baseline/` enters through a commit
-- The commit that holds the change you measured
+```text
+Compare the latest scored run for evals/grader-tool-server with
+the accepted baseline. Explain any refusal, weaker probe or
+incomparable result, and summarize verdicts and strength floors.
+Show what changed and what remains unproven before I decide
+whether to accept it.
+```
 
-## Steps
+The skill guides the review and runs `tea-evaluate`; `eval-quality` supplies the strength relations. [Manual commands](#manual-commands) are below.
 
-### 1. Compare the Most Recent Run
+## 1. Choose the Run You Mean
+
+By default, `compare` selects the most recent `run` invocation and its latest score invocation. Use `--run <runId>` when you need a specific completed run. Rescoring that run changes which score invocation is selected; `compare` has no score-ID selector.
+
+Have the skill identify the run, score invocation, partition and measured revision. Development and held-out runs cover different probes. An incomplete or unscored run has nothing to compare.
+
+Keep two review questions separate:
+
+1. **What did this measurement establish?** Read verdicts, coverage gaps, clean controls, detection outcomes and class-wide strength floors.
+2. **How does its strength compare with the baseline?** Read the comparison only when both sides are compatible.
+
+The second answer cannot replace the first. Two equally weak results can be equivalent.
+
+## 2. Read the Comparison Outcome
+
+Plain `compare` is read-only. It reports one of three normal outcomes, all with **exit 0**:
+
+| Outcome     | Meaning and next step                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------- |
+| `first-run` | No baseline exists. Review this result on its own before deciding to retain it.                |
+| `compared`  | The comparison proceeded. Read every probe's relation and the underlying evidence.             |
+| `refused`   | The measurements are incompatible. Read the reason; no stronger-or-weaker conclusion was made. |
+
+A zero exit therefore does not mean improvement, no regression or acceptance.
+
+For `compared`, **`a` is the baseline and `b` is the selected run**:
+
+| Relation        | How to read it                                                                                                              |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `equivalent`    | The compared strength vectors are equal.                                                                                    |
+| `a-dominates-b` | The baseline is at least as strong in every compared class and stronger in at least one. Investigate the regression.        |
+| `b-dominates-a` | The new run is at least as strong in every compared class and stronger in at least one. Review what produced the gain.      |
+| `incomparable`  | Neither side dominates, or the available evidence cannot support an ordering. Investigate rather than treating it as a tie. |
+
+These are per-probe strength relations, not one overall product-quality ranking. A clean control has no strength vector and compares `incomparable` even with itself. For other probes, insufficient or non-comparable evidence may also prevent an ordering.
+
+Check the run-wide `strength-aggregate.json` separately. A floor can be `does-not-meet` even when `score` exits 0. Neither an `equivalent` relation nor an improved probe removes that gap.
+
+## 3. Understand a Refused Comparison
+
+The CLI refuses the normal comparison when:
+
+- The partitions differ, such as development versus held-out or `both`.
+- The probe sets differ.
+- A probe's `comparabilityKey` differs, for example after changing the scoring policy, probe set or corpus.
+- The runs record different `evalQualityVersion` values.
+
+Adding probes or changing policy may cause an expected refusal. Review the new result against the revised requirements and explain why a new baseline is needed; a refused comparison does not establish improvement.
+
+Conversely, a comparison that proceeds is not a causal experiment. Review changes to the target, model, evaluator, configuration and execution conditions. A dominance relation describes the recorded evidence; it does not establish which change caused it or how the system will behave in production.
+
+An integrity failure is different from the normal `refused` outcome. Missing artifacts, invalid files or baseline digest mismatches exit nonzero and need repair before comparison. Do not edit stored evidence to make the keys or digests agree.
+
+## 4. Decide Whether This Is the Baseline You Want
+
+You own the requirements, accepted limitations and release policy. Before accepting, have the skill summarize:
+
+- The measured change and exact run being retained.
+- Verdicts, missed probes, false positives and unresolved coverage gaps.
+- Each declared strength floor and its decision.
+- Regressions, incomparable probes or reasons comparison was refused.
+- Any changed requirement, threshold, evaluator or engine version.
+
+Use [Read the Gaps and Fix Them](/docs/how-to/evaluate/read-the-gaps-and-fix-them.md) for issues you want repaired first. Record deliberately retained limitations so future reviewers know what this baseline means.
+
+**Acceptance is not a quality gate.** The CLI permits score exits `0`, `2` (`FAIL`) and `3` (`Invalid`) at its score-record check, provided the run also passes all acceptance checks. A weak result can therefore be retained. An Invalid result still needs every required evidence artifact and replay input; many invalid measurements cannot meet those conditions.
+
+Retaining a result does not convert FAIL or Invalid into PASS, establish trustworthy detection from invalid evidence, or waive a release requirement. The separate `--before-state` workflow is also not an acceptable baseline: both comparison and acceptance refuse a before-state run.
+
+## 5. Accept and Commit the Reviewed Measurement
+
+The normal sequence is:
+
+1. Commit the target and evaluation changes you intend to measure.
+2. Run and score that committed setup. Review the new evidence and compare it with the existing baseline, if any.
+3. Confirm the selected run is the one you want retained, then ask the skill to accept it.
+4. Review the resulting `baseline/` diff and commit it in the same pull request as the changes it measures.
+
+`compare --accept` replaces `baseline/`. It preserves the required replay inputs, qualification evidence and latest score invocation byte for byte, then adds `baseline.json` with the accepted IDs and digests. It does not copy every diagnostic or derived view from the run.
+
+The command does not commit, open a pull request, enforce review or require an improving comparison. You and your repository provide those review steps.
+
+Commit the accepted `baseline/` before the next run. Uncommitted changes in the evaluation folder, including the baseline, make that run dirty and prevent its acceptance. Do not change `run.json` to clear the flag: commit the intended changes and measure again.
+
+## Manual Commands
+
+Replace the example folder with yours. To review the most recent scored run:
 
 ```bash
 npm exec --prefix evals -- tea-evaluate compare --evaluation evals/grader-tool-server
 ```
 
-`compare` reads the evidence of the run's latest score invocation and of the baseline, then prints one of three outcomes.
-Each outcome exits 0.
-Add `--run <invocationId>` to compare an older run.
-
-### 2. Read the Outcome
-
-`compare` prints one of three outcomes:
-
-| Outcome     | What to do next                                                                      |
-| ----------- | ------------------------------------------------------------------------------------ |
-| `first-run` | Review the scored run before accepting the first baseline.                           |
-| `compared`  | Read the relation for each probe and investigate any regression.                     |
-| `refused`   | Review what changed in the evaluation, then decide whether to accept a new baseline. |
-
-For a `compared` result, eval-quality uses `a` for the baseline and `b` for the new run:
-
-| Relation        | Meaning                                                                      |
-| --------------- | ---------------------------------------------------------------------------- |
-| `equivalent`    | The strength vectors are equal                                               |
-| `a-dominates-b` | The baseline is at least as strong in every class and stronger in one        |
-| `b-dominates-a` | The run is at least as strong in every class and stronger in one             |
-| `incomparable`  | Neither side dominates the other, or the evidence cannot decide between them |
-
-A clean control carries no strength vector, so it compares `incomparable` with itself.
-Read an `a-dominates-b` line as a regression and find what changed before you accept anything.
-
-For a `refused` result, the message names the change that prevents comparison, such as:
-
-- the partitions differ, such as a held-out run against a baseline accepted from a full run
-- the probe sets differ
-- a probe's `comparabilityKey` differs, because the scoring policy, the probe set or the corpus changed
-- `evalQualityVersion` differs, because a different eval-quality release scored the baseline
-
-Confirm that the new setup is intended before accepting its run as the baseline.
-
-### 3. Accept a Baseline
-
-Check out the commit that holds the change you measured, run and score it, then accept:
+For a new measurement, start from the intended committed setup and run:
 
 ```bash
 npm exec --prefix evals -- tea-evaluate run --evaluation evals/grader-tool-server
-npm exec --prefix evals -- tea-evaluate score --evaluation evals/grader-tool-server
-npm exec --prefix evals -- tea-evaluate compare --evaluation evals/grader-tool-server --accept
 ```
 
-`--accept` replaces `baseline/` with a byte-identical snapshot of the run.
-Review and commit the new `baseline/` folder with the change it measures.
-Another `run` over an uncommitted `baseline/` records `"dirty": true` in its `run.json`, and the accept refuses a dirty run.
+After it completes, copy the printed run ID. Run the next commands separately and inspect their output:
 
-Open a pull request that carries `baseline/` together with the change that moved the target, the corpus, the contract, the policy or the engine.
-The reviewer reads the baseline diff next to the cause of every difference.
+```bash
+npm exec --prefix evals -- tea-evaluate score --evaluation evals/grader-tool-server --run <runId>
+npm exec --prefix evals -- tea-evaluate compare --evaluation evals/grader-tool-server --run <runId>
+```
 
-### 4. Know When an Accept Is Refused
+The default run selects both partitions. When you need a development-only or held-out run, use `--partition development` or `--partition held-out`; review development before opening held-out results. Keep the selected partition consistent with the baseline you intend to compare.
 
-`--accept` refuses a run measured over uncommitted work.
-Commit the change, rerun and score it, then accept that run.
+Only after your acceptance decision:
 
-A baseline edited by hand fails too.
-Restore the file from git, or accept a new run.
-[The `compare` reference](/docs/reference/tea-evaluate-cli.md#compare) has the exact refusal messages and acceptance rules.
+```bash
+npm exec --prefix evals -- tea-evaluate compare --evaluation evals/grader-tool-server --run <runId> --accept
+npm exec --prefix evals -- tea-evaluate check --evaluation evals/grader-tool-server
+```
+
+If a command fails, inspect the diagnostic rather than continuing blindly. A score exit of 2 or 3 warrants an explicit evidence review even though acceptance may be technically possible.
+
+## If Acceptance Is Refused
+
+Common causes are a dirty or before-state run, missing evidence, changed sealed inputs, unusable replay files or a failed score invocation. A score exit outside `0`, `2` and `3`, or a strength aggregate recorded as `failed`, `refused` or `mismatch`, blocks acceptance. Repair the cause and rescore or rerun as directed.
+
+If a baseline file was edited by hand, restore the accepted bytes from Git or deliberately accept a new eligible run. If staging or swapping fails, read the diagnostic before retrying; it reports recovery problems and where the previous baseline remains. See [acceptance rules and recovery](/docs/reference/tea-evaluate-cli.md#accepting-a-baseline) for details.
 
 ## How You Know It Worked
 
-- `compare` prints `compared`, and no probe reads `a-dominates-b`
-- After an accept, the output says `is the baseline` and `git status` shows `baseline/` as the only new path
-- The next `run` records `"dirty": false` once you commit `baseline/`
-- `check` prints `has no authoring defects`, which includes the baseline's digests
+- The acceptance output names the intended run and latest score invocation as the baseline.
+- `check` finds no authoring defects, including baseline digest errors.
+- The reviewed pull request explains the measured changes and retained limitations alongside the `baseline/` diff.
+
+That establishes a recorded reference point. [Put the evaluation in CI](/docs/how-to/evaluate/put-an-evaluation-in-ci.md) to replay it and enforce the checks and blocking policy you chose.
 
 ## Related Guides
 
-- [How to Read the Gaps and Fix Them](/docs/how-to/evaluate/read-the-gaps-and-fix-them.md): Repair a weak run before you accept it
-- [How to Put an Evaluation in CI](/docs/how-to/evaluate/put-an-evaluation-in-ci.md): Replay the baseline on every pull request
+- [How to Read the Gaps and Fix Them](/docs/how-to/evaluate/read-the-gaps-and-fix-them.md): Investigate weaknesses before deciding what to retain
+- [How to Put an Evaluation in CI](/docs/how-to/evaluate/put-an-evaluation-in-ci.md): Replay the baseline and gate checks
 - [How to Evaluate a Skill or Agent](/docs/how-to/evaluate/evaluate-a-skill-or-agent.md): Produce the run to compare
 
 ## Reference
 
-- [tea-evaluate CLI](/docs/reference/tea-evaluate-cli.md): Every command, option and exit code
+- [tea-evaluate CLI](/docs/reference/tea-evaluate-cli.md): Commands, options and fields
 - [compare](/docs/reference/tea-evaluate-cli.md#compare)
 - [ci](/docs/reference/tea-evaluate-cli.md#ci)
 - [Exit codes](/docs/reference/tea-evaluate-cli.md#exit-codes)
-- [How Evaluate Works](/docs/explanation/how-evaluate-works.md): Why a baseline enters only through review
+- [How Evaluate Works](/docs/explanation/how-evaluate-works.md): What a baseline and a pass establish
