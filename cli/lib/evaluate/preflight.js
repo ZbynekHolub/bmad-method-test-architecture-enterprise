@@ -906,7 +906,7 @@ async function runInWorkspaces({
       phaseDurationsMs: {},
       completedTrials: 0,
       totalTrials: null,
-      usage: { trialCostUsd: null, reportedTrialCostUsd: '0', missingReports: 0, scope: 'trials-only' },
+      usage: null,
     };
   }
   state.run = run;

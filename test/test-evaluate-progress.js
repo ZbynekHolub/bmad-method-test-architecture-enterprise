@@ -139,6 +139,11 @@ async function main() {
     assert.equal(liveRecord.progress.phase, 'trials');
     assert.equal(liveRecord.progress.completedTrials, 0);
     assert.equal(liveRecord.progress.totalTrials, 6);
+    assert.equal(liveRecord.progress.usage, null);
+    const statusNow = Date.parse(liveRecord.progress.updatedAt) + 1000;
+    const recordedLive = statusOf(runId, liveRecord, statusNow);
+    const recordedLater = statusOf(runId, liveRecord, statusNow + 20_000);
+    assert.equal(recordedLater.line.match(/elapsed [^|]+/)?.[0], recordedLive.line.match(/elapsed [^|]+/)?.[0]);
 
     const live = cli(['status', '--evaluation', folder, '--run', runId], env);
     assert.equal(live.status, 0, `live status: ${live.stdout}${live.stderr}`);
@@ -243,9 +248,26 @@ async function main() {
       path.join(directory, 'run.json'),
       `${JSON.stringify({ ...finished, completed: false, outcome: null, progress: stale.progress })}\n`,
     );
-    const staleCli = cli(['status', '--evaluation', folder, '--run', runId, '--follow'], env);
-    assert.equal(staleCli.status, 0, `stale follow: ${staleCli.stdout}${staleCli.stderr}`);
-    assert.match(staleCli.stdout, /run .*: stale .*last update .* ago/);
+    following = spawn(process.execPath, [CLI, 'status', '--evaluation', folder, '--run', runId, '--follow'], {
+      cwd: ROOT,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let staleOutput = '';
+    following.stdout.on('data', (chunk) => (staleOutput += chunk));
+    following.stderr.on('data', (chunk) => (staleOutput += chunk));
+    await until(() => staleOutput.includes('stale'), 'stale follow status', following);
+    assert.match(staleOutput, /run .*: stale .*last update .* ago/);
+    const nextRecord = path.join(directory, 'run-next.json');
+    fs.writeFileSync(nextRecord, `${JSON.stringify(finished)}\n`);
+    fs.renameSync(nextRecord, path.join(directory, 'run.json'));
+    const staleExit = await closed(following);
+    assert.equal(staleExit.code, 0, `stale follow: ${staleOutput}`);
+    assert.match(staleOutput, /run .*: complete/);
+
+    const legacy = statusOf(runId, { command: 'run', completed: false, startedAt: finished.progress.startedAt });
+    assert.equal(legacy.state, 'stale');
+    assert.match(legacy.line, /elapsed unknown/);
 
     const zero = statusOf(runId, {
       ...finished,

@@ -357,7 +357,7 @@ function buildProgram(run) {
     .description("Show the newest run's progress, or follow it until completion; --run selects a specific invocation.")
     .option('--evaluation <path>', 'the evaluation folder, or its evaluation.json')
     .option('--run <invocationId>', 'the run to inspect; the most recent run when omitted')
-    .option('--follow', 'print progress changes and periodic heartbeats until the run ends or its updates go stale')
+    .option('--follow', 'print progress changes and periodic heartbeats until the run ends')
     .action((options) => run(statusCommand, options));
   program
     .command('ci')

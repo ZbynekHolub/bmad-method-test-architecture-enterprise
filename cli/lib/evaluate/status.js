@@ -111,18 +111,19 @@ function statusOf(runId, record, now = Date.now()) {
   const completedTrials = Number.isInteger(progress.completedTrials) && progress.completedTrials >= 0 ? progress.completedTrials : null;
   const totalTrials = Number.isInteger(progress.totalTrials) && progress.totalTrials >= 0 ? progress.totalTrials : null;
   const lastElapsed = Number.isFinite(progress.elapsedMs) && progress.elapsedMs >= 0 ? progress.elapsedMs : null;
-  const timeSinceUpdate = Number.isFinite(updatedAt) ? Math.max(0, now - updatedAt) : 0;
   const elapsed =
     lastElapsed === null
       ? terminal && Number.isFinite(record.durationMs)
         ? record.durationMs
-        : (stale && Number.isFinite(updatedAt) ? updatedAt : now) - startedAt
-      : lastElapsed + (terminal || stale ? 0 : timeSinceUpdate);
+        : stale
+          ? Number.NaN
+          : now - startedAt
+      : lastElapsed;
   const parts = [`run ${runId}: ${state}`];
   if (safeText(progress.phase)) parts.push(safeText(progress.phase));
   if (safeText(progress.detail)) parts.push(safeText(progress.detail));
   if (Number.isFinite(progress.phaseElapsedMs) && progress.phaseElapsedMs >= 0) {
-    parts.push(`phase elapsed ${elapsedText(progress.phaseElapsedMs + (terminal || stale ? 0 : timeSinceUpdate))}`);
+    parts.push(`phase elapsed ${elapsedText(progress.phaseElapsedMs)}`);
   }
   if (completedTrials !== null && totalTrials !== null) parts.push(`trials ${completedTrials}/${totalTrials}`);
   parts.push(`elapsed ${elapsedText(elapsed)}`);
@@ -175,7 +176,7 @@ async function runStatusCommand(folder, { run, follow = false, emit, pollMs = PO
       lastIdentity = identity;
       lastReportAt = now;
     }
-    if (!follow || status.terminal || status.stale) return { exitCode: 0, message: status.line, status };
+    if (!follow || status.terminal) return { exitCode: 0, message: status.line, status };
     await sleep(pollMs);
   }
 }
