@@ -83,6 +83,12 @@ try {
       dry.stdout.includes('"max_healing_iterations":3'),
     'dry prompt retains default run-and-heal settings',
   );
+  check(
+    dry.stdout.includes('literal string title in a direct test() call for expand or test.skip() call') &&
+      dry.stdout.includes('Give this rule to every test-generation subagent') &&
+      dry.stdout.includes('rejects dynamic forms'),
+    'headless generation tells every test-writing agent to use verifiable registrations',
+  );
   check(!fs.existsSync(path.join(scratch, '_bmad-output')), 'dry run writes no generated artifacts');
   const redDry = invoke(['--agent', 'none', '--mode', 'red', '--story', 'story.md']);
   check(
