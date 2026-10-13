@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automate accepts whitespace and mixed case in string boolean settings, matching the shared TEA configuration resolver.
 - Automate red generation guidance now selects compatible native activation reports and avoids invalid Playwright report roots from disposable copies.
 - Automate CLI guidance requires completed mode-specific checkpoint steps before publishing generation results, and incomplete checkpoint errors name the missing progress.
+- The locker red evaluation fixture now supplies stable reservation provider state so release and reserved-locker criteria can be tested without an unimplemented setup request.
 - Automate uses shared workflow customization loading to expand `file:` persistent facts and validate custom settings.
 - Restrict environment variables forwarded to model-generated test execution in the live generation scorer.
 - Automate generation evaluation uses the clock port for duration and generation timestamps.
