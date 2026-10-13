@@ -1468,7 +1468,9 @@ async function runTrialSets(given) {
   for (const arm of arms) {
     arm.trials = [];
     for (let trialIndex = 1; trialIndex <= trialCount; trialIndex += 1) {
-      log(`${arm.conditionArm}: trial ${trialIndex} of ${trialCount}`);
+      const trialDetail = `${arm.conditionArm}: trial ${trialIndex} of ${trialCount}`;
+      log(trialDetail);
+      progress('trials', { detail: trialDetail, completedTrials });
       const trial = await runTrial({ ...context, arm, trialIndex });
       const versionReadBegan = Date.now();
       const agentMoved = await agentVersionChange(context);
@@ -1480,7 +1482,7 @@ async function runTrialSets(given) {
       missingReports += trial.unreportedSteps.length;
       completedTrials += 1;
       progress('trials', {
-        detail: `${arm.conditionArm}: trial ${trialIndex} of ${trialCount}`,
+        detail: `${trialDetail} completed`,
         completedTrials,
         usage: {
           trialCostUsd: missingReports === 0 && completedTrials === totalTrials ? reportedUse.costUsd : null,
