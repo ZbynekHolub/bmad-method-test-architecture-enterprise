@@ -107,6 +107,7 @@ async function main() {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'tea-evaluate-progress-'));
   let running;
   let following;
+  let cleanupError;
   try {
     const folder = project(temp);
     const runtimeTemp = path.join(temp, 'runtime-temp');
@@ -189,9 +190,11 @@ async function main() {
     const partial = readJson(path.join(directory, 'run.json'));
     assert.equal(partial.progress.completedTrials, 1);
     assert.equal(partial.progress.totalTrials, 6);
+    assert.equal(partial.progress.detail, 'clean: trial 2 of 3');
     const midway = cli(['status', '--evaluation', folder, '--run', runId], env);
     assert.equal(midway.status, 0, `midway status: ${midway.stdout}${midway.stderr}`);
     assert.match(midway.stdout, /live.*trials 1\/6.*elapsed/);
+    assert.match(midway.stdout, /clean: trial 2 of 3/);
     await until(() => followOutput.includes('trials 1/6'), 'follow intermediate trial progress', following);
 
     fs.writeFileSync(path.join(secondWorkspace, 'gate-release'), 'released\n');
@@ -295,12 +298,17 @@ async function main() {
       Date.now() + 3_600_000,
     );
     assert.equal(interruptedLater.line.match(/elapsed [^|]+/)?.[0], interrupted.line.match(/elapsed [^|]+/)?.[0]);
-    console.log('ok Evaluate status, heartbeat, timing, and unknown trial cost');
   } finally {
     if (running?.exitCode === null && running?.signalCode === null) running.kill('SIGKILL');
     if (following?.exitCode === null && following?.signalCode === null) following.kill('SIGKILL');
-    fs.rmSync(temp, { recursive: true, force: true });
+    try {
+      fs.rmSync(temp, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+    } catch (error) {
+      cleanupError = error;
+    }
   }
+  if (cleanupError) throw cleanupError;
+  console.log('ok Evaluate status, heartbeat, timing, and unknown trial cost');
 }
 
 main().catch((error) => {
