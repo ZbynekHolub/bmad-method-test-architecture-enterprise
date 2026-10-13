@@ -2113,16 +2113,15 @@ On macOS an undeclared runner outside the read grants cannot load its source.
 
 A confined trial reads its workspace, the system's own paths and the paths its registry entry lists in `systemPaths`.
 The runner is a program the trial starts, so the audit lists each of its files that lies outside those places.
-`preflight` audits each of its legs, and a path every leg opened is a path every trial opens too, so it refuses the setup with exit 3 before any trial; `run` and `score` refuse the same paths from the trials' manifests, one `isolation manifest violation: mount outside allowlist` line per file.
+On macOS, the kernel refuses an undeclared source load, and `preflight` reports the attempted paths with exit 3. On Linux, `preflight` audits each leg's reads and refuses paths every leg opened with exit 3 before any trial; `run` and `score` refuse those paths from the trials' manifests, one `isolation manifest violation: mount outside allowlist` line per file.
 That happens when `target` is a bare name such as `tea-skill-runner` and the name resolves to an install outside the workspace.
-After `npm install --prefix evals bmad-method-test-architecture-enterprise eval-quality`, the install is `evals/node_modules`, and `preflight` prints, with the first three paths and a count of the rest:
+After `npm install --prefix evals bmad-method-test-architecture-enterprise eval-quality`, the install is `evals/node_modules`. On macOS, `preflight` reports the kernel-denied attempt. The path count depends on which source files the runner tried to load:
 
 ```text
-tea-evaluate preflight: isolation manifest violation: every preflight leg opened 17 path(s) outside the allowlist (mount outside allowlist: <project>/evals/node_modules/bmad-method-test-architecture-enterprise/cli/lib/agent-adapters.js; mount outside allowlist: <project>/evals/node_modules/bmad-method-test-architecture-enterprise/cli/lib/agent-supervisor-bounds.js; mount outside allowlist: <project>/evals/node_modules/bmad-method-test-architecture-enterprise/cli/lib/agent-supervisor.js; and 14 more), so every trial will too, and `score` refuses a trial that does (exit 3). If they are the files of a target that launches from outside its workspace, use one of two setups: make the registry `target` a path inside `launch.root` (for example `node_modules/.bin/tea-skill-runner` over a copy workspace, or a git workspace with `workspace.provision`), or keep the bare name and list the directories it runs from in `systemPaths`, with the bin directory that holds its link on `PATH`.
+tea-evaluate preflight: isolation manifest violation: every preflight leg attempted access to <count> path(s) outside the allowlist (mount outside allowlist: <project>/evals/node_modules/bmad-method-test-architecture-enterprise/cli/lib/agent-adapters.js; and other attempted paths); the kernel refused those accesses (exit 3).
 ```
 
-On macOS the audit names 17 files, all under two directories: the TEA package and its `commander` dependency, both in `evals/node_modules`.
-On Linux it names 18, the extra one being the link `node_modules/.bin/tea-skill-runner` that `PATH` resolves, in a third directory, `evals/node_modules/.bin`.
+In the Linux traced-read example, the audit names 18 paths, including the link `node_modules/.bin/tea-skill-runner` that `PATH` resolves under `evals/node_modules/.bin`.
 For a path only some legs opened, `preflight` prints a note naming the path and the legs, and `run` and `score` refuse any trial that opens it.
 Two setups work.
 

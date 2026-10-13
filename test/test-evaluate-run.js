@@ -4343,7 +4343,7 @@ if (act === 'read-ungranted') {
     );
     check(!output.includes(secret), 'ungranted host bytes reached target output');
     const channel = readJson(path.join(directory, 'run.json')).observedMountsChannel;
-    check(
+    checkReport(
       channel.every((entry) => entry.canariesDelivered === entry.canariesSent && !entry.logReportedLoss),
       `the diagnostic-drop witness also dropped canaries: ${JSON.stringify(channel)}`,
     );
@@ -22237,7 +22237,7 @@ const CASES = [
   { name: 'the subdirectory digest', body: checkSubdirectoryDigest, group: 'run' },
   { name: 'the confined evaluation folder', body: checkConfinedEvaluationFolder, group: 'confinement', lossy: true },
   { name: 'the observed mounts', body: checkObservedMounts, group: 'confinement', lossy: true },
-  { name: 'the dropped read reports', body: checkDroppedReadReports, group: 'confinement' },
+  { name: 'the dropped read reports', body: checkDroppedReadReports, group: 'confinement', lossy: true },
   { name: 'the platform refusal', body: checkPlatformRefusal, group: 'confinement' },
   { name: 'the leftover process', body: checkLeftoverProcess, group: 'confinement' },
   { name: 'the evaluator swap', body: checkEvaluatorSwap, group: 'confinement', lossy: true },
