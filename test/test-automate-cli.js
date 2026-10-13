@@ -142,7 +142,11 @@ try {
   check(!fs.existsSync(path.join(scratch, '_bmad-output')), 'dry run writes no generated artifacts');
   const redDry = invoke(['--agent', 'none', '--mode', 'red', '--story', 'story.md']);
   check(
-    redDry.status === 0 && redDry.stdout.includes('RED ONLY') && !redDry.stdout.includes('EXPAND ONLY'),
+    redDry.status === 0 &&
+      redDry.stdout.includes('RED ONLY') &&
+      !redDry.stdout.includes('EXPAND ONLY') &&
+      redDry.stdout.includes('use a compatible tea-atdd-red-check native report for disposable activation') &&
+      redDry.stdout.includes('Never list such a report as successful execution evidence'),
     'red selects the ATDD customization namespace',
   );
   for (const args of [
