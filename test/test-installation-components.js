@@ -308,9 +308,7 @@ async function runTests() {
       assert(false, 'SKILL.md exists', 'skills/bmad-tea/SKILL.md not found');
     }
 
-    // Validate customize.toml carries the agent essence + menu in the new [agent] namespace.
-    // Parse with a tiny line-by-line reader — good enough for flat key/value assertions
-    // without adding a TOML dep.
+    // Validate customize.toml carries the agent essence and menu in the [agent] namespace.
     if (await pathExists(customizePath)) {
       const customizeContent = await fs.readFile(customizePath, 'utf8');
 
@@ -339,10 +337,12 @@ async function runTests() {
         { code: 'NR', skill: 'bmad-testarch-nfr' },
         { code: 'RV', skill: 'bmad-testarch-test-review' },
       ];
+      const menu = TOML.parse(customizeContent).agent.menu;
+      assert(Array.isArray(menu), 'customize.toml has an agent menu');
       for (const { code, skill } of expectedMenu) {
-        const codePattern = new RegExp(`\\[\\[agent\\.menu]]\\s*\\ncode\\s*=\\s*"${code}"`);
-        assert(codePattern.test(customizeContent), `customize.toml has [[agent.menu]] entry for code ${code}`);
-        assert(customizeContent.includes(`skill = "${skill}"`), `customize.toml menu ${code} dispatches to ${skill}`);
+        const entries = menu.filter((entry) => entry.code === code);
+        assert(entries.length === 1, `customize.toml has one [[agent.menu]] entry for code ${code}`);
+        assert(entries[0]?.skill === skill, `customize.toml menu ${code} dispatches to ${skill}`);
         const workflowDir = path.join(projectRoot, `skills/${skill}`);
         assert(await pathExists(workflowDir), `Capability skill ${skill} has matching workflow directory`);
       }
