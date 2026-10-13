@@ -14,12 +14,11 @@
 const path = require('node:path');
 const os = require('node:os');
 const fs = require('node:fs/promises');
-const { execFileSync, spawnSync } = require('node:child_process');
+const { execFileSync } = require('node:child_process');
 const { parse } = require('csv-parse/sync');
 const yaml = require('js-yaml');
 const TOML = require('smol-toml');
 const { packedPaths: readPackedPaths } = require('./lib/pack-listing');
-const { replayProblems: setupAliasReplayProblems, captureScenario: captureSetupAliasScenario } = require('./lib/setup-alias-replay');
 
 async function pathExists(filePath) {
   try {
@@ -249,12 +248,12 @@ async function runTests() {
       assert(migration.detect.includes(gone), `migration-1.toml detects ${gone}`);
     }
 
-    // The two moved keys land on keys their skill's customize.toml declares.
-    const ciCustomize = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-ci/customize.toml'), 'utf8'));
+    // The CI key retains its customization filename, while Framework owns the CI phase.
+    const ciCustomize = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-framework/customize.toml'), 'utf8'));
     const evaluateCustomize = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-evaluate/customize.toml'), 'utf8'));
     assert(
       ciCustomize.workflow?.ci_platform === 'auto',
-      'bmad-testarch-ci customize.toml declares ci_platform, the destination migration-1.toml names',
+      'bmad-testarch-framework customize.toml declares ci_platform for the migrated CI setting',
     );
     assert(
       typeof evaluateCustomize.workflow?.evaluations_folder === 'string' &&
@@ -331,13 +330,13 @@ async function runTests() {
       const expectedMenu = [
         { code: 'TMT', skill: 'bmad-teach-me-testing' },
         { code: 'TF', skill: 'bmad-testarch-framework' },
-        { code: 'AT', skill: 'bmad-testarch-atdd' },
+        { code: 'CI', skill: 'bmad-testarch-framework' },
+        { code: 'AT', skill: 'bmad-testarch-automate' },
         { code: 'TA', skill: 'bmad-testarch-automate' },
         { code: 'EV', skill: 'bmad-testarch-evaluate' },
         { code: 'TD', skill: 'bmad-testarch-test-design' },
         { code: 'TR', skill: 'bmad-testarch-trace' },
         { code: 'NR', skill: 'bmad-testarch-nfr' },
-        { code: 'CI', skill: 'bmad-testarch-ci' },
         { code: 'RV', skill: 'bmad-testarch-test-review' },
       ];
       for (const { code, skill } of expectedMenu) {
@@ -419,9 +418,7 @@ async function runTests() {
   const workflowDirs = [
     'bmad-teach-me-testing',
     'bmad-testarch-framework',
-    'bmad-testarch-ci',
     'bmad-testarch-test-design',
-    'bmad-testarch-atdd',
     'bmad-testarch-automate',
     'bmad-testarch-test-review',
     'bmad-testarch-nfr',
@@ -444,13 +441,7 @@ async function runTests() {
   }
 
   for (const dirName of workflowDirs) {
-    const phasePath =
-      dirName === 'bmad-testarch-ci'
-        ? 'bmad-testarch-framework/ci'
-        : dirName === 'bmad-testarch-atdd'
-          ? 'bmad-testarch-automate/red'
-          : dirName;
-    const workflowDir = path.join(projectRoot, `skills/${phasePath}`);
+    const workflowDir = path.join(projectRoot, `skills/${dirName}`);
     const skillMdPath = path.join(projectRoot, `skills/${dirName}/SKILL.md`);
     const customizeTomlPath = path.join(projectRoot, `skills/${dirName}/customize.toml`);
     const workflowYamlPath = path.join(projectRoot, `skills/${dirName}/workflow.yaml`);
@@ -461,39 +452,7 @@ async function runTests() {
       try {
         const skillContent = await fs.readFile(skillMdPath, 'utf8');
         assert(skillContent && skillContent.trim().length > 0, `${dirName}/SKILL.md is not empty`);
-        if (dirName === 'bmad-testarch-ci') {
-          assert(
-            skillContent.includes('setup_scope = ci') && skillContent.includes('setup_entry = bmad-testarch-ci'),
-            'CI compatibility entry presets CI scope and preserves invocation identity',
-          );
-          assert(
-            skillContent.includes('bmad-testarch-framework') && skillContent.includes('Load `{skill-root}/SKILL.md`'),
-            'CI compatibility entry activates the canonical skill',
-          );
-          assert(
-            skillContent.includes('create/resume/validate/edit') && skillContent.includes('setup_scope = both'),
-            'CI compatibility entry preserves operations and explicit combined requests',
-          );
-          assert(
-            skillContent.includes('bmad-testarch-ci.user.toml') && skillContent.includes('ci_platform'),
-            'CI compatibility entry preserves the existing customization layers',
-          );
-        } else if (dirName === 'bmad-testarch-atdd') {
-          assert(
-            skillContent.includes('red') && skillContent.includes('bmad-testarch-automate'),
-            'ATDD entry selects red mode in the combined generation skill',
-          );
-          assert(
-            skillContent.includes('resources/test-generation-routing.md') &&
-              skillContent.includes('red/steps-c/step-01-preflight-and-context.md'),
-            'ATDD entry verifies canonical generation capabilities before delegation',
-          );
-          const entryBmod = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills', dirName, 'bmod.toml'), 'utf8'));
-          assert(
-            Array.isArray(entryBmod.skill.required_skills) && entryBmod.skill.required_skills.includes('bmad-testarch-automate'),
-            'ATDD entry declares its canonical skill dependency',
-          );
-        } else {
+        {
           assert(skillContent.includes('## On Activation'), `${dirName}/SKILL.md has On Activation section`);
           assert(
             skillContent.includes(
@@ -709,20 +668,10 @@ async function runTests() {
     }
   }
 
-  // Setup routing remains shared across the legacy entry points and all requested scopes.
+  // Setup routing remains shared across all requested scopes.
   try {
     const router = await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-framework/resources/setup-routing.md'), 'utf8');
     const canonical = await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-framework/SKILL.md'), 'utf8');
-    const alias = await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-ci/SKILL.md'), 'utf8');
-    const aliasBmod = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-ci/bmod.toml'), 'utf8'));
-    assert(
-      alias.includes(
-        'Require its `SKILL.md`, `{skill-root}/resources/setup-routing.md`, and `{skill-root}/ci/steps-c/step-01-preflight.md`',
-      ) &&
-        alias.includes('all three required files exist') &&
-        aliasBmod.skill.required_skills.includes('bmad-testarch-framework'),
-      'CI alias requires combined-setup capabilities and declares its installed skill dependency',
-    );
     assert(
       canonical.includes('CI-only skips framework prepend/append hooks, persistent facts and completion hooks') &&
         canonical.indexOf('execute each `ci_workflow.activation_steps_prepend`') < canonical.indexOf('### Step 5: Greet the User') &&
@@ -916,10 +865,9 @@ async function runTests() {
       'coordinator settles effective platform and pipeline update/replace before CI workers start',
     );
     assert(
-      router.includes('canonical-owned CI defaults') &&
-        router.includes('when the alias directory is absent') &&
-        router.includes('All legacy overrides, including migrated platform settings, remain effective even without the installed alias'),
-      'standalone canonical CI uses owned defaults and preserves legacy settings',
+      router.includes('Start with CI defaults') &&
+        router.includes('Existing CI overrides, including migrated platform settings, remain effective'),
+      'canonical CI uses owned defaults and preserves existing settings',
     );
     assert(
       router.includes(
@@ -1032,108 +980,6 @@ async function runTests() {
   }
 
   try {
-    for (const failure of ['spawn', 'timeout']) {
-      let scratch;
-      let runnerResult;
-      let thrown;
-      try {
-        captureSetupAliasScenario('ci-only', {
-          run(_command, _args, options) {
-            scratch = options.cwd;
-            runnerResult =
-              failure === 'spawn'
-                ? spawnSync(path.join(scratch, 'missing-runner'), [], { ...options, timeout: 1000 })
-                : spawnSync(process.execPath, ['-e', 'setTimeout(() => {}, 1000)'], { ...options, timeout: 20 });
-            return runnerResult;
-          },
-        });
-      } catch (error) {
-        thrown = error;
-      }
-      try {
-        const capture = JSON.parse(await fs.readFile(path.join(scratch, 'capture.json'), 'utf8'));
-        assert(runnerResult.error?.code === (failure === 'spawn' ? 'ENOENT' : 'ETIMEDOUT'), `alias capture reproduces ${failure} error`);
-        assert(
-          capture.runnerError?.message === runnerResult.error.message && capture.runnerError?.code === runnerResult.error.code,
-          `alias ${failure} evidence retains the original runner error message and code`,
-        );
-        assert(
-          capture.runnerSignal === runnerResult.signal && (failure !== 'timeout' || capture.runnerSignal === 'SIGTERM'),
-          `alias ${failure} evidence retains the runner termination signal`,
-        );
-        assert(
-          thrown?.cause === runnerResult.error && thrown.message.includes(runnerResult.error.message) && thrown.message.includes(scratch),
-          `alias ${failure} throws the original cause with its retained evidence location`,
-        );
-        assert(
-          setupAliasReplayProblems(capture).includes('real alias runner failed or was terminated'),
-          `alias ${failure} replay rejects failed runner evidence`,
-        );
-      } finally {
-        if (scratch) await fs.rm(scratch, { recursive: true, force: true });
-      }
-    }
-  } catch (error) {
-    assert(false, 'CI alias runner failures retain diagnostics before throwing', error.message);
-  }
-
-  try {
-    for (const scenario of ['ci-only', 'outdated-framework']) {
-      const replay = JSON.parse(
-        await fs.readFile(path.join(projectRoot, 'test/fixtures/setup-alias-replay', `${scenario}.capture.json`), 'utf8'),
-      );
-      assert(
-        setupAliasReplayProblems(replay).length === 0,
-        `real alias ${scenario} behavior remains pinned to current source`,
-        setupAliasReplayProblems(replay).join('; '),
-      );
-      const stale = structuredClone(replay);
-      stale.sourceDigests['skills/bmad-testarch-ci/SKILL.md'] = 'sha256:changed';
-      assert(
-        setupAliasReplayProblems(stale).includes('alias replay is stale against current instructions'),
-        `alias ${scenario} replay rejects changed instruction provenance`,
-      );
-      const leaked = structuredClone(replay);
-      leaked.hookEvents = 'FRAMEWORK-PREPEND\n' + (leaked.hookEvents ?? '');
-      assert(setupAliasReplayProblems(leaked).length > 0, `alias ${scenario} replay rejects framework hook leakage`);
-      const misrouted = structuredClone(replay);
-      misrouted.route = {
-        setup_scope: 'framework',
-        setup_entry: 'bmad-testarch-ci',
-        selected_step: 'skills/bmad-testarch-framework/steps-c/step-01-preflight.md',
-        facts: ['FRAMEWORK-FACT'],
-      };
-      assert(setupAliasReplayProblems(misrouted).length > 0, `alias ${scenario} replay rejects framework routing`);
-      if (scenario === 'ci-only') {
-        const facts = structuredClone(replay);
-        facts.route.facts.push('FRAMEWORK-FACT');
-        assert(
-          setupAliasReplayProblems(facts).includes('CI-only run loaded framework persistent facts'),
-          'CI alias replay rejects framework fact leakage',
-        );
-        const greeting = structuredClone(replay);
-        greeting.activationOrder = 'GREET\nCI-PREPEND\nCI-APPEND\nCI-COMPLETE\n';
-        assert(
-          setupAliasReplayProblems(greeting).includes('CI prepend did not precede the greeting'),
-          'CI alias replay rejects prepend hooks after greeting',
-        );
-        const hollowPipeline = structuredClone(replay);
-        hollowPipeline.pipeline = '# node --test\njobs:\n  test:\n    steps:\n      - run: echo success\n';
-        assert(
-          setupAliasReplayProblems(hollowPipeline).includes('alias did not generate CI for the existing test command'),
-          'CI alias replay rejects a test command mentioned only in a comment',
-        );
-      }
-    }
-  } catch (error) {
-    assert(
-      false,
-      'real CI alias captures replay against current instructions',
-      `${error.message}; refresh with node test/lib/setup-alias-replay.js --capture`,
-    );
-  }
-
-  try {
     const generationRoot = path.join(projectRoot, 'skills/bmad-testarch-automate');
     const router = await fs.readFile(path.join(generationRoot, 'resources/test-generation-routing.md'), 'utf8');
     const entry = await fs.readFile(path.join(generationRoot, 'SKILL.md'), 'utf8');
@@ -1142,18 +988,17 @@ async function runTests() {
       'generation resolves mode and operation before any activation hook',
     );
     assert(
-      router.includes('defaults to red through `bmad-testarch-atdd` and expand through the canonical entry') &&
+      router.includes('When no task mode signal is present, default to expand') &&
         router.includes('An explicit mode in the user') &&
         router.includes('test_mode_defaulted = true'),
-      'generation preserves historical entry defaults in every run mode and explicit mode precedence',
+      'generation defaults to expand and preserves explicit mode precedence',
     );
     assert(
-      router.includes('When no task mode signal is present, every run mode defaults') &&
-        router.includes('with no task wording use those entry defaults without a mode question') &&
+      router.includes('When no task mode signal is present, default to expand') &&
         router.includes('only when explicit task mode signals conflict in an interactive run') &&
-        router.includes('with conflicting signals uses the same historical entry default without a question') &&
+        router.includes('with conflicting signals defaults to expand without a question') &&
         !router.includes('or neither resolves a mode'),
-      'interactive AT, TA and slash commands retain no-signal defaults; only conflicting task signals ask',
+      'only conflicting task signals ask a mode question',
     );
     const routingExamples = router
       .split('\n')
@@ -1165,13 +1010,11 @@ async function runTests() {
           .map((cell) => cell.trim()),
       );
     for (const example of [
-      ['AT or `/bmad-testarch-atdd`', 'none', 'interactive', 'red (entry default)', 'no'],
-      ['TA or `/bmad-testarch-automate`', 'none', 'interactive', 'expand (entry default)', 'no'],
-      ['`/bmad-testarch-automate`', 'lets write acceptance tests', 'interactive or headless', 'red', 'no'],
-      ['`/bmad-testarch-automate`', 'acceptance test scaffolds', 'interactive or headless', 'red', 'no'],
-      ['either entry', 'red and expand task signals', 'interactive', 'unresolved', 'ask once'],
-      ['AT or `/bmad-testarch-atdd`', 'red and expand task signals', 'headless', 'red (entry default)', 'no'],
-      ['TA or `/bmad-testarch-automate`', 'red and expand task signals', 'headless', 'expand (entry default)', 'no'],
+      ['`bmad-testarch-automate`', 'none', 'interactive', 'expand (default)', 'no'],
+      ['`bmad-testarch-automate`', 'lets write acceptance tests', 'interactive or headless', 'red', 'no'],
+      ['`bmad-testarch-automate`', 'acceptance test scaffolds', 'interactive or headless', 'red', 'no'],
+      ['`bmad-testarch-automate`', 'red and expand task signals', 'interactive', 'unresolved', 'ask once'],
+      ['`bmad-testarch-automate`', 'red and expand task signals', 'headless', 'expand (default)', 'no'],
     ]) {
       assert(
         routingExamples.some((row) => row.length === example.length && row.every((value, index) => value === example[index])),
@@ -1204,7 +1047,7 @@ async function runTests() {
         router.includes('red/customize.toml') &&
         router.includes('_bmad/custom/bmad-testarch-atdd.toml') &&
         entry.includes('skip this resolver command'),
-      'canonical-only red retains the legacy customization namespace with embedded defaults',
+      'red mode retains the existing customization namespace with embedded defaults',
     );
   } catch (error) {
     assert(false, 'generation routing and Resume contract validates', error.message);
@@ -1231,7 +1074,6 @@ async function runTests() {
   console.log(`${colors.yellow}Test Suite 5: Lean Skill Shape${colors.reset}\n`);
 
   const LEAN_SKILL_DIRS = ['bmad-testarch-evaluate'];
-  const ADAPTER_SKILL_DIRS = ['bmad-testarch-ci', 'bmad-testarch-atdd'];
   const LEAN_REQUIRED = ['SKILL.md', 'customize.toml', 'references', 'assets'];
   const LEAN_FORBIDDEN = ['workflow.yaml', 'steps-c', 'steps-e', 'steps-v', 'instructions.md', 'checklist.md', 'scripts'];
 
@@ -1278,64 +1120,43 @@ async function runTests() {
       .map((entry) => entry.name);
     const computedLean = [];
     const computedHouse = [];
-    const computedAdapters = [];
     for (const name of allSkillDirs) {
-      if (ADAPTER_SKILL_DIRS.includes(name)) computedAdapters.push(name);
-      else if (await isLeanSkill(path.join(testarchRoot, name))) computedLean.push(name);
+      if (await isLeanSkill(path.join(testarchRoot, name))) computedLean.push(name);
       else computedHouse.push(name);
     }
     assert(
       computedLean.sort().join(',') === [...LEAN_SKILL_DIRS].sort().join(','),
       `lean classification of skills/* equals LEAN_SKILL_DIRS (got: ${computedLean.sort().join(', ')})`,
     );
-    assert(computedAdapters.sort().join(',') === [...ADAPTER_SKILL_DIRS].sort().join(','), 'CI compatibility adapter remains installed');
     assert(
-      computedHouse.sort().join(',') ===
-        workflowDirs
-          .filter((name) => !ADAPTER_SKILL_DIRS.includes(name))
-          .sort()
-          .join(','),
+      computedHouse.sort().join(',') === workflowDirs.sort().join(','),
       `house classification of skills/* equals the house workflowDirs list (got: ${computedHouse.sort().join(', ')})`,
     );
   } catch (error) {
     assert(false, 'every skills/* directory lands on exactly one expected set', error.message);
   }
 
-  for (const dirName of ADAPTER_SKILL_DIRS) {
-    const adapterDir = path.join(projectRoot, 'skills', dirName);
-    for (const forbidden of ['steps-c', 'steps-e', 'steps-v', 'instructions.md', 'checklist.md', 'resources']) {
-      assert(!(await pathExists(path.join(adapterDir, forbidden))), `${dirName} delegates ${forbidden} to its canonical skill`);
-    }
-    for (const required of ['SKILL.md', 'customize.toml', 'bmod.toml', 'workflow.yaml']) {
-      assert(await pathExists(path.join(adapterDir, required)), `${dirName}/${required} retains the installed entry point`);
-    }
-    if (dirName === 'bmad-testarch-atdd') {
-      const redRoot = path.join(projectRoot, 'skills', 'bmad-testarch-automate', 'red');
-      for (const required of [
+  for (const [root, required] of [
+    [
+      'bmad-testarch-automate/red',
+      ['instructions.md', 'checklist.md', 'atdd-checklist-template.md', 'resources', 'steps-c', 'steps-v', 'steps-e'],
+    ],
+    [
+      'bmad-testarch-framework/ci',
+      [
         'instructions.md',
         'checklist.md',
-        'atdd-checklist-template.md',
+        'github-actions-template.yaml',
+        'gitlab-ci-template.yaml',
+        'azure-pipelines-template.yaml',
+        'jenkins-pipeline-template.groovy',
+        'harness-pipeline-template.yaml',
         'resources',
-        'steps-c',
-        'steps-v',
-        'steps-e',
-      ]) {
-        assert(await pathExists(path.join(redRoot, required)), `canonical red mode retains ${required}`);
-      }
-      continue;
-    }
-    const ciRoot = path.join(projectRoot, 'skills', 'bmad-testarch-framework', 'ci');
-    for (const required of [
-      'instructions.md',
-      'checklist.md',
-      'github-actions-template.yaml',
-      'gitlab-ci-template.yaml',
-      'azure-pipelines-template.yaml',
-      'jenkins-pipeline-template.groovy',
-      'harness-pipeline-template.yaml',
-      'resources',
-    ]) {
-      assert(await pathExists(path.join(ciRoot, required)), `canonical CI phase retains ${required}`);
+      ],
+    ],
+  ]) {
+    for (const file of required) {
+      assert(await pathExists(path.join(projectRoot, 'skills', root, file)), `${root} retains ${file}`);
     }
   }
 
@@ -1528,9 +1349,7 @@ async function runTests() {
       }
       assert(outputSteps > 0, `${workflow} declares at least one create-mode outputFile under {test_artifacts}`);
 
-      const workflowYaml = yaml.load(
-        await fs.readFile(path.join(projectRoot, 'skills', `bmad-testarch-${workflow}`, 'workflow.yaml'), 'utf8'),
-      );
+      const workflowYaml = yaml.load(await fs.readFile(path.join(projectRoot, 'skills', phase, 'workflow.yaml'), 'utf8'));
       const deliverables = [
         ...Object.entries(workflowYaml)
           .filter(([key, value]) => (key === 'default_output_file' || key.endsWith('_output')) && typeof value === 'string')

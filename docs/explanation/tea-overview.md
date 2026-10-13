@@ -31,7 +31,7 @@ TEA runs in solutioning, implementation, and release gates; the Enterprise track
 
 ## TEA Skill Catalog
 
-Eight canonical skills have ten direct capability commands, plus the TEA agent. The documentation sidebar lists these skills in this order:
+Eight workflows have eight direct capability commands, plus the TEA agent and its module record. The documentation sidebar lists these skills in this order:
 
 | Skill                                                          | Primary Outputs                                                                                                      | Browser Automation (CLI/MCP)                                      |
 | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -53,15 +53,15 @@ Eight canonical skills have ten direct capability commands, plus the TEA agent. 
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | [Evaluate](/docs/tutorials/evaluate-your-first-skill.md) | Scored behavioral evaluation, named gaps, and a CI plan handed to Framework with CI scope |
 
-Automation uses one skill with two modes: red before implementation and expand after implementation. The ATDD command and `AT` select red by default; automate and `TA` select expand. Your prompt can explicitly select either. Create runs execute and repair tests for up to three rounds while keeping real product defects visible.
+Automation uses one skill with two modes: red before implementation and expand after implementation. Request red mode through Automate for acceptance tests before implementation. Automate and `TA` default to expand when no task mode is given. Create runs execute and repair tests for up to three rounds while keeping real product defects visible.
 
 Invoke a skill as `/bmad-testarch-<skill>` in Claude Code, Cursor, and Windsurf, or `$bmad-testarch-<skill>` in Codex.
 NFR uses `/bmad-testarch-nfr` or `$bmad-testarch-nfr`; its stored identifier is `nfr-assess`. Teach Me Testing uses `/bmad-teach-me-testing` or `$bmad-teach-me-testing`, with no `testarch` segment.
-Inside an active TEA agent session, use the menu codes: `TD`, `TF`, `CI`, `AT`, `TA`, `EV`, `RV`, `NR`, `TR`, plus `TMT` for TEA Academy and `GATE`.
+Inside an active TEA agent session, use the menu codes: `TD`, `TF`, `TA`, `EV`, `RV`, `NR`, `TR`, plus `TMT` for TEA Academy and `GATE`.
 
 `bmad-testarch-framework` owns both setup phases.
 Request framework only, CI only, or both. It infers scope from the prompt and asks "Do you want CI too?" once when CI scope is unclear in an interactive session. An unattended request with unclear scope runs framework setup only and states that CI was excluded.
-`bmad-testarch-ci` and `CI` still start its CI setup; `TF` starts framework setup.
+Request CI setup through `bmad-testarch-framework` or `TF`; the same entry handles framework setup.
 Create starts setup, Resume continues an interrupted run, Validate reports checks without repairing outputs, and Edit revises the selected outputs and checks those changes.
 
 <a id="tea-workflow-lifecycle"></a>

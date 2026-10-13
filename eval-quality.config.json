@@ -859,9 +859,9 @@
       },
       {
         "file": "README.md",
-        "claim": "the preserved command entries and their canonical skills",
+        "claim": "the direct command entries and their workflows",
         "pattern": {
-          "match": "([A-Za-z-]+) commands start the ([a-z-]+) skills"
+          "match": "([A-Za-z-]+) commands start the ([a-z-]+) workflows"
         },
         "counts": ["workflowCommandCount", "canonicalWorkflowCount"]
       },
@@ -1042,13 +1042,7 @@
         "path": "skills/bmad-teach-me-testing"
       },
       {
-        "path": "skills/bmad-testarch-atdd"
-      },
-      {
         "path": "skills/bmad-testarch-automate"
-      },
-      {
-        "path": "skills/bmad-testarch-ci"
       },
       {
         "path": "skills/bmad-testarch-evaluate/SKILL.md"

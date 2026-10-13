@@ -258,7 +258,7 @@ P0, P1, P2, and P3 describe priority. Execution timing is defined separately bel
 
 ## Follow-on Workflows
 
-- Run `/bmad-testarch-atdd` explicitly for the four P0 scenarios.
+- Run `/bmad-testarch-automate` in red mode explicitly for the four P0 scenarios.
 - Run `/bmad-testarch-automate` for the remaining functional coverage after implementation exists.
 - Run `/bmad-testarch-nfr` when evidence exists for all four NFR domains.
 - Run `/bmad-testarch-trace` to map the approved oracle and apply the release gate.

@@ -227,7 +227,6 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 const FIXTURE_ROOT = path.join(__dirname, 'fixtures', 'ci-eval');
 const GROUND_TRUTH = path.join(FIXTURE_ROOT, 'ground-truth.json');
 const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-framework');
-const CI_ALIAS_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-ci');
 const SUITE_ID = 'ci';
 
 // A complete CI run reads four step files, the template, several knowledge
@@ -1345,7 +1344,6 @@ async function writeMinimalGitDirectory(projectDir, set) {
  *   <projectRoot>/   the project, plus a resolved _bmad/config.toml, an empty
  *                    test-artifacts/, and the minimal .git/ above
  *   bmad-testarch-framework/  the canonical skill, copied verbatim
- *   bmad-testarch-ci/         the real CI compatibility entry
  *   bmod-tea/        the shared TEA knowledge base the skill reads as {tea-knowledge}
  *
  * The project root is the set's own, so the prompt that names it says which
@@ -1385,11 +1383,6 @@ async function stageIntoWorkspace(dir, set) {
     const target = path.join(dir, 'bmad-testarch-framework', relative);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.copyFileSync(path.join(SKILL_ROOT, relative), target);
-  }
-  for (const relative of filesUnder(CI_ALIAS_ROOT)) {
-    const target = path.join(dir, 'bmad-testarch-ci', relative);
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(path.join(CI_ALIAS_ROOT, relative), target);
   }
   stageTeaKnowledge(dir);
 
@@ -1466,10 +1459,10 @@ function buildPrompt(set, { ciPlatform = PLATFORM } = {}) {
   const root = set.projectRoot;
   if (set.mode === 'edit') return buildEditPrompt(set, { ciPlatform });
   return [
-    `You are running the TEA workflow \`bmad-testarch-ci\` against the project in \`${root}/\`.`,
+    `You are running the TEA Framework skill with CI scope against the project in \`${root}/\`.`,
     '',
-    'Start through the real `/bmad-testarch-ci` entry. Read `bmad-testarch-ci/SKILL.md` completely and follow its',
-    'activation, shared router, and CI Create steps in order, in full. The original request is CI-only Create.',
+    'Read `bmad-testarch-framework/SKILL.md` completely and follow its activation, shared router, and CI Create',
+    'steps in order, in full. The original request is CI-only Create. Set `setup_scope = ci`.',
     '',
     '----- run configuration -----',
     'Resolve the workflow placeholders and variables to these values:',
@@ -1478,7 +1471,6 @@ function buildPrompt(set, { ciPlatform = PLATFORM } = {}) {
     `- TEA config (\`[core]\` and \`[modules.tea]\`): \`${root}/_bmad/config.toml\``,
     `- \`{test_artifacts}\`: \`${root}/test-artifacts\``,
     '- `{skill-root}`: `bmad-testarch-framework`',
-    '- `{ci-skill-root}`: `bmad-testarch-ci`',
     TEA_KNOWLEDGE_PROMPT_LINE,
     `- \`ci_platform\`: \`${ciPlatform}\``,
     `- \`test_dir\`: \`${root}/tests\``,
@@ -1513,10 +1505,10 @@ function buildPrompt(set, { ciPlatform = PLATFORM } = {}) {
 function buildEditPrompt(set, { ciPlatform = PLATFORM } = {}) {
   const root = set.projectRoot;
   return [
-    `You are running the TEA workflow \`bmad-testarch-ci\` in edit mode against the project in \`${root}/\`.`,
+    `You are running the TEA Framework skill with CI scope in edit mode against the project in \`${root}/\`.`,
     '',
-    'Start through the real `/bmad-testarch-ci` entry. Read `bmad-testarch-ci/SKILL.md` completely and follow its',
-    'activation, shared router, and CI Edit steps in order, in full. The original request is CI-only Edit.',
+    'Read `bmad-testarch-framework/SKILL.md` completely and follow its activation, shared router, and CI Edit',
+    'steps in order, in full. The original request is CI-only Edit. Set `setup_scope = ci`.',
     '',
     '----- run configuration -----',
     'Resolve the workflow placeholders and variables to these values:',
@@ -1525,7 +1517,6 @@ function buildEditPrompt(set, { ciPlatform = PLATFORM } = {}) {
     `- TEA config (\`[core]\` and \`[modules.tea]\`): \`${root}/_bmad/config.toml\``,
     `- \`{test_artifacts}\`: \`${root}/test-artifacts\``,
     '- `{skill-root}`: `bmad-testarch-framework`',
-    '- `{ci-skill-root}`: `bmad-testarch-ci`',
     TEA_KNOWLEDGE_PROMPT_LINE,
     `- \`ci_platform\`: \`${ciPlatform}\``,
     `- \`test_dir\`: \`${root}/tests\``,

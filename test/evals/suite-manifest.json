@@ -55,7 +55,7 @@
         "by test/test-atdd-isolation.js before this suite is registered."
       ],
       "id": "atdd",
-      "skill": "bmad-testarch-atdd",
+      "skill": "bmad-testarch-automate",
       "evalType": "behavioral",
       "harness": "test/eval-atdd.js",
       "harnessOptions": {
@@ -206,9 +206,7 @@
       ],
       "id": "fragment-selection",
       "skills": [
-        "bmad-testarch-atdd",
         "bmad-testarch-automate",
-        "bmad-testarch-ci",
         "bmad-testarch-framework",
         "bmad-testarch-nfr",
         "bmad-testarch-test-design",
@@ -285,7 +283,7 @@
         "fragment selection, and two is the smallest number that can say whether the answer is reproducible."
       ],
       "id": "ci",
-      "skills": ["bmad-testarch-framework", "bmad-testarch-ci"],
+      "skills": ["bmad-testarch-framework"],
       "evalType": "behavioral",
       "harness": "test/eval-ci.js",
       "harnessOptions": {
