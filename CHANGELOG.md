@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Evaluate records whole-run and phase timing. Progress treats incomplete trial usage as unknown trial cost and keeps reported usage as a subtotal; full-run cost remains unknown because qualification and preflight costs are not fully captured. Shared arms count once in trial totals. Progress reports no verdict or ETA.
+- Evaluate can delegate bounded authoring research and candidate drafting to the latest available Haiku or Luna subagent tier. Its parent keeps artifact ownership and scoring decisions, records authoring time and reported usage, and resolves any adopter-requested latest target tier before a new baseline while preserving each run's exact target and judge conditions.
 
 ### Fixed
 
