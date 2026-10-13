@@ -743,6 +743,11 @@ async function pipeline(
     log(
       `pristine workspace, ${pristine.kind === 'git-worktree' ? `a detached worktree at ${pristine.commit}` : `a temp copy${pristine.dirty ? ' of the working tree' : ''}`}: ${pristine.root}`,
     );
+    if (pristine.kind === 'git-worktree') {
+      log(
+        'Git worktrees share repository refs, config and hooks. Keep Git writes in every worktree of this repository paused until this command ends, or use a dedicated clone for concurrent work.',
+      );
+    }
     // The evaluation folder is read from the working tree (the workspaces
     // leave it out), so uncommitted work in it reaches the run, which is then
     // dirty: no committed state names what it measured.

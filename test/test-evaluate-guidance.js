@@ -3445,6 +3445,7 @@ function checkHarnessGuidance(guide, failures) {
 function checkRunGuidance(guide, failures) {
   checkRetiredNetwork(guide, failures, 'run.md');
   for (const heading of [
+    "## Protect the target's Git state",
     '## Install the private latest-spec runtime',
     '## Check, compile, seal and preflight',
     '## Run confined',
@@ -3481,6 +3482,9 @@ function checkRunGuidance(guide, failures) {
     'runs/<invocationId>/scores/<scoreInvocationId>/',
     'Each trial set has its own `runId`',
     'before the first preflight',
+    'git -C <launch-root> rev-parse --git-common-dir',
+    'dedicated clone with its own `.git` directory',
+    'repository-wide Git quiet period',
     'strength.comparable',
     'strength.vector',
     'evaluation.json.strengthFloor',

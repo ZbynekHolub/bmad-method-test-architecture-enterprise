@@ -133,6 +133,7 @@ async function main() {
     running.stderr.on('data', (chunk) => (runOutput += chunk));
 
     const workspace = await until(() => (fs.existsSync(readyFile) ? fs.readFileSync(readyFile, 'utf8') : null), 'paused target', running);
+    assert.match(runOutput, /Git worktrees share repository refs, config and hooks/);
     const directory = await until(() => runDirectory(folder), 'run directory', running);
     const runId = path.basename(directory);
     const liveRecord = readJson(path.join(directory, 'run.json'));

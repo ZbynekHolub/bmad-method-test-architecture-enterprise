@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Corrected stale Evaluate guide claim metadata and clarified the records evaluator's rubric partition restriction.
 - Restored the held-out gap reader example so its documented command remains exercised by CI after the guide rewrite.
+- Warned before Git-backed live evaluations and documented a dedicated-clone or repository quiet-period procedure, since writes in another worktree can invalidate a run after an expensive target call.
 
 ## [2.0.2] - 2026-10-12
 
