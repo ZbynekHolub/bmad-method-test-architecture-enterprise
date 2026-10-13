@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `tea-automate` CLI for the merged red/expand skill, with Create, Resume, Validate, Edit, default run-and-heal, JSON outcomes, and retained agent/runner evidence.
+- Real Codex generation captures and an independent fixed-versus-mutated voucher-suite scorer, complementing the deterministic AUTOMATE fixture evaluator.
+
+### Changed
+
+- Built-in Codex CLI adapters now use `gpt-6.1-sol` as their current default model, including Automate and Test Review. Explicit `--model` overrides still take precedence.
+
+### Fixed
+
+- Headless Automate generation now tells test-writing subagents to use literal Playwright registrations that the CLI can verify, after a live evaluation found dynamic registrations in two of three trials.
+- Automate reconciles native Playwright evidence across nested configs, RegExp selectors, CommonJS and ESM source locations, namespace registrations, and merged fixture aliases. Real native full and filtered runs verify complete generated scope for each supported form.
+- Reconcile Automate generated test leaves, files, configured projects, and repetitions with native execution identities; require complete mode progress, preserve disabled healing counters, and protect existing directory inputs and aliases from result publication.
+- Bind Automate CLI results to the current request and selected checkpoint, reject stale generated artifacts and opaque or repeated success evidence, distinguish red assertions from execution failures, and protect input and evidence files from JSON hardlink collisions.
+- Retained generation artifacts use compact paths so Windows checkouts can clone the repository.
+- Native generated-suite replay retains raw timeout and signal evidence before reporting execution blockers.
+- Automate's Codex runs can opt into unrestricted outbound network access with `--allow-network` when tests need local HTTP services. Shared command-execution callers keep their existing network policy; explicit agent configuration keeps precedence.
+- Automate accepts whitespace and mixed case in string boolean settings, matching the shared TEA configuration resolver.
+- Automate red generation guidance now selects compatible native activation reports and avoids invalid Playwright report roots from disposable copies.
+- Automate CLI guidance requires completed mode-specific checkpoint steps before publishing generation results, and incomplete checkpoint errors name the missing progress.
+- The locker red evaluation fixture now supplies stable reservation provider state so release and reserved-locker criteria can be tested without an unimplemented setup request.
+- Automate uses shared workflow customization loading to expand `file:` persistent facts and validate custom settings.
+- Restrict environment variables forwarded to model-generated test execution in the live generation scorer.
+- Automate generation evaluation uses the clock port for duration and generation timestamps.
+- Prune raw uncompressed terminal stderr streams from live evaluation captures and gitignore evidence stderr logs.
+
 ## [2.0.3] - 2026-10-13
 
 ### Added

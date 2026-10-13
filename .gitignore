@@ -10,7 +10,11 @@ coverage/
 
 # Logs
 logs/
+.playwright-mcp/
 *.log
+!test/results/**/*.log
+**/evidence/**/stderr.txt
+**/cli-evidence/**/stderr.txt
 npm-debug.log*
 
 # Environment variables
