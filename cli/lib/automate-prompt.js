@@ -92,6 +92,9 @@ function generationRequest({ mode, operation, request, story, targets, checkpoin
     'The headless config snapshot supplied above is authoritative for activation Step 4. Setup scripts and interactive setup are unnecessary for this CLI run.',
     `Resolved Create settings: ${JSON.stringify(settings)}. Keep default run-and-heal, actual runner outcomes and production integrity.`,
     'Create and Resume continue the owning generation flow and save its completed YAML checkpoint. Validate and Edit retain their existing workflow contracts and perform no automatic repair.',
+    mode === 'red'
+      ? 'Finish the red Create or Resume workflow through step-05-validate-and-complete before publishing the manifest. The saved checklist frontmatter must have workflowStatus: completed; stepsCompleted must retain step-01-preflight-and-context, step-02-generation-mode, step-03-test-strategy, step-04c-aggregate (or step-04-generate-tests), and step-05-validate-and-complete; lastStep must be step-05-validate-and-complete. Record only steps actually completed during this run.'
+      : 'Finish the expand Create or Resume workflow through step-04-validate-and-summarize before publishing the manifest. The saved summary frontmatter must have workflowStatus: completed; stepsCompleted must retain step-01-preflight-and-context, step-02-identify-targets, step-03c-aggregate (or step-03-generate-tests), and step-04-validate-and-summarize; lastStep must be step-04-validate-and-summarize. Record only steps actually completed during this run.',
     'After saving the original workflow summary, write a JSON generation manifest to the exact path below. This is CLI metadata in addition to the existing skill outputs.',
     JSON.stringify(manifestPath),
     `CLI request identity: ${JSON.stringify(requestId)}. Set manifest requestId to this exact value.`,

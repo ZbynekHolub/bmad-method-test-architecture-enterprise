@@ -130,7 +130,8 @@ try {
   check(
     dry.stdout.includes('"auto_validate":true') &&
       dry.stdout.includes('"auto_heal_failures":true') &&
-      dry.stdout.includes('"max_healing_iterations":3'),
+      dry.stdout.includes('"max_healing_iterations":3') &&
+      dry.stdout.includes('step-04-validate-and-summarize before publishing the manifest'),
     'dry prompt retains default run-and-heal settings',
   );
   check(
@@ -146,7 +147,9 @@ try {
       redDry.stdout.includes('RED ONLY') &&
       !redDry.stdout.includes('EXPAND ONLY') &&
       redDry.stdout.includes('use a compatible tea-atdd-red-check native report for disposable activation') &&
-      redDry.stdout.includes('Never list such a report as successful execution evidence'),
+      redDry.stdout.includes('Never list such a report as successful execution evidence') &&
+      redDry.stdout.includes('step-05-validate-and-complete before publishing the manifest') &&
+      redDry.stdout.includes('stepsCompleted must retain step-01-preflight-and-context'),
     'red selects the ATDD customization namespace',
   );
   for (const args of [

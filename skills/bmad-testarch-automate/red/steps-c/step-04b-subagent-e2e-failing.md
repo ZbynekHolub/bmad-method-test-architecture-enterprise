@@ -29,7 +29,7 @@ This is an **isolated subagent** running in parallel with API red-phase test gen
 - 📖 Read this entire subagent file before acting
 - ✅ Generate red-phase E2E test scaffolds ONLY
 - ✅ Tests MUST be emitted with `test.skip()` until the developer activates them
-- ✅ Register each Playwright scaffold with a direct `test.skip('literal title', ...)` call. Literal `test.describe('literal title', ...)` suites may contain those calls. Avoid loops, `test.each()`, helper registrations, computed titles, and template titles; the CLI verifies each generated leaf against runner evidence.
+- ✅ Register each Playwright scaffold with a direct `test.skip` call and a literal criterion title. Literal `test.describe` suites may contain those calls. Avoid loops, `test.each()`, helper registrations, computed titles, and template titles; the CLI verifies each generated leaf against runner evidence.
 - ✅ Output structured JSON to temp file
 - ✅ Follow knowledge fragment patterns
 - ❌ Do NOT generate API tests (that's subagent 4A)

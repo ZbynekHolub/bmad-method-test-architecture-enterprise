@@ -258,7 +258,8 @@ function parseResult({
       throw new Error('failed validation must report a failed outcome');
   }
   if (operation === 'create' || operation === 'resume') {
-    if (checkpoint?.workflowStatus !== 'completed') throw new Error('generation checkpoint is incomplete');
+    if (checkpoint?.workflowStatus !== 'completed')
+      throw new Error(`generation checkpoint is incomplete: workflowStatus is ${JSON.stringify(checkpoint?.workflowStatus ?? null)}`);
     const terminal = mode === 'red' ? 'step-05-validate-and-complete' : 'step-04-validate-and-summarize';
     const required =
       mode === 'red'
@@ -266,13 +267,13 @@ function parseResult({
         : ['step-01-preflight-and-context', 'step-02-identify-targets', terminal];
     const aggregation =
       mode === 'red' ? ['step-04c-aggregate', 'step-04-generate-tests'] : ['step-03c-aggregate', 'step-03-generate-tests'];
-    if (
-      !Array.isArray(checkpoint.stepsCompleted) ||
-      required.some((step) => !checkpoint.stepsCompleted.includes(step)) ||
-      !aggregation.some((step) => checkpoint.stepsCompleted.includes(step)) ||
-      checkpoint.lastStep !== terminal
-    )
-      throw new Error('generation checkpoint does not retain completed mode-specific steps and terminal step');
+    const completed = Array.isArray(checkpoint.stepsCompleted) ? checkpoint.stepsCompleted : [];
+    const missing = required.filter((step) => !completed.includes(step));
+    if (!aggregation.some((step) => completed.includes(step))) missing.push(`one of ${aggregation.join(' or ')}`);
+    if (missing.length > 0 || checkpoint.lastStep !== terminal)
+      throw new Error(
+        `generation checkpoint does not retain completed mode-specific steps and terminal step: missing ${missing.join(', ') || 'none'}; lastStep ${JSON.stringify(checkpoint.lastStep ?? null)}; expected ${terminal}`,
+      );
     if (result.generatedFiles.length === 0) throw new Error('generation completed without generated files');
     if (checkpoint.test_mode !== mode || checkpoint.test_operation !== 'create')
       throw new Error('generation checkpoint has inconsistent mode or operation');
