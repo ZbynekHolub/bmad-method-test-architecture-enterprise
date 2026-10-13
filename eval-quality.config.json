@@ -1165,8 +1165,8 @@
     "symbols": {
       "foreign": [
         {
-          "token": "SCORE",
-          "reason": "a shell variable the how-to guides capture from the score summary line, not a TEA declaration"
+          "token": "Invalid",
+          "reason": "the eval-quality package's score exit-3 verdict label, not a TEA source declaration"
         },
         {
           "token": "NODE_EXTRA_CA_CERTS",

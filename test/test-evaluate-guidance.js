@@ -3445,6 +3445,7 @@ function checkHarnessGuidance(guide, failures) {
 function checkRunGuidance(guide, failures) {
   checkRetiredNetwork(guide, failures, 'run.md');
   for (const heading of [
+    "## Protect the target's Git state",
     '## Install the private latest-spec runtime',
     '## Check, compile, seal and preflight',
     '## Run confined',
@@ -3481,6 +3482,9 @@ function checkRunGuidance(guide, failures) {
     'runs/<invocationId>/scores/<scoreInvocationId>/',
     'Each trial set has its own `runId`',
     'before the first preflight',
+    'git -C <launch-root> rev-parse --git-common-dir',
+    'dedicated clone with its own `.git` directory',
+    'repository-wide Git quiet period',
     'strength.comparable',
     'strength.vector',
     'evaluation.json.strengthFloor',
@@ -3592,9 +3596,11 @@ function checkRunGuidance(guide, failures) {
     'npm exec --prefix {tea_evaluations_folder} -- tea-evaluate run --evaluation <evaluation-folder> --partition development',
     'npm exec --prefix {tea_evaluations_folder} -- tea-evaluate score --evaluation <evaluation-folder> --run <invocationId>',
   ];
-  const commands = [...guide.matchAll(/^npm exec --prefix \{tea_evaluations_folder\} -- (?:tea-evaluate|eval-quality) .+$/gm)].map(
-    ([command]) => command,
-  );
+  const commands = [...guide.matchAll(/^npm exec --prefix \{tea_evaluations_folder\} -- (?:tea-evaluate|eval-quality) .+$/gm)]
+    .map(([command]) => command)
+    // The read-only status examples may appear after score without changing
+    // the command sequence that builds and scores the evaluation.
+    .filter((command) => !command.includes('tea-evaluate status '));
   if (JSON.stringify(commands) !== JSON.stringify(expectedCommands))
     failures.push('run.md check-through-score command sequence or required arguments changed');
 }

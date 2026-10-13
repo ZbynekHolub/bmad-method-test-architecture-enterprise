@@ -7,7 +7,7 @@ description: 'Commands, manifest fields, evaluator settings, confinement, and ex
 
 `tea-evaluate` is the runtime behind the Evaluate skill (`bmad-testarch-evaluate`).
 It validates an evaluation folder, qualifies each seeded probe in a disposable workspace, runs every arm a probe needs as sealed trial sets, scores them through `eval-quality score`, compares the result with a committed baseline and runs the checks of one CI tier from the evaluation's own plan.
-Seven subcommands cover those jobs.
+Eight subcommands cover those jobs.
 TEA also ships `tea-skill-runner`, the command an evaluation registers to run a skill.
 
 | Command                   | What it does                                                                      | Exit codes                           |
@@ -16,6 +16,7 @@ TEA also ships `tea-skill-runner`, the command an evaluation registers to run a 
 | [`digest`](#digest)       | Writes `corpus-index.json` and prints a digest                                    | 0, 10, 12, 64                        |
 | [`preflight`](#preflight) | Qualifies each seeded probe and drives the preflight legs against the real target | 0, 3, 4, 5, 10, 11, 12, 64           |
 | [`run`](#run)             | Runs the preflight, then every arm a probe needs, and seals the trials            | 0, 3, 4, 5, 10, 11, 12, 64           |
+| [`status`](#status)       | Reads a run's current progress; `--follow` reports updates until it ends          | 0, 12, 64                            |
 | [`score`](#score)         | Scores the trial sets of a completed run                                          | 0, 2, 3, 4, 5, 10, 12, 64            |
 | [`compare`](#compare)     | Sets a scored run beside `baseline/`, and with `--accept` replaces the baseline   | 0, 10, 12, 64                        |
 | [`ci`](#ci)               | Runs the checks the CI plan places on one tier                                    | 0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 64 |
@@ -1228,6 +1229,7 @@ The steps run in order in one invocation, each stopping the run with its own exi
    Its trial sets stay sealed and `run.json` records `completed: true` with that exit in `outcome`, so `score --run <invocationId>` prints one `mount outside allowlist` reason per path.
 
 `run.json` records how every `preflight` and `run` invocation ended (`outcome`: the stage, the exit and the message; for an interrupting signal, the stage `signal` and the signal's name), and a `run` records `completed`, true only for a run that sealed its trial sets.
+While `run` is active, its progress snapshot records the current phase, time spent in that phase, completed and planned trials, last heartbeat, whole-run elapsed time and completed phase durations. The running command prints periodic heartbeat lines, including while a long target or evaluator call is in progress. Read the snapshot through [`status`](#status) from another process. Progress does not assign a verdict or estimate remaining time.
 The scoring policy, the evaluator conditions and the corpus index are read once, before anything runs, and the policy `run` copies to `scoring-policy.json` is the one the trials used, its digest in `run.json`.
 The workspaces leave the evaluation folder out, so the run reads it from your working tree: uncommitted work in it (an edit, a deletion or an untracked file) makes `run.json` record `dirty: true` and `evaluationFolder.dirty: true`, since no commit names what the run measured.
 
@@ -1250,6 +1252,7 @@ When a target gives no complete report, the closed record and manifest schemas s
 `run.json` lists the affected trial and step in `unreportedResourceUse`.
 An empty list means every issued target call reported use, including an explicit measured zero.
 API and MCP calls have no usage report contract and appear as unreported when issued.
+Progress reports usage for scored trials only. It can show a trial cost when all trial calls report complete usage; otherwise trial cost is unknown and `reportedTrialCostUsd` is only the subtotal of reports received. `missingReports` gives the number of unreported trial calls. Qualification and preflight costs are not fully captured, so progress does not claim a full-run cost. An explicit zero in a complete report counts as measured zero.
 The observed mounts are the paths the confinement's audit saw the trials' targets open outside what they were granted (see [File-system confinement](#file-system-confinement)), none in a clean run and none in a run that opted out, which observes no file-system access; on macOS the log can lose reports, so read an empty list together with the trial's `observedMountsChannel` entry in `run.json`.
 The runtime observes no network access, so the network allowlist and the observed network targets are empty; a Bubblewrap target has a loopback and the hosts its entry lists through the proxy (see [File-system confinement](#file-system-confinement)), and a macOS target keeps the host's network.
 Each forbidden input's note says what the runtime hands the target and names the confinement that withheld the rest, or, in a run that opted out, that the runtime does not sandbox the target's file system.
@@ -1669,6 +1672,21 @@ An exit 0 or 2 carries an evidence artifact (one record below a `minimumTrialCou
 An attempt `eval-quality score` cannot score stops the run with exit 12 before any report is judged: a call that cannot run, an exit other than 0, 2 or 3, no evidence artifact, no single trial vote for the probe, or a call whose inputs, staged artifact, exit or `eval-quality:` lines are not the ones the held bytes give.
 An arm whose agreement is below `minimumAgreement` exits 11 as an evaluation weakness, naming the arm and `evaluator-qualification.json`, with no trial record and no `trial-sets.json`.
 The two numbers appear in `EvaluatorConfiguration.decodingParameters` as `tea.evaluatorQualificationAttempts` and `tea.evaluatorQualificationMinimumAgreement`, so changing either changes the scoring version.
+
+## status
+
+`status` reads the progress of one `run` invocation from another process. It does not launch a target, score a trial, or write to the run directory.
+
+```bash
+npm exec --prefix evals -- tea-evaluate status --evaluation evals/my-evaluation --run <invocationId>
+npm exec --prefix evals -- tea-evaluate status --evaluation evals/my-evaluation --run <invocationId> --follow
+```
+
+`--evaluation` names the evaluation folder. `--run` names the invocation ID printed when `run` starts; when omitted, `status` selects the latest run. Use an explicit ID to reconnect to a specific invocation. `--follow` reports changes until the run reaches a terminal outcome, including while its last update is stale. Stop a follower for an abandoned run with Ctrl-C. `status` refuses an unknown or malformed run ID and does not follow a linked run entry.
+
+The snapshot shows the current phase, completed and planned trial counts, elapsed time recorded at the last update, completed phase durations, and the last heartbeat. Trial counts include each arm once, even when several probes share it. A heartbeat says when the run last reported progress; an old heartbeat does not establish whether its process is still alive. A completed or interrupted run shows its exit code or signal and no longer emits live heartbeats. Progress makes no verdict or ETA claim; use `score` for the result.
+
+When trial reports exist, the usage section has `scope: "trials-only"`. `trialCostUsd` is a decimal string when all trial calls report complete usage, or null when trial cost is unknown. `reportedTrialCostUsd` is a decimal-string subtotal of reports received, and `missingReports` gives the number of trial calls without complete reports. A complete, explicitly reported zero is a measured zero. Full-run cost is unknown because qualification and preflight cost are not fully captured. Whole-run elapsed time includes those phases.
 
 ## score
 

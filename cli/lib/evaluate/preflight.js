@@ -513,6 +513,8 @@ function runPreflightCommand(folder, { partition, requirePartition = false, ...o
  * @param {Set<string>|null} [options.selectedProbeIds] the probes the partition selects; every probe when null
  * @param {NodeJS.ProcessEnv} [options.env]
  * @param {(line: string) => void} [options.log]
+ * @param {number} [options.progressIntervalMs] heartbeat interval, for tests and long-running runs
+ * @param {number} [options.progressStartedAt] invocation start time, before setup
  * @param {(context: object) => PreflightOutcome|null|Promise<PreflightOutcome|null>} [options.prepare]
  * @param {(context: object) => Promise<PreflightOutcome>} [options.afterVerdict]
  * @returns {Promise<PreflightOutcome>}
@@ -520,10 +522,11 @@ function runPreflightCommand(folder, { partition, requirePartition = false, ...o
 async function runPipeline(folder, options) {
   // The invocation's run directory and run.json, held in memory, so its end is
   // recorded from what the runtime knows, never from a file read back.
-  const state = { writer: null, run: null, sealed: false, retractUnlessSealed: [] };
+  const state = { writer: null, run: null, sealed: false, retractUnlessSealed: [], progressTimer: null, finishProgress: null };
   try {
     return await recordEnd(await pipeline(folder, options, state), state);
   } finally {
+    if (state.progressTimer !== null) clearInterval(state.progressTimer);
     // The directories the run made stay held open until here, so none of
     // their inode numbers can pass to a directory the target makes.
     state.writer?.close();
@@ -543,6 +546,7 @@ function recordEnd(outcome, state) {
     const failed = [];
     for (const [what, step] of [
       ...state.retractUnlessSealed.map((file) => [`remove ${file}`, () => state.writer.remove(file)]),
+      ['record final progress', () => state.finishProgress?.('stopped')],
       ['record this end in run.json', () => state.writer.replaceJson('run.json', state.run)],
     ]) {
       try {
@@ -574,6 +578,8 @@ async function pipeline(
     selectedProbeIds = null,
     partition,
     seed,
+    progressIntervalMs = 30_000,
+    progressStartedAt,
   },
   state,
 ) {
@@ -658,6 +664,7 @@ async function pipeline(
     }
   };
   const onSignal = (name) => {
+    if (state.progressTimer !== null) clearInterval(state.progressTimer);
     removeScratch();
     if (journal) {
       try {
@@ -671,6 +678,7 @@ async function pipeline(
       for (const file of [...retractOnSignal, ...state.retractUnlessSealed]) state.writer.remove(file);
       state.run.outcome = { stage: 'signal', exitCode: null, signal: name, message: `stopped by ${name} before it finished` };
       if (state.run.command === 'run') state.run.completed = false;
+      state.finishProgress?.('stopped');
       state.writer.replaceJson('run.json', state.run);
     } catch {
       // The signal still ends the process; run.json keeps its last state.
@@ -735,6 +743,11 @@ async function pipeline(
     log(
       `pristine workspace, ${pristine.kind === 'git-worktree' ? `a detached worktree at ${pristine.commit}` : `a temp copy${pristine.dirty ? ' of the working tree' : ''}`}: ${pristine.root}`,
     );
+    if (pristine.kind === 'git-worktree' && sharedState) {
+      log(
+        'Git worktrees share repository refs, config and hooks. Keep Git writes in every worktree of this repository paused until this command ends, or use a dedicated clone for concurrent work.',
+      );
+    }
     // The evaluation folder is read from the working tree (the workspaces
     // leave it out), so uncommitted work in it reaches the run, which is then
     // dirty: no committed state names what it measured.
@@ -766,6 +779,8 @@ async function pipeline(
       runsDirectory,
       invocationId,
       seed: runSeed,
+      progressStartedAt,
+      progressIntervalMs,
       retractOnSignal,
       scratch,
       state,
@@ -826,6 +841,8 @@ async function runInWorkspaces({
   runsDirectory,
   invocationId,
   seed,
+  progressStartedAt,
+  progressIntervalMs,
   retractOnSignal,
   scratch,
   state,
@@ -877,9 +894,65 @@ async function runInWorkspaces({
     adopterTree: { repository: before.repository === null ? null : REPOSITORY, unchanged: null },
     refused: [],
   };
+  const progressStarted = progressStartedAt ?? Date.now();
+  const progressCreatedAt = Date.now();
+  const progressCreatedTick = globalThis.performance.now();
+  const setupBeforeRecordMs = Math.max(0, progressCreatedAt - progressStarted);
+  let phaseStartedTick = progressCreatedTick;
+  if (command === 'run') {
+    run.progress = {
+      phase: 'setup',
+      detail: 'Preparing the run',
+      startedAt: new Date(progressStarted).toISOString(),
+      updatedAt: new Date(progressCreatedAt).toISOString(),
+      phaseStartedAt: new Date(progressStarted).toISOString(),
+      phaseElapsedMs: setupBeforeRecordMs,
+      elapsedMs: setupBeforeRecordMs,
+      phaseDurationsMs: {},
+      completedTrials: 0,
+      totalTrials: null,
+      usage: null,
+    };
+  }
   state.run = run;
   const writeRun = () => writer.replaceJson('run.json', run);
   writeRun();
+  const progress = (phase, fields = {}) => {
+    if (command !== 'run' || state.sealed) return;
+    const now = Date.now();
+    const tick = globalThis.performance.now();
+    const sinceCreated = Math.max(0, tick - progressCreatedTick);
+    if (phase !== run.progress.phase) {
+      const prior = run.progress.phase;
+      const priorDuration = Math.max(0, tick - phaseStartedTick) + (prior === 'setup' ? setupBeforeRecordMs : 0);
+      run.progress.phaseDurationsMs[prior] = (run.progress.phaseDurationsMs[prior] ?? 0) + priorDuration;
+      phaseStartedTick = tick;
+      run.progress.phase = phase;
+      run.progress.phaseStartedAt = new Date(now).toISOString();
+    }
+    Object.assign(run.progress, fields, {
+      updatedAt: new Date(now).toISOString(),
+      elapsedMs: setupBeforeRecordMs + sinceCreated,
+      phaseElapsedMs: Math.max(0, tick - phaseStartedTick) + (phase === 'setup' ? setupBeforeRecordMs : 0),
+    });
+    writeRun();
+  };
+  state.finishProgress = (phase) => progress(phase, { detail: phase === 'complete' ? 'Run sealed' : 'Run stopped' });
+  if (command === 'run') {
+    state.progressTimer = setInterval(() => {
+      try {
+        progress(run.progress.phase);
+        log(
+          `progress: ${run.progress.phase}; ${run.progress.completedTrials ?? '?'}/${run.progress.totalTrials ?? '?'} trials; ${Math.floor(run.progress.elapsedMs / 1000)}s elapsed`,
+        );
+      } catch (error) {
+        // A progress write is guarded like every other run-directory write. The main
+        // pipeline will detect the same changed directory at its next verification.
+        log(`progress could not be recorded: ${error.message}`);
+      }
+    }, progressIntervalMs);
+    state.progressTimer.unref?.();
+  }
 
   // The run keeps its own copy of the contract this partition runs, so every stage below reads the
   // same bytes and the verdict can be reproduced from the run directory alone.
@@ -951,6 +1024,7 @@ async function runInWorkspaces({
     }
   };
 
+  progress('qualification', { detail: 'Qualifying probes and clean controls' });
   const qualified = [];
   const policyPath = path.join(folder, POLICY_PATH);
   const policy = fs.existsSync(policyPath) ? readJson(policyPath) : null;
@@ -1192,6 +1266,7 @@ async function runInWorkspaces({
     // Every leg has a port, and so a home, of its own.
     resetHome() {},
   };
+  progress('preflight', { detail: 'Running preflight legs and verdict' });
   try {
     const recorder = recordingPort({
       pristine: { label: 'pristine', cwd: workspaceDirectory(pristine), port: auditedLegs },
@@ -1325,6 +1400,7 @@ async function runInWorkspaces({
       writer,
       run,
       writeRun,
+      progress,
       treeUnchanged,
       retractUnlessSealed: state.retractUnlessSealed,
       markSealed: () => {
