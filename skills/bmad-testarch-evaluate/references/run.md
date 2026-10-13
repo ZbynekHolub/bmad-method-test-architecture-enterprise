@@ -56,6 +56,17 @@ npm exec --prefix {tea_evaluations_folder} -- tea-evaluate score --evaluation <e
 
 Use the `invocationId` emitted by `run`; it names `runs/<invocationId>/` and is the value `score --run` accepts. Each trial set has its own `runId`, which is a different identifier. The runtime qualifies mutations against a passing baseline, calibrates any rubric judge, qualifies a sealed-brief agent evaluator on the clean and mutated arms, executes clean and mutated trials through the chosen evaluator, verifies rollback, and seals records and isolation manifests. `score` delegates every probe to eval-quality and persists per-probe diagnostics under `runs/<invocationId>/scores/<scoreInvocationId>/`, plus evidence artifacts, the run-wide `strength-aggregate.json`, `interpretation.json`, `partitions.json` and `gap-view.json`. Preserve both the command exit and each per-probe exit. A clean control should resolve `passed-clean-control` and the seeded defect `caught`; read those states from the evidence artifact. If a development `score` exits 3 with no artifact, read its persisted `score.json`, stdout and stderr diagnostics and route the fault through the gaps guide. For a held-out fault, read only `gap-view.json` and reproduce the class failure in development before inspecting diagnostics.
 
+For a long run, use its invocation ID from another terminal to read progress without disturbing the run:
+
+```sh
+npm exec --prefix {tea_evaluations_folder} -- tea-evaluate status --evaluation <evaluation-folder> --run <invocationId>
+npm exec --prefix {tea_evaluations_folder} -- tea-evaluate status --evaluation <evaluation-folder> --run <invocationId> --follow
+```
+
+Inside TeA, use `node cli/evaluate.js status` with the same arguments. `status` reads the current phase, time spent in that phase, completed and planned trials, whole-run elapsed time, completed phase durations, last heartbeat, and trial usage from the run directory. `--follow` keeps reporting changes until the run ends. The running `run` command also prints periodic heartbeat lines during a long call. If a heartbeat is old, report when it was last seen without claiming the process is still alive. Show the whole-run elapsed time alongside phase timing; the sum of trial durations omits qualification and preflight. Count a shared arm's trials once when reporting totals.
+
+Usage in progress covers scored trials only. Qualification and preflight costs are not fully captured, so full-run cost is unknown even when all trials report. If a trial call lacks complete usage, trial cost is also unknown; the reported amount is a subtotal. An explicit reported zero is a measured zero. Progress carries no verdict and provides no ETA. Continue through `score` to read the evaluation result.
+
 ## Record a before state
 
 A target with known defects fails its clean controls, so `run` stops with exit 11 on the first. Record that starting point with `--before-state` and keep the ordinary run for the fixed target.

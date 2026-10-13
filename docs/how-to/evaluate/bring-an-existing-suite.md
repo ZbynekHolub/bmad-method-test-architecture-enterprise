@@ -143,7 +143,7 @@ Skip this step if the contract has no rubric. Otherwise, framework ownership of 
 
 Have the skill prepare labeled examples for every criterion and anchored level. Approve those labels and `judgeCalibration.minimumAgreement`, then run calibration through the configured scorer. For a `command` evaluator, rubric scores come from your wrapper; TEA does not add its separate judge. Omit the unused separate `judge` blocks.
 
-For `records`, your harness must also supply bound `calibration-judgments.json`. TEA computes agreement from those answers but cannot prove or replay the harness's scorer execution. The combination of `records`, rubrics and a `partitionPlan` is currently refused. Use `command` when TEA must execute the scorer or you need that partitioned rubric setup. Follow the [judge calibration guide](/docs/how-to/evaluate/choose-an-evaluator-and-calibrate-a-judge.md) for the full gate.
+For `records`, your harness must also supply bound `calibration-judgments.json`. TEA computes agreement from those answers but cannot prove or replay the harness's scorer execution. TEA refuses a `records` evaluator with rubrics and a `partitionPlan`. Use `command` when TEA must execute the scorer or you need that partitioned rubric setup. Follow the [judge calibration guide](/docs/how-to/evaluate/choose-an-evaluator-and-calibrate-a-judge.md) for the full gate.
 
 ## 6. Run the Evaluation and Inspect the Score
 

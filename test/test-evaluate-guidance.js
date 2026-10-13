@@ -3592,9 +3592,11 @@ function checkRunGuidance(guide, failures) {
     'npm exec --prefix {tea_evaluations_folder} -- tea-evaluate run --evaluation <evaluation-folder> --partition development',
     'npm exec --prefix {tea_evaluations_folder} -- tea-evaluate score --evaluation <evaluation-folder> --run <invocationId>',
   ];
-  const commands = [...guide.matchAll(/^npm exec --prefix \{tea_evaluations_folder\} -- (?:tea-evaluate|eval-quality) .+$/gm)].map(
-    ([command]) => command,
-  );
+  const commands = [...guide.matchAll(/^npm exec --prefix \{tea_evaluations_folder\} -- (?:tea-evaluate|eval-quality) .+$/gm)]
+    .map(([command]) => command)
+    // The read-only status examples may appear after score without changing
+    // the command sequence that builds and scores the evaluation.
+    .filter((command) => !command.includes('tea-evaluate status '));
   if (JSON.stringify(commands) !== JSON.stringify(expectedCommands))
     failures.push('run.md check-through-score command sequence or required arguments changed');
 }
