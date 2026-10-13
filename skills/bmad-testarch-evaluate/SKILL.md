@@ -123,7 +123,7 @@ Interpret a weak result and close the gap. Load `references/gaps.md`.
 
 ### Stage 12: CI
 
-Inspect the adopter's repository, place each check in a tier, write `<evaluation-folder>/ci/evaluation-ci-plan.json` and hand it to `bmad-testarch-framework` with CI setup scope. The `bmad-testarch-ci` compatibility entry remains valid. Load `references/ci.md`.
+Inspect the adopter's repository, place each check in a tier, write `<evaluation-folder>/ci/evaluation-ci-plan.json` and hand it to `bmad-testarch-framework` with CI setup scope. Load `references/ci.md`.
 
 ## On Complete
 

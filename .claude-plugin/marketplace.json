@@ -38,9 +38,7 @@
       "skills": [
         "./skills/bmod-tea",
         "./skills/bmad-tea",
-        "./skills/bmad-testarch-atdd",
         "./skills/bmad-testarch-automate",
-        "./skills/bmad-testarch-ci",
         "./skills/bmad-testarch-evaluate",
         "./skills/bmad-testarch-framework",
         "./skills/bmad-testarch-nfr",

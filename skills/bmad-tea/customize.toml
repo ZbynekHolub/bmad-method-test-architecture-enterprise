@@ -74,13 +74,13 @@ skill = "bmad-testarch-framework"
 
 [[agent.menu]]
 code = "CI"
-description = "Continuous Integration: scaffold CI/CD quality pipeline through the combined framework skill"
-skill = "bmad-testarch-ci"
+description = "Continuous Integration: scaffold a CI/CD quality pipeline through Framework CI scope"
+skill = "bmad-testarch-framework"
 
 [[agent.menu]]
 code = "AT"
-description = "ATDD: generate and verify failing acceptance tests in red mode before development"
-skill = "bmad-testarch-atdd"
+description = "ATDD: generate and verify failing acceptance tests through Automate red mode"
+skill = "bmad-testarch-automate"
 
 [[agent.menu]]
 code = "TA"

@@ -374,7 +374,7 @@ const recommendations = [];
 if (criticalGaps.length > 0) {
   recommendations.push({
     priority: 'URGENT',
-    action: `Run /bmad-testarch-atdd for ${criticalGaps.length} P0 requirements`,
+    action: `Run /bmad-testarch-automate for ${criticalGaps.length} P0 requirements: red mode where behavior is missing; expand mode where behavior exists but tests are incomplete`,
     requirements: criticalGaps.map((r) => r.id),
   });
 }

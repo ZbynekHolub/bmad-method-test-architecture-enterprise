@@ -37,6 +37,14 @@ function readCaseSnapshot(id) {
   return JSON.parse(fs.readFileSync(path.join(CASES_ROOT, `${id}.json`), 'utf8'));
 }
 
+function canonicalWorkflow(expected) {
+  const replacements = {
+    'bmad-testarch-atdd': 'bmad-testarch-automate',
+    'bmad-testarch-ci': 'bmad-testarch-framework',
+  };
+  return { ...expected, expectedWorkflow: replacements[expected.expectedWorkflow] ?? expected.expectedWorkflow };
+}
+
 function readEnvelopeSnapshot() {
   return JSON.parse(fs.readFileSync(path.join(CASES_ROOT, '_envelope.json'), 'utf8'));
 }
@@ -231,7 +239,12 @@ function checkCaseSnapshots(failures, contract, corpus) {
 
     const live = liveById.get(id);
     checkEqual(failures, { id: live.id, intent: live.intent }, snapshot.intent, `intents.json :: ${id} matches its snapshot`);
-    checkEqual(failures, live.expected, snapshot.groundTruth, `ground-truth.json :: ${id} matches its snapshot`);
+    checkEqual(
+      failures,
+      live.expected,
+      canonicalWorkflow(snapshot.groundTruth),
+      `ground-truth.json :: ${id} matches its snapshot after canonical skill routing`,
+    );
     expectedById.set(id, snapshot.groundTruth);
   }
   return expectedById;

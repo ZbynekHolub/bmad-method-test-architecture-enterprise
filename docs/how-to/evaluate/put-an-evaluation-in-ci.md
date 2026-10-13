@@ -26,7 +26,7 @@ Test the plan before handing it to Framework with CI scope.
 
 The skill inspects your workflows and release process, writes `ci/evaluation-ci-plan.json` and aligns `tiers` in `evaluation.json`. The CLI runs the plan. The Framework skill edits the pipeline. A plan file alone creates no scheduled job or shipping gate.
 
-Your CI runner needs Node.js 22.20 or later and the evaluation tooling declared in `evals/package.json`. Evaluate’s setup installs the TeA CLI and its `eval-quality` scoring engine there, separately from your application’s dependencies. You invoke `tea-evaluate`; it calls `eval-quality` internally. Commit `evals/package.json` and `evals/package-lock.json`, then install the locked dependencies in CI with `npm ci --prefix evals`, including `devDependencies`. `evals` is the default folder name; substitute the configured evaluations folder if different. See [Prerequisites](/docs/reference/tea-evaluate-cli.md#prerequisites).
+Your CI runner needs Node.js 22.20 or later and the evaluation tooling declared in `evals/package.json`. Evaluate’s setup installs the TeA CLI and its `eval-quality` scoring engine there, separately from your application’s dependencies. You invoke `tea-evaluate`; it calls `eval-quality` internally. Commit `evals/package.json` and `evals/package-lock.json`, then install the locked dependencies in CI with `npm ci --prefix evals`, including development dependencies. `evals` is the default folder name; substitute the configured evaluations folder if different. See [Prerequisites](/docs/reference/tea-evaluate-cli.md#prerequisites).
 
 ## 1. Choose When Each Check Should Run
 
