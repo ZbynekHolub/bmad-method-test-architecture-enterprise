@@ -10,6 +10,8 @@ Record the provider, requested tier, exact resolved model, host or CLI version w
 
 This routing applies to the agent **authoring** the evaluation. The target model, system prompt, evaluator framework, rubric judge, decoding settings, and isolation conditions are fixed scored conditions. Keep their recorded snapshots and values identical across clean and mutated arms. A model change to any scored condition needs a new comparable run, never an unrecorded worker substitution.
 
+When the adopter asks for the latest target model or model tier, resolve it from the current provider or host catalog before the first live preflight. Do not inherit a versioned adapter default from an older implementation, reuse a prior evaluation's model ID, or assume the host's configured default is current. Record the requested tier, source and time of resolution, exact ID passed to the target, and the same ID in evaluator conditions. Recheck before a new baseline; if the resolved ID changes, update the condition and repeat check, compile, seal, preflight, run, and score. Historical run records retain their original IDs.
+
 ## Delegate bounded tasks
 
 Use at most two read-only workers at once. Give each a disjoint source scope, the confirmed requirements statement, a concrete question, a time bound, and this output shape: `candidate`, `source path and line`, `uncertainty`, and `files inspected`. Good tasks are entry-point inventory, failure-history search, candidate boundary cases, candidate mutation locations, and summaries of public evaluator documentation. Workers may draft a probe or oracle fragment as text, but the parent decides whether it enters the corpus or contract.
