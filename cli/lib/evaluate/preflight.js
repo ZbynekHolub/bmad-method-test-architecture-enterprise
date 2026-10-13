@@ -743,7 +743,7 @@ async function pipeline(
     log(
       `pristine workspace, ${pristine.kind === 'git-worktree' ? `a detached worktree at ${pristine.commit}` : `a temp copy${pristine.dirty ? ' of the working tree' : ''}`}: ${pristine.root}`,
     );
-    if (pristine.kind === 'git-worktree') {
+    if (pristine.kind === 'git-worktree' && sharedState) {
       log(
         'Git worktrees share repository refs, config and hooks. Keep Git writes in every worktree of this repository paused until this command ends, or use a dedicated clone for concurrent work.',
       );
