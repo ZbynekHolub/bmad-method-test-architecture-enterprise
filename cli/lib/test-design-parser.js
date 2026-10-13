@@ -275,10 +275,18 @@ function readRisks(tables) {
     if (table.reference) continue;
     const idColumn = columnIndex(table.header, ['Risk ID', 'RiskID', 'ID']);
     const scoreColumn = columnIndex(table.header, ['Score', 'Risk Score']);
+    const hasRiskFields = ['Category', 'Risk Category', 'Probability', 'Impact'].some((name) => columnIndex(table.header, [name]) !== -1);
+    const statesRiskRegister = /\brisk(?:s| register| assessment)\b/i.test(table.headings.at(-1) ?? '');
     if (
       idColumn !== -1 &&
       scoreColumn === -1 &&
-      table.rows.some((row) => RISK_ID_PATTERN.test(String(row[idColumn] ?? '').toUpperCase()))
+      table.rows.some((row) => {
+        const id = String(row[idColumn] ?? '').trim();
+        return (
+          RISK_ID_PATTERN.test(id.toUpperCase()) ||
+          ((hasRiskFields || statesRiskRegister) && id !== '' && !/^\{.*\}$/.test(id) && !/^none$/i.test(id))
+        );
+      })
     ) {
       const entry = { headings: table.headings, rows: table.rows.length };
       unscored.push(entry);

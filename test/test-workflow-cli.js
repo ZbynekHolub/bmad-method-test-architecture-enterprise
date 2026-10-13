@@ -38,6 +38,8 @@ if(mode === 'empty-and-heading') plan = plan.replace(/(## Interworking and Regre
 if(mode === 'empty-execution') plan += '\\n## Execution Strategy\\n\\n### Empty child\\n<!-- no content -->\\n';
 if(mode === 'shadow-appendix') plan = '## Appendix Notes\\n\\nPopulated lookalike.\\n\\n'+plan.replace(/(## Appendix\\n)[^]*?(?=\\n## |$)/, '$1\\n<!-- empty canonical -->\\n');
 if(mode === 'shadow-risk') { const original = plan.match(/## Risk Assessment\\n([^]*?)(?=\\n## |$)/)[1]; plan = '## Residual Risk Assessment Notes\\n'+original+'\\n'+plan.replace(/(## Risk Assessment\\n)[^]*?(?=\\n## |$)/,'$1\\n<!-- empty canonical -->\\n'); }
+if(mode === 'fenced-section') plan = plan.replace('## Entry Criteria\\n\\nExplicit scope, owner, condition and supporting evidence.', '## Intake Conditions\\n\\nExplicit scope, owner, condition and supporting evidence.')+'\\n'+String.fromCharCode(96).repeat(3)+'md\\n## Entry Criteria\\nOnly an example.\\n'+String.fromCharCode(96).repeat(3)+'\\n';
+if(mode === 'unscored-noncanonical') plan = plan.replace('## Risk Assessment', '## Supplementary Risk Register\\n\\n| Risk ID | Category | Description | Probability | Impact |\\n| --- | --- | --- | --- | --- |\\n| E7-R01 | DATA | Queued input can disappear | 3 | 3 |\\n\\n## Risk Assessment');
 if(mode === 'decorated-headings') plan = plan.replace(/^## (.+)$/gm, '## 🧪 2. $1').replace('Follow-on Workflows\\n','Follow-on Workflows (Manual)\\n');
 if(mode === 'misband') plan = plan.replace('| 1 | 2 | 2 |', '| 3 | 3 | 9 |');
 if(mode === 'no-priority') plan = plan.replace('### P1', '### Test Cases');
@@ -646,6 +648,22 @@ test('public CLI prefers canonical section headings over populated lookalike hea
     assert.equal(rejected.status, 3, rejected.stderr);
     assert.match(rejected.stderr, new RegExp(`missing populated section: ${expectedSection}`));
   }
+});
+
+test('public CLI rejects a required heading that appears only inside fenced code', (t) => {
+  const root = project(t);
+  const result = execute(root, ['--epic', '7'], 'fenced-section');
+  assert.equal(result.status, 3, result.stderr);
+  assert.match(result.stderr, /missing populated section: Entry Criteria/);
+  assert.equal(fs.existsSync(path.join(root, 'published')), false);
+});
+
+test('public CLI rejects a noncanonical risk register with no score column', (t) => {
+  const root = project(t);
+  const result = execute(root, ['--epic', '7'], 'unscored-noncanonical');
+  assert.equal(result.status, 3, result.stderr);
+  assert.match(result.stderr, /unscored risk tables/);
+  assert.equal(fs.existsSync(path.join(root, 'published')), false);
 });
 
 test('public CLI accepts decorated and numbered headings when content is populated', (t) => {

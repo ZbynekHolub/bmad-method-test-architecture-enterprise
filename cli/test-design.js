@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const yaml = require('js-yaml');
+const MarkdownIt = require('markdown-it');
 const { Command } = require('commander');
 const { resolveTeaConfig } = require('./lib/resolve-tea-config');
 const { readDesign, RISK_ID_PATTERN, bandFor } = require('./lib/test-design-parser');
@@ -19,6 +20,7 @@ const {
   mainError,
 } = require('./lib/workflow-cli');
 const collect = (value, previous) => [...previous, value];
+const sectionMarkdown = new MarkdownIt();
 const digest = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 /** Resolve existing parents so publication checks include symlink aliases. */
 function canonicalDestination(file) {
@@ -42,7 +44,24 @@ function checkPublication(destinations, inputs) {
 }
 /** Require populated workflow sections and reject unresolved template scaffolding. */
 function validateSections(text, sections, label) {
-  const headings = [...text.matchAll(/^(#{2,3})[ \t]+([^\n]+)\n/gm)];
+  const lines = text.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+  const offsets = [0];
+  for (const line of lines) offsets.push(offsets.at(-1) + line.length);
+  const headings = [];
+  let quoted = 0;
+  let listed = 0;
+  for (const token of sectionMarkdown.parse(text, {})) {
+    if (token.type === 'blockquote_open') quoted += 1;
+    if (token.type === 'blockquote_close') quoted -= 1;
+    if (token.type === 'list_item_open') listed += 1;
+    if (token.type === 'list_item_close') listed -= 1;
+    if (token.type !== 'heading_open' || quoted || listed || !/^#{2,3}$/.test(token.markup)) continue;
+    const level = Number.parseInt(token.tag.slice(1), 10);
+    const [start, end] = token.map;
+    const source = lines[start].replace(/\r?\n$/, '');
+    const match = /^#{2,3}[ \t]+(.+?)[ \t]*#*[ \t]*$/.exec(source);
+    if (match) headings.push({ level, index: offsets[start], end: offsets[end], title: match[1] });
+  }
   const equivalentHeading = (value) => value.replaceAll(/\band\b/gi, '&');
   const normalizeHeading = (value) =>
     equivalentHeading(value)
@@ -54,10 +73,10 @@ function validateSections(text, sections, label) {
     const normalizedSection = normalizeHeading(section);
     const escaped = equivalentHeading(section).replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
     const heading =
-      headings.find((entry) => normalizeHeading(entry[2]) === normalizedSection) ??
-      headings.find((entry) => new RegExp(`(?:^|\\b)${escaped}(?:\\b|$)`, 'i').test(equivalentHeading(entry[2])));
-    const stop = heading && headings.find((entry) => entry.index > heading.index && entry[1].length <= heading[1].length);
-    const body = heading && text.slice(heading.index + heading[0].length, stop?.index ?? text.length);
+      headings.find((entry) => normalizeHeading(entry.title) === normalizedSection) ??
+      headings.find((entry) => new RegExp(`(?:^|\\b)${escaped}(?:\\b|$)`, 'i').test(equivalentHeading(entry.title)));
+    const stop = heading && headings.find((entry) => entry.index > heading.index && entry.level <= heading.level);
+    const body = heading && text.slice(heading.end, stop?.index ?? text.length);
     const content = body
       ?.replaceAll(/<!--[^]*?-->/g, '')
       .replaceAll(/^#{1,6}[^\n]*$|^[-*_]{3,}\s*$/gm, '')
