@@ -7,20 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.0.3] - 2026-10-13
-
 ### Added
 
 - `tea-automate` CLI for the merged red/expand skill, with Create, Resume, Validate, Edit, default run-and-heal, JSON outcomes, and retained agent/runner evidence.
 - Real Codex generation captures and an independent fixed-versus-mutated voucher-suite scorer, complementing the deterministic AUTOMATE fixture evaluator.
-- `tea-evaluate status --evaluation <path> --run <invocationId>` reads a run's phase, trial progress, elapsed time, heartbeat, and trial usage from another process. `--follow` reports updates until the run ends. Running commands print periodic heartbeats during long calls.
 
 ### Changed
 
 - Built-in Codex CLI adapters now use `gpt-6.1-sol` as their current default model, including Automate and Test Review. Explicit `--model` overrides still take precedence.
-- Evaluate authoring workers use a compact isolated context when the host supports it, and the authoring log records the context mode alongside model and usage.
-- Evaluate records whole-run and phase timing. Progress treats incomplete trial usage as unknown trial cost and keeps reported usage as a subtotal; full-run cost remains unknown because qualification and preflight costs are not fully captured. Shared arms count once in trial totals. Progress reports no verdict or ETA.
-- Evaluate can delegate bounded authoring research and candidate drafting to the latest available Haiku or Luna subagent tier. Its parent keeps artifact ownership and scoring decisions, records authoring time and reported usage, and resolves any adopter-requested latest target tier before a new baseline while preserving each run's exact target and judge conditions.
 
 ### Fixed
 
@@ -37,6 +31,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict environment variables forwarded to model-generated test execution in the live generation scorer.
 - Automate generation evaluation uses the clock port for duration and generation timestamps.
 - Prune raw uncompressed terminal stderr streams from live evaluation captures and gitignore evidence stderr logs.
+
+## [2.0.3] - 2026-10-13
+
+### Added
+
+- `tea-evaluate status --evaluation <path> --run <invocationId>` reads a run's phase, trial progress, elapsed time, heartbeat, and trial usage from another process. `--follow` reports updates until the run ends. Running commands print periodic heartbeats during long calls.
+
+### Changed
+
+- Evaluate authoring workers use a compact isolated context when the host supports it, and the authoring log records the context mode alongside model and usage.
+- Evaluate records whole-run and phase timing. Progress treats incomplete trial usage as unknown trial cost and keeps reported usage as a subtotal; full-run cost remains unknown because qualification and preflight costs are not fully captured. Shared arms count once in trial totals. Progress reports no verdict or ETA.
+- Evaluate can delegate bounded authoring research and candidate drafting to the latest available Haiku or Luna subagent tier. Its parent keeps artifact ownership and scoring decisions, records authoring time and reported usage, and resolves any adopter-requested latest target tier before a new baseline while preserving each run's exact target and judge conditions.
+
+### Fixed
+
 - Enforce Darwin evaluation file-read grants in the kernel so dropped audit diagnostics cannot expose ungranted host files. Run Git confinement fixtures through the selected executable without its Xcode shim cache. Preflight preserves observed denial paths and setup guidance when a blocked runner fails its verdict.
 - Evaluate live status names the active scored trial as soon as it starts and marks completed trials during handoff.
 - Removed redundant ATDD and CI skill entries so TEA exposes eight direct workflows. Automate handles red acceptance tests and Framework handles CI setup. The Murat agent keeps its `AT` and `CI` menu shortcuts.
