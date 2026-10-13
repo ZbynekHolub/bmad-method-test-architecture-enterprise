@@ -73,7 +73,7 @@ build/
 
 # The files under the gitignored _bmad-output this repository tracks on purpose: epics.md, the
 # sprint's own checklist ticked by the story that closes it, the Evaluate plan and its stories under
-# the two evaluate/ directories, and three earlier planning files. Without these lines, `git add` on
+# the two evaluate/ directories, and earlier planning files. Without these lines, `git add` on
 # any of them prints "ignored by one of your .gitignore files" every time, lint-staged's own internal
 # re-add after formatting prints the same as FAILED, and Prettier, which reads .gitignore, neither
 # formats them in lint-staged nor checks them in `npm run format:check`. `_bmad-output` above is `/*`
@@ -94,6 +94,7 @@ _bmad-output/implementation-artifacts/*
 !_bmad-output/implementation-artifacts/evaluate/
 !_bmad-output/implementation-artifacts/handover-4-1.md
 !_bmad-output/implementation-artifacts/spec-1-6-test-design-coverage-grounding.md
+!_bmad-output/implementation-artifacts/spec-evaluate-authoring-routing.md
 
 # Live eval output: the pre-flight observation cache, whose entries are each a
 # full prompt and a full agent reply, and the artifacts npm run

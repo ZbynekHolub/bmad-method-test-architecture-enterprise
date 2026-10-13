@@ -290,7 +290,7 @@ Do not re-list the individual tests here. They are already in the coverage plan.
 
 ## Follow-on Workflows (Manual)
 
-- Run `/bmad-testarch-atdd` to generate failing P0 tests (separate workflow; not auto-run).
+- Run `/bmad-testarch-automate` in red mode to generate failing P0 tests (separate workflow; not auto-run).
 - Run `/bmad-testarch-automate` for broader coverage once implementation exists.
 
 ---

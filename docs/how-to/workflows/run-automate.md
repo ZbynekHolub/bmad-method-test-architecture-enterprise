@@ -45,7 +45,7 @@ If using Cypress, commands and syntax will differ.
 - **Codex:** `$bmad-testarch-automate`
 - **Inside a `/bmad-tea` chat:** `TA`
 
-Acceptance scaffolds before implementation select red; coverage for existing code selects expand. A single explicit mode overrides the command default. With no task mode signal, the ATDD entry and `AT` default to red, while the Automate entry and `TA` default to expand. Conflicting task mode signals prompt one mode question in an interactive run; an unattended run uses its entry default. Every entry-default fallback states the selected mode in the final summary. Existing customization files and interrupted progress keep working.
+Acceptance scaffolds before implementation select red; coverage for existing code selects expand. With no task mode signal, Automate and `TA` default to expand. Conflicting task mode signals prompt one mode question in an interactive run; an unattended run uses expand. Every default fallback states the selected mode in the final summary. Existing customization files and interrupted progress remain usable.
 
 Full invocation rules: [Invoking a TEA Skill](/docs/reference/commands.md#invoking-a-tea-skill).
 
@@ -691,7 +691,7 @@ See [Configure Browser Automation](/docs/how-to/customization/configure-browser-
 
 ## Red Mode
 
-Use the Automate skill's `red` mode to generate acceptance test scaffolds before implementation. The existing `atdd` command and `AT` menu code select red by default; you can also ask `/bmad-testarch-automate` for red mode.
+Use the Automate skill's `red` mode to generate acceptance test scaffolds before implementation. Ask `/bmad-testarch-automate`, `$bmad-testarch-automate`, or `TA` for red mode.
 TEA emits these scaffolds with `test.skip()` so they can be reviewed, linked into the story, and activated task-by-task during implementation.
 
 <a id="red-when-to-use-this"></a>
@@ -733,9 +733,7 @@ Request red mode explicitly:
 Generate red acceptance scaffolds for this story before implementation.
 ```
 
-The compatibility entries `/bmad-testarch-atdd`, `$bmad-testarch-atdd`, and `AT` default to red mode.
-
-Acceptance scaffolds before implementation select red; coverage for existing code selects expand. A single explicit mode overrides the command default. With no task mode signal, the ATDD entry and `AT` default to red, while the Automate entry and `TA` default to expand. Conflicting task mode signals prompt one mode question in an interactive run; an unattended run uses its entry default. Every entry-default fallback states the selected mode in the final summary. Existing customization files and interrupted ATDD progress keep working.
+Acceptance scaffolds before implementation select red; coverage for existing code selects expand. With no task mode signal, Automate and `TA` default to expand. Conflicting task mode signals prompt one mode question in an interactive run; an unattended run uses expand. Every default fallback states the selected mode in the final summary. Existing customization files and interrupted ATDD progress remain usable.
 
 Create runs verify the generated tests in a disposable copy with their scaffold skips activated. TEA uses `tea-atdd-red-check` for compatible browserless loopback tests when the command is installed. Browser tests and projects needing their own environment or services use the installed project test runner with the original configuration and environment. Execution respects the project's existing test budgets, and the summary names the runner and any fallback reason. Tests must fail for the acceptance behavior that implementation will add. TEA repairs syntax, imports, selectors, data, timing, network, hard waits, and setup that cause the wrong failure, for up to three rounds. The implementation handoff retains its deliberate skipped scaffolds. The summary records repairs, intended red failures, and unresolved problems. Validate reports findings and Edit checks the changes you requested; neither operation repairs tests.
 
@@ -1144,7 +1142,7 @@ Run `test-design` before Automate red mode for better results:
 
 ```text
 /bmad-testarch-test-design   # risk assessment and priorities
-/bmad-testarch-atdd          # generate tests based on that design
+/bmad-testarch-automate      # request red mode to generate tests based on that design
 ```
 
 <a id="red-browser-automation-optional"></a>

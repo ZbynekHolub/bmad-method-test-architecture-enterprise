@@ -17,7 +17,7 @@ Explicit framework-only requests skip the CI phase. For both, TEA agrees the sta
 
 Setup scope is separate from the operation: Create starts a new run, Resume picks up an interrupted run where it stopped, Validate reports checks without repairing outputs, and Edit revises the selected outputs and checks those changes.
 
-Choose [framework setup](#framework-setup), [CI setup](#ci-setup), or both. Existing CI commands, customizations, and progress remain usable. [Evaluation plans](#evaluation-plans) integrate scored checks into the pipeline.
+Choose [framework setup](#framework-setup), [CI setup](#ci-setup), or both. Existing CI customizations and progress remain usable. [Evaluation plans](#evaluation-plans) integrate scored checks into the pipeline.
 
 ## Framework Setup
 
@@ -52,7 +52,7 @@ Full invocation rules: [Invoking a TEA Skill](/docs/reference/commands.md#invoki
 
 For framework only, add "Set up the test framework only."
 For both phases, add "Set up the test framework and CI." The same skill runs both phases using an agreed stack, framework, and test-command contract.
-`TF` starts framework setup; the `CI` menu code starts its CI phase.
+`TF` starts Framework. Ask for CI setup to select its CI phase.
 
 <a id="framework-2-answer-teas-questions"></a>
 
@@ -184,7 +184,7 @@ Configure in your IDE's MCP settings.
 
 - **Run only once per repository**: Framework setup is a one-time operation
 - **Run after architecture is complete**: Framework aligns with tech stack
-- **Include CI in the same run**: Ask for framework and CI setup together, or use the `ci` command later to start the CI phase
+- **Include CI in the same run**: Ask for framework and CI setup together, or request CI scope from Framework later
 
 <a id="framework-next-steps"></a>
 
@@ -200,7 +200,7 @@ After test framework setup:
 
 ## CI Setup
 
-Use Framework to configure test jobs, sharding, burn-in runs, quality gates, and result artifacts. The existing CI command and `CI` menu code select this phase.
+Use Framework to configure test jobs, sharding, burn-in runs, quality gates, and result artifacts. Ask for CI setup to select this phase.
 
 <a id="ci-when-to-use-this"></a>
 
@@ -238,8 +238,6 @@ Request CI scope explicitly:
 ```text
 Set up CI only for the existing test framework.
 ```
-
-The compatibility entries `/bmad-testarch-ci`, `$bmad-testarch-ci`, and `CI` select CI scope by default.
 
 Full invocation rules: [Invoking a TEA Skill](/docs/reference/commands.md#invoking-a-tea-skill).
 

@@ -859,9 +859,9 @@
       },
       {
         "file": "README.md",
-        "claim": "the preserved command entries and their canonical skills",
+        "claim": "the direct command entries and their workflows",
         "pattern": {
-          "match": "([A-Za-z-]+) commands start the ([a-z-]+) skills"
+          "match": "([A-Za-z-]+) commands start the ([a-z-]+) workflows"
         },
         "counts": ["workflowCommandCount", "canonicalWorkflowCount"]
       },
@@ -1044,13 +1044,7 @@
         "path": "skills/bmad-teach-me-testing"
       },
       {
-        "path": "skills/bmad-testarch-atdd"
-      },
-      {
         "path": "skills/bmad-testarch-automate"
-      },
-      {
-        "path": "skills/bmad-testarch-ci"
       },
       {
         "path": "skills/bmad-testarch-evaluate/SKILL.md"
@@ -1167,8 +1161,8 @@
     "symbols": {
       "foreign": [
         {
-          "token": "SCORE",
-          "reason": "a shell variable the how-to guides capture from the score summary line, not a TEA declaration"
+          "token": "Invalid",
+          "reason": "the eval-quality package's score exit-3 verdict label, not a TEA source declaration"
         },
         {
           "token": "NODE_EXTRA_CA_CERTS",
@@ -2026,10 +2020,10 @@
           "match": "Outputs use fixed folders under `{test_artifacts}`"
         },
         {
-          "match": "All\\ eight\\ skills\\ covered\\ by\\ fragment\\ selection\\ now\\ have\\ behavioral\\ suites\\ of\\ their\\ own"
+          "match": "All\\ six\\ skills\\ covered\\ by\\ fragment\\ selection\\ now\\ have\\ behavioral\\ suites\\ of\\ their\\ own"
         },
         {
-          "match": "All\\ eleven\\ TEA\\ skills\\ have\\ covering\\ suites"
+          "match": "All\\ eight\\ TEA\\ workflows\\ and\\ the\\ Test\\ Architect\\ agent\\ have\\ covering\\ suites"
         },
         {
           "match": "records\\ 34\\ expected\\ CONCERNS\\ outcomes"
@@ -2053,7 +2047,7 @@
       "claims": [
         {
           "file": "test/docs/eval-quality-adoption-guide.md",
-          "key": "All eight skills covered by fragment selection now have behavioral suites of their own",
+          "key": "All six skills covered by fragment selection now have behavioral suites of their own",
           "settles": {
             "module": "test/lib/doc-claim-sources.js",
             "export": "NO_FRAGMENT_SELECTION_SKILL_DEFERRED"
@@ -2062,12 +2056,12 @@
         },
         {
           "file": "test/docs/eval-quality-roadmap.md",
-          "key": "All eleven TEA skills have covering suites",
+          "key": "All eight TEA workflows and the Test Architect agent have covering suites",
           "settles": "read",
           "reason": "a hand-read count of test/evals/suite-manifest.json's deferred array; no export replaced NO_SKILLS_DEFERRED because the invariant this sentence states (zero named skills since Story 1.16 registered bmad-testarch-evaluate's own suite) legitimately changes as skills are deferred and un-deferred, so it is pinned to the file's hash instead of a boolean. When this claim's hash goes stale after a legitimate manifest edit: re-count the deferred array, update the sentence if the count or the named skill changed, then run `node tools/regenerate-doc-claim-hash.mjs test/evals/suite-manifest.json` and paste the printed hash in below",
           "asOf": {
             "subject": "test/evals/suite-manifest.json",
-            "hash": "350f0f8cce8f4f0628c9bf62ccf072b475c10b6486d5cffabbc59904ee763d57"
+            "hash": "0d4e3f8298e53a16559c2e15c06c940413d26e04e7deb13cf0d4b3707aaaa813"
           }
         },
         {
@@ -2119,7 +2113,7 @@
           "reason": "an intro label for the table that follows, transcribed by hand from test/evals/suite-manifest.json's own suites and deferred entries; no predicate reads the manifest and regenerates the table, but the transcription can be pinned to the file it was read against. When this claim's hash goes stale after a legitimate manifest edit: re-read the table above against the new manifest, update it if it drifted, then run `node tools/regenerate-doc-claim-hash.mjs test/evals/suite-manifest.json` and paste the printed hash in below",
           "asOf": {
             "subject": "test/evals/suite-manifest.json",
-            "hash": "350f0f8cce8f4f0628c9bf62ccf072b475c10b6486d5cffabbc59904ee763d57"
+            "hash": "0d4e3f8298e53a16559c2e15c06c940413d26e04e7deb13cf0d4b3707aaaa813"
           }
         },
         {
@@ -2177,7 +2171,7 @@
           "reason": "a hand-read count of test/evals/suite-manifest.json's deferred array; no export replaced NO_SKILLS_DEFERRED because the invariant this sentence states (zero named skills since Story 1.16 registered bmad-testarch-evaluate's own suite) legitimately changes as skills are deferred and un-deferred, so it is pinned to the file's hash instead of a boolean. When this claim's hash goes stale after a legitimate manifest edit: re-count the deferred array, update the sentence if the count or the named skill changed, then run `node tools/regenerate-doc-claim-hash.mjs test/evals/suite-manifest.json` and paste the printed hash in below",
           "asOf": {
             "subject": "test/evals/suite-manifest.json",
-            "hash": "350f0f8cce8f4f0628c9bf62ccf072b475c10b6486d5cffabbc59904ee763d57"
+            "hash": "0d4e3f8298e53a16559c2e15c06c940413d26e04e7deb13cf0d4b3707aaaa813"
           }
         },
         {
@@ -2187,7 +2181,7 @@
           "reason": "Trace probe strength records retain three uncovered whole-body falsifiers; reviewed against the stored expected-strength artifact.",
           "asOf": {
             "subject": "test/probes/expected-strength.json",
-            "hash": "7239754e56aaba0ea26754760e9d10f6d82ba852a07a58d2b2572c64e2674a8a"
+            "hash": "05d4b8474b453801bf234a8f9c52dc039cba58fca598a775341b4c56218fcd03"
           }
         }
       ]

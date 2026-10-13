@@ -5,189 +5,110 @@ description: How Evaluate authors and runs evaluations, scores known defects, ch
 
 # How Evaluate Works
 
-Evaluate (`bmad-testarch-evaluate`, menu code `EV`) checks whether your evaluation can detect known defects.
-It plants a defect in your target, runs the evaluation, then restores the original files and runs again.
-A passing evaluation on the mutated target exposes a blind spot.
+Evaluate tests whether your evaluation deserves trust. A green result means little unless the same evaluation catches deliberate failures. The workflow is: define correctness, establish a reliable measurement, plant a failure, measure detection, and preserve the evidence.
 
-Evaluation moves from confirmed requirements to CI in six steps, and three roles carry them.
-The Evaluate skill authors the evaluation, the `tea-evaluate` command runs it and records the evidence, and [`eval-quality`](https://github.com/bmad-code-org/bmad-eval-quality) scores it.
-You confirm the requirements and accept the baseline, and CI enforces the checks the evaluation chose.
+You start Evaluate (`bmad-testarch-evaluate`, menu code `EV`) in your coding agent. Its skill guides the agent through authoring and running the evaluation. The `tea-evaluate` CLI manages execution and evidence; the underlying [`eval-quality` engine](https://github.com/bmad-code-org/bmad-eval-quality) checks the contract, applies its evidence rules, and produces formal verdicts and strength measurements.
+
+Five questions explain what that gives you:
+
+1. [Who decides what is correct?](#1-who-decides-what-is-correct)
+2. [What executes, and what can it access?](#2-what-executes-and-what-can-it-access)
+3. [What makes the evidence trustworthy?](#3-what-makes-the-evidence-trustworthy)
+4. [When does Evaluate refuse to continue?](#4-when-does-evaluate-refuse-to-continue)
+5. [What does a pass prove?](#5-what-does-a-pass-prove)
+
+## One workflow
 
 ```mermaid
 flowchart TD
-  Confirm(["You confirm the requirements"])
-  Author["<b>AUTHORING SKILL: Evaluate</b><br/>authors the evaluation: probes, contract, oracles, mutations"]
-  Run["<b>EXECUTION CLI: tea-evaluate</b><br/>runs the clean and mutated arms and records the evidence"]
-  Score["<b>SCORING ENGINE: eval-quality</b><br/>scores each probe and takes the verdicts"]
-  Accept(["You accept the baseline"])
-  CI(["CI enforces the chosen checks"])
-  Confirm --> Author --> Run --> Score --> Accept --> CI
+  You["You confirm the requirements"]
+  subgraph TEA["TEA Evaluate"]
+    Skill["Evaluate skill<br/>Guides your coding agent"]
+    CLI["tea-evaluate CLI<br/>Runs the experiment and records evidence"]
+    Skill -->|Authors and orchestrates| CLI
+  end
+  Target["Your skill, agent, workflow or service"]
+  EQ["eval-quality<br/>Underlying contract and scoring engine"]
+  Results["Verdicts and strength<br/>for your review"]
+  You --> Skill
+  CLI -->|Runs and observes| Target
+  CLI -->|Supplies contract and evidence| EQ
+  EQ --> Results
 ```
 
-To run one, start with the tutorial [Evaluate Your First Skill](/docs/tutorials/evaluate-your-first-skill.md).
-For the commands and fields, use the [tea-evaluate CLI reference](/docs/reference/tea-evaluate-cli.md).
+The skill and CLI are parts of the same Evaluate workflow. The skill guides design and interpretation; the CLI handles repeatable execution mechanics, mutation rollback, evidence recording and CI checks. It delegates formal scoring to `eval-quality`, which can also be used independently of TEA. Model-driven targets and evaluators can still vary between runs.
 
-## The stack
+## 1. Who decides what is correct?
 
-| Layer                              | What it is                                                                                        | The question it answers                                |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| The system under test              | Your use of a model, a skill, an agent, a workflow, a tool server or an HTTP service              | What behaves, and where do we observe it?              |
-| The evaluation                     | A folder committed with your code: requirements, contract, probes, mutations, policy and baseline | What do we claim, and what is the evidence?            |
-| The Behavioral Evaluation Contract | One JSON file in the folder that declares behaviors, interfaces, evidence, oracles and budgets    | What counts as the behavior holding?                   |
-| `eval-quality`                     | The engine that compiles and seals the contract, takes verdicts and scores strength               | Did the evaluation catch the defect, and how strongly? |
+You do. The skill inspects the target and drafts requirements for you to confirm: expected behavior, important boundaries, admissible evidence, permitted resources and failures worth catching. The evaluated target is your use of a model, skill, agent, workflow or service, including the prompts and wiring you control.
 
-The system under test is always your use of something: the prompt, the wiring and the tools around a model.
-Evaluate redirects a request to evaluate a vendor model on its own, because the vendor owns that system and you cannot fix it.
+Those requirements become a **Behavioral Evaluation Contract**: what must hold, how to observe it, which interfaces may be used, and which checks decide the outcome. An **oracle** is an assertion over evidence, such as “the refund decision is approved when the amount equals the limit.” The **evaluator** applies those assertions or supplies evidence-backed judgments.
 
-The evaluation is a folder (`evals/<evaluation-id>/` in the examples) that holds everything needed to repeat the measurement: the confirmed `requirements.md`, the `contract.json`, one probe file per probe, one mutation file per planted defect, the scoring policy and, once you accept one, a `baseline/` of results.
-Because it is committed, a reviewer reads a change to the evaluation the way they read a change to code.
+The default evaluator uses deterministic oracle resolution. Alternatives include your own command, an agent working from a sealed brief, or records supplied by an existing harness. An agent evaluator must qualify through repeated attempts. Judgment-heavy criteria use anchored rubrics; a model judge must agree sufficiently with your human-labeled examples before its trial scores count.
 
-The contract tells an evaluator how to expose a failure and what evidence counts as finding it.
-Every behavior in it carries an observable success criterion, and every behavior that a defect probe covers is decided by exactly one oracle.
+The engine checks the contract's structure and discipline. You remain responsible for whether the requirements capture the right behavior. See [eval-quality's contract explanation](https://github.com/bmad-code-org/bmad-eval-quality/blob/main/docs/explanation/behavioral-evaluation-contracts.md) and [evaluator options](/docs/reference/tea-evaluate-cli.md#the-evaluation-layer).
 
-`eval-quality` owns the mathematics and the integrity rules.
-It compiles the contract, seals the brief an independent evaluator reads, checks that the environment can measure anything at all, resolves oracles over evidence, scores each probe and compares two runs.
-The runtime accepts verdicts from `eval-quality`.
+## 2. What executes, and what can it access?
 
-## What TEA owns above eval-quality
+The CLI coordinates the target, evaluator and any judge through the configured registry and adapters. The registry names permitted commands, tool servers or HTTP targets, alongside their resource and environment settings. Locally executed target arms get a fresh disposable workspace for each trial; an external harness supplies its own records. A sealed evaluator brief withholds answer-revealing contract details.
 
-Evaluate authors the evaluation through its skill and executes it through `tea-evaluate`.
+Confinement is enabled by default on supported macOS and Linux hosts. It restricts target writes, protects evaluation files and audits access outside the granted paths. It also provides runtime-managed temporary and home directories. This is a configured boundary with platform-specific limits: the target still needs system and toolchain access, and explicit confinement opt-out is supported and recorded. A required confinement mechanism or audit that cannot operate stops the run.
 
-The skill is a conversation with the Master Test Architect through twelve stages: inspect the target and name its kind, capture the requirements you confirm, design the corpus of probes, author the contract, design the oracles, scaffold the registry and adapters, choose the evaluator, plant and roll back mutations, scaffold the harness, run and score, interpret the gaps, and write the CI plan.
-Every stage has a craft guide, and a stage hands a checked artifact to the next.
+The committed evaluation folder holds the confirmed requirements, contract, probes, mutations, policy and accepted baseline. Run records preserve what happened under that configuration. See [the folder reference](/docs/reference/tea-evaluate-cli.md#the-evaluation-folder) and [why Evaluate confines the target](/docs/explanation/why-evaluate-confines-the-target.md) for the implementation details.
 
-The runtime, `tea-evaluate`, does the mechanical work that has to be exactly right.
-It validates the folder, builds a disposable workspace for every arm, applies and rolls back mutations, confines every process the target starts, records observations, seals each trial as a record `eval-quality` reads, replays a committed baseline and runs the checks of a CI tier.
-It computes no verdict, no score and no rate of its own.
-Every exit that carries a judgment is `eval-quality`'s exit, passed through unchanged.
+## 3. What makes the evidence trustworthy?
 
-The engine checks scoring against its published corpus.
-The runtime records evidence from confined target processes.
+Start with a small example from [Evaluate Your First Skill](/docs/tutorials/evaluate-your-first-skill.md). A refund skill should approve an amount **at or below** the limit. The probe asks for a refund of 100 against a limit of 100.
 
-## Oracles and evaluator kinds
+```mermaid
+flowchart TD
+  Clean["Clean rule: at or below<br/>100 at a limit of 100 is approved"]
+  Broken["Plant one defect: below<br/>The same request is now declined"]
+  Caught["The boundary check fails"]
+  Restore["Restore original bytes and file mode<br/>Verify restoration and rerun"]
+  Again["The request is approved again"]
+  Clean -->|Change only the rule| Broken
+  Broken --> Caught
+  Caught --> Restore
+  Restore --> Again
+```
 
-An oracle is the assertion: a relation that has to hold over the recorded evidence. "The title sent equals the title read back" is an oracle.
-An exit code of zero alone decides nothing, because a process can succeed and still give a wrong answer.
-So a strong oracle reads the substantive channel, such as the response body or the structured result, and says what it expects of it.
+This is the qualification sequence. The clean behavior must satisfy the oracle; the deliberate change must break it; restoration must recover both the file and the clean behavior. If the edit does not produce the expected wrong behavior, qualification stops: it has not established a usable defect to test. Merely observing a successful process exit would miss a wrong refund decision.
 
-Judgment that no relation can express gets a rubric: an anchored scale of levels, written by you, that a scorer applies to a piece of evidence.
-Every rubric criterion is calibrated before its scores count, which the next section explains.
+After qualification, the run repeats the required clean and defective variants, called **arms**, in fresh workspaces. If the evaluator reports the broken behavior as correct despite a qualified defect, it has a blind spot. Historical probes can instead exercise a real defect across its fix, using revisions or deployments. Clean controls check for false alarms.
 
-Who applies the oracles is the evaluator kind, and `evaluation.json` chooses it:
+A finding needs a recorded observation and quoted evidence. The runtime checks record structure, citations and digests; `eval-quality` checks whether the evidence supports the finding and matches the declared defect signature. A claim that “the defect was caught” earns no credit by itself. Failed preflight or invalid evidence cannot establish detection.
 
-- **`deterministic`**, the default.
-  The runtime resolves each oracle with `eval-quality`'s own resolver over the recorded observations.
-  A contract with a rubric also names a model judge, which scores each trial once.
-- **`command`**.
-  Your executable under `evaluator/` receives the sealed brief and the observations and prints judgment rows.
-  It suits a skill-specific evaluator or a wrapper around a framework you already use.
-  [AgentEvals](https://github.com/langchain-ai/agentevals) is one optional framework for checking an agent's tool-call trajectory; [Bring an Existing Suite](/docs/how-to/evaluate/bring-an-existing-suite.md) shows its wrapper.
-- **`sealed-brief-agent`**.
-  An agent reads the sealed brief alone and acts on the target only through a bridge the runtime owns, so the registry still decides what it may call.
-  Because the agent chooses its own calls, two runs can differ, so Evaluate runs it several times on each arm first and requires its attempts to agree.
-- **`records`**.
-  Your own harness runs the target and the scorer, and hands over sealed run records.
-  The runtime checks they match the brief and the configuration and passes them on.
+**Gameability probes** test a different weakness: a committed, compliant-looking response that does no meaningful work. A naive oracle must accept it while the disciplined oracle rejects it. This arm uses the committed response without launching the target. Zero-action defect probes test omission of a required action despite a success claim.
 
-Whatever the kind, `score` refuses a finding that cites no observation, quotes no evidence or cites an observation its record does not hold, with exit 10 before any score call.
-Whether a quote, a citation or a signature supports the finding is `eval-quality`'s decision when it ingests the records, so an evaluator that cites evidence that does not exist is caught by the engine.
+## 4. When does Evaluate refuse to continue?
 
-## Held-out probes and judge calibration
+Stopping can reveal a problem with the evaluation or its environment. It does not automatically mean the target is defective.
 
-An evaluation you tune while you watch it will fit what you watched.
-Evaluate splits the probes into two partitions to stop that.
-The development partition is the one you author against and fix against.
-The held-out partition holds probes you reserve and do not read while you improve the target, and each behavior that has a held-out probe also keeps a development probe.
+- **The evaluation is malformed:** missing requirements, invalid evidence references, inconsistent records or stale digests must be fixed before scoring.
+- **The evaluation cannot distinguish good from bad:** a mutation does not produce the expected distinction, a clean control fails, or judge/evaluator agreement falls below the declared minimum.
+- **The measurement cannot be trusted:** preflight fails, required infrastructure cannot run, restoration cannot recover the clean baseline, or evidence integrity or isolation checks fail.
 
-The gap loop reads a view of the held-out partition that carries only the probe's identifier, its class and its outcome.
-It hides the rationale, the defect, the test data and the mutation text, so a repair that makes the held-out probe pass shows a real gain.
-When a held-out request must not reach the development partition at all, a `partitionPlan` removes the steps and oracles of one partition from the other's contract, so no run directory of either partition holds the other's requests.
+TEA enforces its execution and admission checks; `eval-quality` owns the formal contract verdicts and strength rules. Both can stop the workflow. The [exit-code reference](/docs/reference/tea-evaluate-cli.md#exit-codes) distinguishes authoring defects, evaluation weaknesses, invalid measurements and infrastructure failures.
 
-A rubric score is only as good as its scorer.
-Calibration measures that before any trial counts.
-You label example responses at every anchored level of every criterion, the scorer scores them without seeing the labels, and the run computes exact agreement per criterion.
-Agreement below the minimum you set in `judgeCalibration` ends the run with exit 11, an evaluation weakness, before any trial record exists.
-The calibration file and the minimum become part of the scoring version, so changing either changes what a score means.
+## 5. What does a pass prove?
 
-## Gameability
+Read the result at three levels:
 
-A rubric or a judgment invites a shortcut: a response that looks compliant and decides nothing.
-A gameability probe commits such a degenerate response, for example a verdict line with no verdict behind it, together with a naive oracle that accepts it.
-The disciplined oracle of the behavior under test has to reject the same response.
-If the naive oracle rejects it, or the disciplined one accepts it, the probe shows the evaluation can be gamed, and the run exits 11.
+- **Detection:** did this probe catch its declared defect?
+- **Evaluation verdict:** was the measurement sound and complete enough under the contract and policy?
+- **Strength:** how many distinct qualified probes were caught in each class across the run?
 
-The probe launches no target.
-The runtime answers the interaction plan from the committed response, as if the target had produced it, and resolves both oracles.
-When a held-out partition exists, the response splits where the plan does, and a run of both partitions scores each probe against the oracle of its own partition, which a `ci` replay of the baseline reproduces.
+Evaluate's generated runs use **contract-scoring** mode. A correctly caught defect can contribute to a `PASS` for the evaluation even though the deliberately broken target behaved incorrectly. Other evidence faults or coverage gaps can still prevent that pass. A zero exit is also broader than `PASS`: scoring can return `WAIVED` or `CONCERNS` with zero.
 
-## The clean and mutated arms, and their rollback
+Strength is reported separately for defect, gameability and zero-action probes. Repeated trials reduce to one result per probe; clean controls and canaries do not inflate the catch rate. A perfect result on known probes does not establish exhaustive coverage or production reliability. See [eval-quality's Contract Strength explanation](https://github.com/bmad-code-org/bmad-eval-quality/blob/main/docs/explanation/contract-strength.md).
 
-An evaluation earns trust when it passes on a system that works and fails on the same system with a known defect.
-Evaluate calls those the clean arm and the mutated arm.
+Held-out probes help limit tuning to examples already seen. Evaluate's gap view reveals only their identifiers, classes and outcomes. A partition plan can also separate held-out requests from development runs; without it, filtering scored probes alone does not separate the requests. Repeated feedback can still influence later changes, so a held-out pass is bounded evidence, not a guarantee of independent generalization.
 
-The clean arm runs the interaction plan against the unchanged target in a disposable workspace.
-A clean control, a probe flagged as expecting no defect, must pass, or the evaluation produces false alarms.
+After review, you accept and commit a baseline. That preserves the measurement you accepted so later runs can expose changes. It does not certify the product as correct.
 
-The mutated arm plants one defect.
-A mutation is a single exact replacement in one file of your project: a sentence of a prompt, a limit in a rule, a condition in code.
-The runtime qualifies it through six steps in a workspace of its own:
+## Carrying the evidence into CI
 
-1. The clean arm runs, and every oracle of the covered behaviors must hold.
-2. The mutation is applied.
-3. The mutated arm runs, and at least one of those oracles must be violated.
-4. The original bytes are restored, with the file's original mode.
-5. The restored file's digest and mode are compared with the ones taken before the mutation.
-6. The clean arm runs again until it passes, within a cap the scoring policy sets.
+The skill derives a CI plan from your repository, workflow events, secrets and release process. Model-free deterministic checks, including contract validation, gameability checks and baseline replay, belong on the `pr` tier. Live target runs, judge calibration, held-out execution and strength comparisons belong on `merge`, `scheduled` or `release` tiers. The CLI rejects invalid placement and runs each tier's blocking policy. CI setup must wire that plan into your pipeline before those checks can gate changes or releases.
 
-The run proves the rollback: `rollbackVerified` is true only when the restored bytes match and the clean arm passes again.
-If the harness cannot reproduce its clean baseline after restoration, the run exits 12 because the harness is unfit to qualify that mutation.
-A mutation that does not change the behavior exits 11, because an evaluation that cannot see a defect it was designed to see is the weakness Evaluate exists to find.
-
-Two more arms exist for particular probes.
-A historical arm runs a defect a release really fixed, either across the commit that fixed it or against two deployments, so the evaluation is tested on a failure your users met.
-A gameability arm, described above, launches nothing.
-Each arm runs the number of trials `evaluation.json` declares, in a fresh workspace each time, and the sealed trial sets go to `eval-quality score`, one call per probe.
-
-The result is a strength vector per probe, and a catch rate per probe class in the run's strength aggregate, which together say how much of the planted-defect space the evaluation catches.
-`compare --accept` writes the scored run to `baseline/`, which you commit, and later runs are held to it.
-A baseline enters the repository only through a reviewed change, because it states what you accepted as the measure of the feature.
-
-## Why the target is confined
-
-The target is code you are measuring, so the runtime trusts none of it.
-A skill or an agent can read files, write files, start processes and call out, and an evaluation is only worth having if what it did is recorded honestly.
-So the runtime confines every process the target starts: it can write its disposable workspace and nothing else, it cannot read the contract, the probes or the evaluator, it cannot change your repository, and what it opens outside the grants is audited and makes the score Invalid.
-
-macOS confines through Seatbelt and Linux through Bubblewrap.
-A host that can do neither, or whose audit cannot observe, stops the command with exit 12, because an audit that cannot see would report an empty list as if it were evidence.
-[Why Evaluate Confines the Target](/docs/explanation/why-evaluate-confines-the-target.md) describes the mechanisms, and the [reference](/docs/reference/tea-evaluate-cli.md#file-system-confinement) lists what you configure.
-
-## How CI placement is derived
-
-`ci/evaluation-ci-plan.json` assigns each check to a CI tier.
-The runtime uses that plan to decide which checks run for each event.
-
-The checks fall into two groups.
-The deterministic set needs no secret and calls no model: the contract checks, the conformance run of an HTTP port, the gameability arm, the agreement of each oracle with its scorer and the replay of the baseline.
-Every one of them belongs on the `pr` tier, so every pull request runs them, and the runtime refuses a plan that places one anywhere else.
-The live set needs a live target, a model judge or a run to compare: a live preflight, a twin run of the evaluation, a held-out run, a judge calibration and a strength comparison.
-It belongs on the `merge`, `scheduled` or `release` tiers, and the runtime refuses a live check on `pr`.
-
-The last stage of the skill derives the placement from your repository.
-It reads the pipeline files, the events that start each workflow, the checks your platform requires, the merge flow, the release flow and the secrets each event receives.
-It also prices a live run from the contract's severities and the number of trials.
-Each check starts at its default tier and moves only for a reason recorded in the plan, naming the file or the answer behind it.
-A pull request from a fork receives no secret on most platforms, so a check that needs one cannot live on `pr`, and a scheduled run on the default branch can hold it.
-
-Placement decides blocking too.
-`tea-evaluate ci --tier <tier>` runs every check of the tier, keeps the evidence of each, and exits with the most severe blocking result.
-It passes `eval-quality`'s exits through, so the pipeline fails for the engine's reason.
-A plan can name existing publish or deploy jobs for a tier to gate, so a failing release evaluation stops the shipment.
-`bmad-testarch-framework`'s CI setup renders the plan into the pipeline, one job per tier, as [Setup CI](/docs/how-to/workflows/setup-test-framework.md#evaluation-plans) describes.
-
-## Related
-
-- [Evaluate Your First Skill](/docs/tutorials/evaluate-your-first-skill.md) walks one small skill from requirements to an accepted baseline.
-- [tea-evaluate CLI reference](/docs/reference/tea-evaluate-cli.md) states every command, option, field and exit code.
-- [Why Evaluate Confines the Target](/docs/explanation/why-evaluate-confines-the-target.md) explains the confinement and the integrity checks.
-- [How TEA Is Tested](/docs/explanation/how-tea-is-tested.md) shows the engine, the skill and the runtime proving themselves.
+Start with [Evaluate Your First Skill](/docs/tutorials/evaluate-your-first-skill.md). Use the [CLI reference](/docs/reference/tea-evaluate-cli.md) for commands and fields, [Setup CI](/docs/how-to/workflows/setup-test-framework.md#evaluation-plans) to wire the plan into your pipeline, and [How TEA Is Tested](/docs/explanation/how-tea-is-tested.md) for the checks behind Evaluate itself.

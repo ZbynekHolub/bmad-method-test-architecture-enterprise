@@ -11,17 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `tea-automate` CLI for the merged red/expand skill, with Create, Resume, Validate, Edit, default run-and-heal, JSON outcomes, and retained agent/runner evidence.
 - Real Codex generation captures and an independent fixed-versus-mutated voucher-suite scorer, complementing the deterministic AUTOMATE fixture evaluator.
-- `tea-trace` runs Trace from a terminal and writes scope-specific reports with CI exit codes. Each attempt retains its prompt, agent output, and generated files. Reports are published after validation.
+- `tea-evaluate status --evaluation <path> --run <invocationId>` reads a run's phase, trial progress, elapsed time, heartbeat, and trial usage from another process. `--follow` reports updates until the run ends. Running commands print periodic heartbeats during long calls.
 
 ### Changed
 
 - Built-in Codex CLI adapters now use `gpt-6.1-sol` as their current default model, including Automate and Test Review. Explicit `--model` overrides still take precedence.
-- The eight Evaluate how-to guides now keep the agent-led path and reader decisions in view, with shorter troubleshooting passages and links to CLI details.
-- Each Evaluate how-to guide now opens with the action, the reader's decisions, and the result. The openings explain that the coding agent normally handles the detailed steps.
-- The MCP Evaluate guide now explains what the coding agent does, states the expected result upfront, and adds a checkpoint before scoring.
-  The architecture page links to `eval-quality` and identifies AgentEvals as an optional evaluator of agent tool calls.
-- The Evaluate tutorial now explains the usual coding-agent workflow before walking through its prepared example by hand.
-- Reordered the public Skills menu with Automate first and Test Review second, placed Trace alongside the other skills, and moved the Evaluate tutorial to third. The skill catalogs and command reference now use the same order and names; ATDD and CI compatibility entries remain under Automate and Framework.
+- Evaluate authoring workers use a compact isolated context when the host supports it, and the authoring log records the context mode alongside model and usage.
+- Evaluate records whole-run and phase timing. Progress treats incomplete trial usage as unknown trial cost and keeps reported usage as a subtotal; full-run cost remains unknown because qualification and preflight costs are not fully captured. Shared arms count once in trial totals. Progress reports no verdict or ETA.
+- Evaluate can delegate bounded authoring research and candidate drafting to the latest available Haiku or Luna subagent tier. Its parent keeps artifact ownership and scoring decisions, records authoring time and reported usage, and resolves any adopter-requested latest target tier before a new baseline while preserving each run's exact target and judge conditions.
 
 ### Fixed
 
@@ -36,6 +33,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict environment variables forwarded to model-generated test execution in the live generation scorer.
 - Automate generation evaluation uses the clock port for duration and generation timestamps.
 - Prune raw uncompressed terminal stderr streams from live evaluation captures and gitignore evidence stderr logs.
+- Enforce Darwin evaluation file-read grants in the kernel so dropped audit diagnostics cannot expose ungranted host files. Run Git confinement fixtures through the selected executable without its Xcode shim cache. Preflight preserves observed denial paths and setup guidance when a blocked runner fails its verdict.
+- Evaluate live status names the active scored trial as soon as it starts and marks completed trials during handoff.
+- Removed redundant ATDD and CI skill entries so TEA exposes eight direct workflows. Automate handles red acceptance tests and Framework handles CI setup. The Murat agent keeps its `AT` and `CI` menu shortcuts.
+- Restored Git and Prettier coverage for the tracked Evaluate authoring spec so the repository quality gate passes.
+- Corrected stale Evaluate guide claim metadata and clarified the records evaluator's rubric partition restriction.
+- Restored the held-out gap reader example so its documented command remains exercised by CI after the guide rewrite.
+- Warned before Git-backed live evaluations and documented a dedicated-clone or repository quiet-period procedure, since writes in another worktree can invalidate a run after an expensive target call.
+
+## [2.0.2] - 2026-10-12
+
+### Added
+
+- `tea-trace` runs Trace from a terminal and writes scope-specific reports with CI exit codes. Each attempt retains its prompt, agent output, and generated files. Reports are published after validation.
+
+### Changed
+
+- Replaced four Evaluate how-to guides (bringing an existing suite, putting an evaluation in CI, comparing runs and accepting a baseline, and reading and fixing gaps) with bottom-line-up-front summaries and skill-led walkthroughs.
+- Updated Skill, MCP, and HTTP API Evaluate guides to use plain commands with printed invocation IDs instead of piping through `tee` and `sed`, and clarified that only `score` produces contract verdicts while a successful `run` records trials.
+- Restructured the Evaluate explanation page to lead with its bottom line and answer five core questions about behavioral contracts, target execution and confinement, evidence trustworthiness, error stops, and pass semantics.
+- The eight Evaluate how-to guides now keep the agent-led path and reader decisions in view, with shorter troubleshooting passages and links to CLI details.
+- Each Evaluate how-to guide now opens with the action, the reader's decisions, and the result. The openings explain that the coding agent normally handles the detailed steps.
+- The MCP Evaluate guide now explains what the coding agent does, states the expected result upfront, and adds a checkpoint before scoring.
+  The architecture page links to `eval-quality` and identifies AgentEvals as an optional evaluator of agent tool calls.
+- The Evaluate tutorial now explains the usual coding-agent workflow before walking through its prepared example by hand.
+- Reordered the public Skills menu with Automate first and Test Review second, placed Trace alongside the other skills, and moved the Evaluate tutorial to third. The skill catalogs and command reference now use the same order and names; ATDD and CI compatibility entries remain under Automate and Framework.
+
+### Fixed
+
+- `tea-test-review` now shows the agent's bounded output when a review agent exits with an error.
+- `tea-test-review` neutralizes workflow commands in agent output before printing failure diagnostics in CI logs.
+- `tea-test-review` lets the reviewer read type-checker configuration when CI runs a checker without file targets, so H10 reflects whether the checker covers the reviewed test.
 - Trace keeps published reports after failed reruns, updates command JSON on publication errors, and rejects live evidence if Git HEAD changes.
 - Trace accepts compact priority-labeled matrix headings, honors explicit priorities in criterion text, rejects non-collected contract-static reports, and ignores malformed or duplicate live failures when counting fresh failures.
 - Trace merges matching criterion claims and skips unrelated source labels and matrix examples. Mapping cites final outcome assertions once, source references use numbered lines, and coverage totals are checked against mapped rows before the gate. The gate uses execution reports when available.

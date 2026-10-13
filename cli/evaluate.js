@@ -29,6 +29,8 @@
  *                                             compare a scored run's evidence with baseline/ through eval-quality's
  *                                             compareDominance (compared, first-run or refused, every one exit 0), or
  *                                             with --accept replace baseline/ with a byte-identical snapshot of the run
+ *   tea-evaluate status --evaluation <path> [--run <invocationId>] [--follow]
+ *                                             show the latest run's progress, or follow it until it ends
  *   tea-evaluate ci --evaluation <path> --tier <pr|merge|scheduled|release>
  *                                             run exactly the checks ci/evaluation-ci-plan.json places on the tier, in
  *                                             plan order, each one's exit, stdout and stderr kept under
@@ -130,6 +132,7 @@ const { runRunCommand } = require('./lib/evaluate/run');
 const { runCompareCommand } = require('./lib/evaluate/compare');
 const { runScoreCommand } = require('./lib/evaluate/score');
 const { runCiCommand } = require('./lib/evaluate/ci');
+const { runStatusCommand } = require('./lib/evaluate/status');
 const { TIERS } = require('./lib/evaluate/ci-plan');
 const { escapeUnprintable, findingLine } = require('./lib/evaluate/finding-lines');
 const { calibrationInputsOf } = require('./lib/evaluate/records-calibration');
@@ -265,6 +268,17 @@ function compareCommand(options) {
   return runDriven('compare', runCompareCommand, options, { run: options.run, accept: options.accept === true });
 }
 
+async function statusCommand(options) {
+  const folder = folderFrom(options);
+  const result = await runStatusCommand(folder, {
+    run: options.run,
+    follow: options.follow === true,
+    emit: (line) => process.stdout.write(`${NAME} status: ${escapeUnprintable(line)}\n`),
+  });
+  if (result.exitCode !== 0) process.stderr.write(`${NAME} status: ${escapeUnprintable(result.message)}\n`);
+  return result.exitCode;
+}
+
 async function ciCommand(options) {
   if (!TIERS.includes(options.tier)) {
     throw new UsageError(
@@ -278,7 +292,7 @@ function buildProgram(run) {
   const program = new Command();
   program
     .name(NAME)
-    .description('Validate, digest, preflight, run, score, compare and run the CI tiers of an Evaluate evaluation folder.')
+    .description('Validate, digest, preflight, run, score, compare, report status and run the CI tiers of an Evaluate evaluation folder.')
     .showHelpAfterError()
     .exitOverride()
     .configureOutput({ writeErr: (text) => process.stderr.write(text) });
@@ -339,6 +353,13 @@ function buildProgram(run) {
     .option('--accept', 'replace baseline/ with a byte-identical snapshot of the run; refused for a dirty run')
     .action((options) => run(compareCommand, options));
   program
+    .command('status')
+    .description("Show the newest run's progress, or follow it until completion; --run selects a specific invocation.")
+    .option('--evaluation <path>', 'the evaluation folder, or its evaluation.json')
+    .option('--run <invocationId>', 'the run to inspect; the most recent run when omitted')
+    .option('--follow', 'print progress changes and periodic heartbeats until the run ends')
+    .action((options) => run(statusCommand, options));
+  program
     .command('ci')
     .description(
       'Run the checks ci/evaluation-ci-plan.json places on a tier, passing every stage exit through; the final exit is the most severe blocking one.',
@@ -377,7 +398,9 @@ async function main(argv) {
     return await pending;
   } catch (error) {
     if (error instanceof UsageError) {
-      process.stderr.write(`${NAME}: ${error.message}\nUsage: ${NAME} <check|digest|preflight|run|score|compare|ci> --evaluation <path>\n`);
+      process.stderr.write(
+        `${NAME}: ${error.message}\nUsage: ${NAME} <check|digest|preflight|run|score|compare|status|ci> --evaluation <path>\n`,
+      );
       return EXIT_CODES.usage;
     }
     if (error instanceof CorpusIndexError) {

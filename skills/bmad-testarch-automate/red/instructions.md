@@ -26,8 +26,7 @@ This workflow uses **step-file architecture**:
 
 This instruction file owns red mode after canonical activation.
 Set `test_mode = red` when a direct runner loads this file without the shared router; keep `{skill-root}` canonical.
-Resolve red customization using `{skill-root}/../bmad-testarch-atdd/customize.toml` and the legacy ATDD overrides.
-When that sibling is absent, merge `{skill-root}/red/customize.toml` with `_bmad/custom/bmad-testarch-atdd.toml` and `.user.toml` manually and retain its workflow block.
+Resolve red customization by merging `{skill-root}/red/customize.toml` with `_bmad/custom/bmad-testarch-atdd.toml` and `.user.toml` manually and retain its workflow block.
 Entry activation and operation routing remain in `{skill-root}/SKILL.md`.
 
 ### 1. Configuration Loading

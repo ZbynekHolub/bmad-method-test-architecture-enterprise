@@ -4035,6 +4035,34 @@ async function runTests() {
       assert(!staleRun.stdout.includes('"recommendation": "Block"'), 'stale pre-placed report is never parsed', staleRun.stdout);
       assert(!fs.existsSync(staleOut), 'stale pre-placed report is deleted before the agent runs', staleOut);
 
+      for (const mode of ['workflow-injection-fail', 'workflow-injection-missing']) {
+        const injected = runCli(
+          [
+            '--files',
+            'tests/checkout.spec.ts',
+            '--project-root',
+            fixtureProject,
+            '--output',
+            path.join(tmpRoot, mode, 'test-review.md'),
+            '--agent-cmd',
+            stubAgent,
+            '--no-isolate',
+            '--retries',
+            '0',
+            ...stubPass('STUB_MODE'),
+          ],
+          { STUB_MODE: mode },
+        );
+        assert(
+          injected.status === 3 &&
+            !injected.stderr.includes('##[error]') &&
+            !injected.stderr.includes('##[warning]') &&
+            !/(^|\n)\s*::(?:error|warning)::/m.test(injected.stderr),
+          `${mode} cannot inject GitHub Actions annotations through CLI diagnostics`,
+          `status=${injected.status} stderr=${injected.stderr}`,
+        );
+      }
+
       const staleCopyOut = path.join(tmpRoot, 'stale-copy-run', 'test-review.md');
       const oldReport = path.join(tmpRoot, 'stale-copy-run', 'old-report.md');
       fs.mkdirSync(path.dirname(oldReport), { recursive: true });
@@ -4102,6 +4130,26 @@ async function runTests() {
         failAgentRun.status === 3 && failAgentRun.stderr.includes('simulated agent failure'),
         'STUB_MODE=fail exits 3 and surfaces the agent stderr tail',
         `status=${failAgentRun.status} stderr=${failAgentRun.stderr}`,
+      );
+      const quotaAgentRun = runCli(
+        [
+          '--files',
+          'tests/checkout.spec.ts',
+          '--project-root',
+          fixtureProject,
+          '--output',
+          path.join(tmpRoot, 'quota-agent-run', 'test-review.md'),
+          '--agent-cmd',
+          stubAgent,
+          '--no-isolate',
+          ...stubPass('STUB_MODE'),
+        ],
+        { STUB_MODE: 'quota' },
+      );
+      assert(
+        quotaAgentRun.status === 3 && quotaAgentRun.stderr.includes('Weekly limit reached; try again after reset.'),
+        'a structured Claude quota error explains the failed review',
+        `status=${quotaAgentRun.status} stderr=${quotaAgentRun.stderr}`,
       );
 
       // ---- --skill-root: explicit trusted skill source ----
@@ -6077,10 +6125,12 @@ async function runTests() {
         'build-prompt states both install gates, defaulting to false when none are passed',
       );
       assert(
-        defaultConfigPrompt.includes('when H10 turns on whether a static type checker') &&
-          defaultConfigPrompt.includes('read the CI workflow files (.github/workflows)') &&
+        defaultConfigPrompt.includes('when H10 turns on whether a static') &&
+          defaultConfigPrompt.includes('(.github/workflows), scripts they invoke') &&
+          defaultConfigPrompt.includes('checker configuration') &&
+          defaultConfigPrompt.includes('effective file scope') &&
           defaultConfigPrompt.includes('not open package.json for them'),
-        "build-prompt lets the agent read the CI workflow for H10 while the install gates stay the CLI's to state",
+        "build-prompt lets the agent resolve H10 checker scope while the install gates stay the CLI's to state",
       );
       const installedPrompt = buildPrompt({
         skillRoot,

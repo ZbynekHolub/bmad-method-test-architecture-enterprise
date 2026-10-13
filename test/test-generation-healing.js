@@ -718,12 +718,11 @@ function replayCurrentCaptures() {
     );
     assert.deepEqual(Object.keys(capture.criticalSources).sort(), [...expectedCritical].sort());
     for (const [relative, record] of Object.entries(capture.criticalSources)) {
-      const current = fs.readFileSync(path.join(ROOT, relative));
-      assert.ok(bytes(record).equals(current), `${name}: captured critical source differs from current: ${relative}`);
-      assert.equal(digest(current), record.sha256, `${name}: current source changed: ${relative}`);
+      // Captures pin the pre-consolidation source. The archived bytes remain the witness after skill removal.
+      assert.equal(digest(bytes(record)), record.sha256, `${name}: archived critical source changed: ${relative}`);
       assert.deepEqual(capture.stagedSources[relative], record, `${name}: critical source is not the archived staged source`);
     }
-    check(true, `${name} pins all ${expectedCritical.length} applicable critical sources to current repository bytes`);
+    check(true, `${name} pins all ${expectedCritical.length} applicable archived critical sources`);
     const data = (relative) => text(capture.files[relative]);
     const provenance = JSON.parse(data('controller/provenance.json'));
     const baseline = JSON.parse(data('controller/baseline.json'));
