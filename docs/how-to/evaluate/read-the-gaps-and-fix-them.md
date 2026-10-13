@@ -125,6 +125,13 @@ During the repair loop, read held-out results only through `runs/<runId>/gap-vie
 - `caught: false` calls for a new development probe of the same class, then diagnosis there.
 - `outcome: null` leaves the cause undisclosed. Reproduce the class failure in development; if you cannot, record the gap as blocked.
 
+Read held-out results only from `gap-view.json` in the scored run folder. Set `RUN` to the ID printed by `run`:
+
+```bash
+(cd "evals/test-review-json-stdin/runs/$RUN" &&
+  node -p "require('./gap-view.json')['held-out'].map((r) => r.probeId + ' ' + r.probeClass + (r.outcome ? ' caught=' + r.outcome.caught + ' ' + r.outcome.caughtCount + '/' + r.outcome.validCount : ' outcome withheld')).join('\\n')")
+```
+
 Keep held-out inputs, records and answers closed while repairing. A [`partitionPlan`](/docs/reference/tea-evaluate-cli.md#held-out-probes-and-partition-plans) can separate held-out requests from development execution; selecting development probes alone does not.
 
 Repeated held-out feedback can still influence later changes. A held-out pass is bounded evidence, not proof of exhaustive coverage.
