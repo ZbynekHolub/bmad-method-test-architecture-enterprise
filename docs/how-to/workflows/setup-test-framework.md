@@ -184,7 +184,7 @@ Configure in your IDE's MCP settings.
 
 - **Run only once per repository**: Framework setup is a one-time operation
 - **Run after architecture is complete**: Framework aligns with tech stack
-- **Include CI in the same run**: Ask for framework and CI setup together, or use the `ci` command later to start the CI phase
+- **Include CI in the same run**: Ask for framework and CI setup together, or request CI scope from Framework later
 
 <a id="framework-next-steps"></a>
 

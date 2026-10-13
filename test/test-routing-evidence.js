@@ -241,7 +241,7 @@ function checkCaseSnapshots(failures, contract, corpus) {
     checkEqual(failures, { id: live.id, intent: live.intent }, snapshot.intent, `intents.json :: ${id} matches its snapshot`);
     checkEqual(
       failures,
-      canonicalWorkflow(live.expected),
+      live.expected,
       canonicalWorkflow(snapshot.groundTruth),
       `ground-truth.json :: ${id} matches its snapshot after canonical skill routing`,
     );

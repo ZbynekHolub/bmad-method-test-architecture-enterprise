@@ -57,11 +57,11 @@ Automation uses one skill with two modes: red before implementation and expand a
 
 Invoke a skill as `/bmad-testarch-<skill>` in Claude Code, Cursor, and Windsurf, or `$bmad-testarch-<skill>` in Codex.
 NFR uses `/bmad-testarch-nfr` or `$bmad-testarch-nfr`; its stored identifier is `nfr-assess`. Teach Me Testing uses `/bmad-teach-me-testing` or `$bmad-teach-me-testing`, with no `testarch` segment.
-Inside an active TEA agent session, use the menu codes: `TD`, `TF`, `TA`, `EV`, `RV`, `NR`, `TR`, plus `TMT` for TEA Academy and `GATE`.
+Inside an active TEA agent session, use the menu codes: `TD`, `TF`, `CI`, `AT`, `TA`, `EV`, `RV`, `NR`, `TR`, plus `TMT` for TEA Academy and `GATE`. `AT` selects Automate red mode; `CI` selects Framework CI scope.
 
 `bmad-testarch-framework` owns both setup phases.
 Request framework only, CI only, or both. It infers scope from the prompt and asks "Do you want CI too?" once when CI scope is unclear in an interactive session. An unattended request with unclear scope runs framework setup only and states that CI was excluded.
-Request CI setup through `bmad-testarch-framework` or `TF`; the same entry handles framework setup.
+Request CI setup through `bmad-testarch-framework` with CI scope or use the agent's `CI` menu code.
 Create starts setup, Resume continues an interrupted run, Validate reports checks without repairing outputs, and Edit revises the selected outputs and checks those changes.
 
 <a id="tea-workflow-lifecycle"></a>

@@ -192,7 +192,7 @@
 - [ ] `/bmad-testarch-automate` is a separate workflow and must be run explicitly (not auto-run)
 - [ ] Can proceed to `automate` workflow with full coverage plan
 - [ ] Risk assessment informs `gate` workflow criteria
-- [ ] Integrates with `ci` workflow execution order
+- [ ] Integrates with Framework CI scope execution order
 
 ## Accountability & Logistics
 
@@ -415,15 +415,15 @@
 1. [ ] Review risk assessment with team
 2. [ ] Prioritize mitigation for high-priority risks (score ≥6)
 3. [ ] Allocate resources per estimates
-4. [ ] Run `/bmad-testarch-automate` in red mode to generate P0 tests (separate workflow; not auto-run)
+4. [ ] Run `/bmad-testarch-automate` in red mode to generate P0 tests
 5. [ ] Set up test data factories and fixtures
 6. [ ] Schedule team review of test design document
 
 **Recommended next workflows:**
 
-1. [ ] Run `atdd` workflow for P0 test generation
+1. [ ] Run Automate in red mode for P0 test generation
 2. [ ] Run `framework` workflow if not already done
-3. [ ] Run `ci` workflow to configure pipeline stages
+3. [ ] Run Framework with CI scope to configure pipeline stages
 
 ## Rollback Procedure
 

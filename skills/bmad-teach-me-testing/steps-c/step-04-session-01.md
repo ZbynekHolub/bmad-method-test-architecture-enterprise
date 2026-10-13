@@ -93,7 +93,7 @@ Present this content (mostly autonomous, clear and educational):
 
 TEA is a comprehensive test architecture framework that provides:
 
-- **8 Workflows:** Teach Me Testing, Test Design, Framework and CI Setup, Automation (red and expand modes), Test Review, NFR Evidence Audit, Trace, Evaluate. The CI and ATDD commands and their menu codes remain available.
+- **8 Workflows:** Teach Me Testing, Test Design, Framework and CI Setup, Automation (red and expand modes), Test Review, NFR Evidence Audit, Trace, Evaluate. The agent's `AT` and `CI` menu codes remain available for Automate red mode and Framework CI scope.
 - **Framework and CI setup:** One `bmad-testarch-framework` skill handles framework only, CI only, or both. Ask that skill for CI setup, or use the agent's `CI` menu code. TEA infers the scope from your prompt and asks "Do you want CI too?" once when unclear in an interactive session. An unattended request with unclear scope sets up the framework only. Create, Resume, Validate, and Edit choose the operation.
 - **59 Knowledge Fragments:** Distilled expertise on patterns, best practices, Playwright Utils
 - **Quality Standards:** Definition of Done with execution limits (no flaky tests, no hard waits, etc.)
