@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Enforce Darwin evaluation file-read grants in the kernel so dropped audit diagnostics cannot expose ungranted host files. Run Git confinement fixtures through the selected executable without its Xcode shim cache. Preflight preserves observed denial paths and setup guidance when a blocked runner fails its verdict.
 - Evaluate live status names the active scored trial as soon as it starts and marks completed trials during handoff.
 - Removed redundant ATDD and CI skill entries so TEA exposes eight direct workflows. Automate handles red acceptance tests and Framework handles CI setup. The Murat agent keeps its `AT` and `CI` menu shortcuts.
 - Restored Git and Prettier coverage for the tracked Evaluate authoring spec so the repository quality gate passes.
