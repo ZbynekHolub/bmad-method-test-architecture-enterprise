@@ -1,11 +1,11 @@
 ---
-title: ATDD Compatibility Entry
-description: Use the ATDD command to start Automate in red mode
+title: ATDD Through Automate
+description: Use Automate in red mode for acceptance tests before implementation
 ---
 
-# ATDD Compatibility Entry
+# ATDD Through Automate
 
-ATDD starts the [Automate skill in red mode](/docs/how-to/workflows/run-automate.md#red-mode). Use `/bmad-testarch-atdd` in Claude Code, Cursor, or Windsurf, `$bmad-testarch-atdd` in Codex, or `AT` in a TEA agent chat. This entry defaults to red; your prompt can select either mode. Existing ATDD customizations and interrupted progress keep working.
+For ATDD, run [Automate in red mode](/docs/how-to/workflows/run-automate.md#red-mode). Use `/bmad-testarch-automate` in Claude Code, Cursor, or Windsurf, `$bmad-testarch-automate` in Codex, or `TA` in a TEA agent chat. Ask for acceptance tests before implementation to select red mode. Existing ATDD customizations and interrupted progress remain usable.
 
 See [Automate red mode](/docs/how-to/workflows/run-automate.md#red-mode) for acceptance scaffolds, verification, and the implementation handoff.
 

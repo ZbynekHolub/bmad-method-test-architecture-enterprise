@@ -58,6 +58,6 @@ checklist = [
   "`risk_threshold`, `test_design_output`, `test_review_output` and `trace_output` are in no `[modules.tea]` layer.",
   "`ci_platform` and `tea_evaluations_folder` are in no `[modules.tea]` layer.",
   "`uv run _bmad/scripts/resolve_config.py --project-root . --key modules.tea` prints only supported v7 keys; omitted healing options use the shipped defaults.",
-  "`uv run _bmad/scripts/resolve_customization.py --skill <skill-root> --project-root . --key workflow` for `bmad-testarch-ci` and `bmad-testarch-evaluate` prints the migrated values.",
+  "`uv run _bmad/scripts/resolve_customization.py --skill <evaluate-skill-root> --project-root . --key workflow` prints the migrated Evaluate value; Framework CI scope merges `_bmad/custom/bmad-testarch-ci.toml` and its user layer to read the migrated CI value.",
   "Every file the plan listed for removal is either removed in the commit the user chose or reported as still present.",
 ]

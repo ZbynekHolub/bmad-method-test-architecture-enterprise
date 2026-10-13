@@ -1939,6 +1939,17 @@ function checkTargetUsageReports() {
       run.unreportedResourceUse?.length === 0,
       `reported usage was marked unreported: ${JSON.stringify(run.unreportedResourceUse)}; first stderr: ${JSON.stringify(firstEvidence.steps?.[0]?.observation?.stderr)}; environment: ${JSON.stringify(firstEvidence.steps?.[0]?.request?.channels?.environment)}`,
     );
+    check(
+      run.progress?.usage?.trialCostUsd === '0.015' &&
+        run.progress.usage.reportedTrialCostUsd === '0.015' &&
+        run.progress.usage.missingReports === 0,
+      `reported trial progress usage is ${JSON.stringify(run.progress?.usage)}`,
+    );
+    const measuredStatus = evaluate(['status', '--evaluation', reported.folder, '--run', run.invocationId], reported.env);
+    check(
+      measuredStatus.status === 0 && measuredStatus.stdout.includes('trial cost $0.015 (trials only)'),
+      `reported trial status exited ${measuredStatus.status}: ${measuredStatus.output}`,
+    );
     const index = readJson(path.join(measuredDirectory, 'trial-sets.json'));
     for (const set of index.trialSets) {
       const manifest = readJson(path.join(measuredDirectory, set.isolationManifest));
