@@ -114,6 +114,14 @@ try {
     Object.fromEntries(Object.entries(HEALING_DEFAULTS).map(([key, value]) => [key, String(value)])),
   );
   checks++;
+  const uppercaseConfig = path.join(scratch, '_bmad/config.toml');
+  fs.writeFileSync(uppercaseConfig, '[modules.tea]\nauto_validate = " TRUE "\nauto_heal_failures = "FALSE"\n');
+  const uppercase = invoke(['--agent', 'none', '--target', '.', 'cover the service']);
+  check(
+    uppercase.status === 0 && uppercase.stdout.includes('"auto_validate":true') && uppercase.stdout.includes('"auto_heal_failures":false'),
+    'mixed-case string booleans match shared TEA configuration parsing',
+  );
+  fs.unlinkSync(uppercaseConfig);
   const dry = invoke(['--agent', 'none', '--target', '.', 'cover the service']);
   check(
     dry.status === 0 && dry.stdout.includes('EXPAND ONLY') && dry.stdout.includes('STRICT_POLICY_RULE') && !dry.stdout.includes('RED ONLY'),

@@ -10,8 +10,9 @@ const { RESULT_KEYS } = require('./automate-result');
 const HEALING_DEFAULTS = { auto_validate: true, auto_heal_failures: true, max_healing_iterations: 3, use_mcp_healing: true };
 
 function boolean(value, key) {
-  if (value === true || value === 'true') return true;
-  if (value === false || value === 'false') return false;
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : value;
+  if (normalized === true || normalized === 'true') return true;
+  if (normalized === false || normalized === 'false') return false;
   throw new Error(`${key} must be true or false`);
 }
 
