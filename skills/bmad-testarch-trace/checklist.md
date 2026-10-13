@@ -16,7 +16,7 @@ This checklist covers **two sequential phases**:
 
 - [ ] A coverage oracle is available or inferred (formal requirements, spec, resolvable external pointer, or synthetic journeys)
 - [ ] Test suite exists (or gaps are acknowledged and documented)
-- [ ] If tests are missing, recommend `/bmad-testarch-atdd` (trace does not run it automatically)
+- [ ] If tests are missing, recommend `/bmad-testarch-automate` with the applicable red or expand mode (trace does not run it automatically)
 - [ ] Test directory path is correct (`test_dir` variable)
 - [ ] Story file is accessible (if using BMad mode)
 - [ ] Knowledge base is loaded (test-priorities, traceability, risk-governance)
@@ -673,7 +673,7 @@ This list is the definition of waiver validity. `steps-c/step-05-gate-decision.m
 
 - If PASS (both phases): Proceed to deployment
 - If WARN/CONCERNS: Address gaps/issues, proceed with monitoring
-- If FAIL (either phase): Run `/bmad-testarch-atdd` for missing tests, fix issues, re-run `/bmad-testarch-trace`
+- If FAIL (either phase): Run `/bmad-testarch-automate` for missing tests, fix issues, re-run `/bmad-testarch-trace`
 - If WAIVED: Deploy with approved waiver, schedule remediation
 
 ---

@@ -4160,7 +4160,7 @@ function checkCiGuidance(guide, failures, assets = ciAssets(), egressProblems = 
     "Name in the `trigger` of every check on the gating tier each event that starts the gated job's workflow.",
     "When that workflow also starts on `workflow_dispatch`, as a nightly `deploy.yml` does, list `manual-dispatch` beside `release`, since the CI skill refuses a gate whose job already ran on an event where the tier's evaluation job is skipped.",
     "The jobs a tier gates are the union of `gates` over the checks the plan places on that tier, so name a job once, on any check of the tier, and a name repeated across the tier's checks is merged.",
-    '`check` accepts a job id and reports any other name under rule `gates`; it cannot tell whether the repository holds that job, which `bmad-testarch-ci` answers when it renders the wait.',
+    '`check` accepts a job id and reports any other name under rule `gates`; it cannot tell whether the repository holds that job, which `bmad-testarch-framework` answers when it renders the wait.',
     "The wait holds best when the job lives in the workflow file the CI skill edits, which holds the evaluation jobs too: the job then waits through `needs`, and the step refuses the plan when the job already ran in a run where the tier's evaluation job is skipped, such as a deploy on every `push` beside an evaluation job guarded to tags, or when the evaluation job runs on a run the job did not run on before, such as a `workflow_dispatch` the plan adds to a tag-push release file, while a run the render adds that the evaluation job skips is skipped through the wait and is no conflict.",
     'A job in another workflow file waits through a `workflow_run` trigger, which the step refuses for a pull request tier, for a tier whose evaluation job carries a ref or cron guard, and for a job with its own `needs`, `if:` or ref and event contexts, so hand the CI skill the workflow file that holds the job when you can.',
     'Leave `gates` out when the inspection found no such job or the adopter declined the gate, and say which in the `reason` of the release entries.',
@@ -4227,7 +4227,7 @@ function checkCiGuidance(guide, failures, assets = ciAssets(), egressProblems = 
     'so relay that report to the adopter',
     'When the plan gates a job, invoke it on the workflow file that holds that job.',
     "give the adopter the request and the plan's path and record the hand-off as an open item in the inspection record",
-    'a declined baseline or a missing `bmad-testarch-framework` (with no usable `bmad-testarch-ci` compatibility entry) stays a named open item in the `## CI` section and does not reopen the stage',
+    'a declined baseline or a missing `bmad-testarch-framework` stays a named open item in the `## CI` section and does not reopen the stage',
     'Stage 12 is complete when the plan passes `check`',
     'the secrets the live tiers need',
     'every tier that exited non-zero with the stage that owns its repair',
@@ -4317,7 +4317,7 @@ function checkCiGuidance(guide, failures, assets = ciAssets(), egressProblems = 
     'upload of the',
     'runs the `pr` tier first',
   ])
-    if (prose.includes(forbidden)) failures.push(`ci.md restates a rendering rule of bmad-testarch-ci: ${forbidden}`);
+    if (prose.includes(forbidden)) failures.push(`ci.md restates a rendering rule of bmad-testarch-framework: ${forbidden}`);
   // Phrases that would turn an AC-critical rule around.
   for (const forbidden of [
     'on `pr` too',
@@ -4496,7 +4496,7 @@ function checkSkillStage12(skillContent, failures) {
   const stage12 = headingBody(skillContent, '### Stage 12: CI').trim();
   if (
     stage12 !==
-    "Inspect the adopter's repository, place each check in a tier, write `<evaluation-folder>/ci/evaluation-ci-plan.json` and hand it to `bmad-testarch-framework` with CI setup scope. The `bmad-testarch-ci` compatibility entry remains valid. Load `references/ci.md`."
+    "Inspect the adopter's repository, place each check in a tier, write `<evaluation-folder>/ci/evaluation-ci-plan.json` and hand it to `bmad-testarch-framework` with CI setup scope. Load `references/ci.md`."
   )
     failures.push(`SKILL.md Stage 12 reads ${JSON.stringify(stage12)}`);
 }
@@ -5542,7 +5542,7 @@ async function main() {
         ciCheck,
         (text) =>
           text.replace(
-            '`check` accepts a job id and reports any other name under rule `gates`; it cannot tell whether the repository holds that job, which `bmad-testarch-ci` answers when it renders the wait.',
+            '`check` accepts a job id and reports any other name under rule `gates`; it cannot tell whether the repository holds that job, which `bmad-testarch-framework` answers when it renders the wait.',
             '',
           ),
       ],

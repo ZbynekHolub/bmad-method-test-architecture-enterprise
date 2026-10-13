@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Removed redundant ATDD and CI skill entries so TEA exposes eight direct workflows. Automate handles red acceptance tests and Framework handles CI setup. The Murat agent keeps its `AT` and `CI` menu shortcuts.
+- Restored Git and Prettier coverage for the tracked Evaluate authoring spec so the repository quality gate passes.
 - Corrected stale Evaluate guide claim metadata and clarified the records evaluator's rubric partition restriction.
 - Restored the held-out gap reader example so its documented command remains exercised by CI after the guide rewrite.
 - Warned before Git-backed live evaluations and documented a dedicated-clone or repository quiet-period procedure, since writes in another worktree can invalidate a run after an expensive target call.

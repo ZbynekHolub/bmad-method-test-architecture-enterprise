@@ -33,7 +33,7 @@ From `workflow.yaml`, resolve:
 
 ### 2. Canonical CI Activation
 
-If invoked through legacy workflow metadata, preset `setup_scope = ci` and `setup_entry = bmad-testarch-ci`, then load `{skill-root}/SKILL.md` and its shared router before executing a phase. Keep the original operation and legacy CI customization. CI instructions, templates and steps resolve under `{skill-root}/ci/`.
+If invoked through legacy workflow metadata, preset `setup_scope = ci`, then load `{skill-root}/SKILL.md` and its shared router before executing a phase. Keep the original operation and CI customization. CI instructions, templates and steps resolve under `{skill-root}/ci/`.
 
 ### 3. First Step
 
