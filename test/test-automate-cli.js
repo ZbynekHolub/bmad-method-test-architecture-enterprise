@@ -49,24 +49,66 @@ try {
   assert.throws(() => selectMode('expand', 'continue', 'red'), /checkpoint belongs to red/);
   check(true, 'task signals, headless conflicts and saved mode follow canonical routing');
   for (const method of ['buildArgv', 'buildUsageArgv']) {
-    const commands = AGENT_ADAPTERS.codex[method]([], 'gpt-5.6-sol', ['command-execution']);
+    const commands = AGENT_ADAPTERS.codex[method]([], AGENT_ADAPTERS.codex.defaultModel, ['command-execution']);
     check(
-      commands.includes('sandbox_workspace_write.network_access=true') && commands[commands.indexOf('--sandbox') + 1] === 'workspace-write',
-      `${method} permits command-execution networking inside workspace-write`,
+      !commands.includes('sandbox_workspace_write.network_access=true') &&
+        commands[commands.indexOf('--sandbox') + 1] === 'workspace-write',
+      `${method} keeps shared command-execution networking disabled`,
     );
     for (const capability of ['read-only', 'scoped-artifact-writes'])
       check(
-        !AGENT_ADAPTERS.codex[method]([], 'gpt-5.6-sol', [capability]).includes('sandbox_workspace_write.network_access=true'),
+        !AGENT_ADAPTERS.codex[method]([], AGENT_ADAPTERS.codex.defaultModel, [capability]).includes(
+          'sandbox_workspace_write.network_access=true',
+        ),
         `${method} keeps ${capability} network policy unchanged`,
       );
-    const override = AGENT_ADAPTERS.codex[method](['-c', 'sandbox_workspace_write.network_access=false'], 'gpt-5.6-sol', [
-      'command-execution',
-    ]);
-    check(
-      override.indexOf('sandbox_workspace_write.network_access=false') > override.indexOf('sandbox_workspace_write.network_access=true'),
-      `${method} preserves explicit network opt-out precedence`,
-    );
   }
+  function codexArgv(evidenceDir, extra = []) {
+    const run = invoke(
+      [
+        '--agent',
+        'codex',
+        '--agent-cmd',
+        STUB,
+        '--env-pass',
+        'TEA_AUTOMATE_STUB_CASE',
+        '--target',
+        '.',
+        '--evidence-dir',
+        evidenceDir,
+        ...extra,
+        'cover the service',
+      ],
+      'argv',
+    );
+    const runDir = fs.readdirSync(path.join(scratch, evidenceDir)).find((entry) => entry.startsWith('tea-automate-'));
+    return {
+      status: run.status,
+      argv: fs.readFileSync(path.join(scratch, evidenceDir, runDir, 'attempt-1/stdout.txt'), 'utf8'),
+    };
+  }
+  const network = codexArgv('network-opt-in-evidence', ['--allow-network']);
+  check(
+    network.status === 3 && network.argv.includes('sandbox_workspace_write.network_access=true'),
+    'Automate explicitly enables Codex networking',
+  );
+  const noNetwork = codexArgv('network-default-evidence');
+  check(
+    noNetwork.status === 3 && !noNetwork.argv.includes('sandbox_workspace_write.network_access=true'),
+    'Automate defaults to no Codex network grant',
+  );
+  const override = codexArgv('network-override-evidence', [
+    '--allow-network',
+    '--agent-arg=-c',
+    '--agent-arg=sandbox_workspace_write.network_access=false',
+  ]);
+  check(
+    override.status === 3 &&
+      override.argv.indexOf('sandbox_workspace_write.network_access=false') >
+        override.argv.indexOf('sandbox_workspace_write.network_access=true'),
+    'explicit Codex network opt-out keeps precedence',
+  );
+  check(invoke(['--agent', 'none', '--allow-network', '--target', '.', 'cover the service']).status === 2, 'network opt-in requires Codex');
   assert.deepEqual(
     defaultsAgree(path.join(ROOT, 'skills/bmod-tea')),
     Object.fromEntries(Object.entries(HEALING_DEFAULTS).map(([key, value]) => [key, String(value)])),

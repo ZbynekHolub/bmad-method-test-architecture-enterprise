@@ -1,6 +1,6 @@
 # Codex AUTOMATE generation evaluation
 
-These captures execute the current merged Automate skill through Codex with pinned model `gpt-5.6-sol` and Codex CLI `0.162.0`.
+These captures executed the Automate skill through Codex with model `gpt-5.6-sol` and Codex CLI `0.162.0` on 2026-10-09.
 `test/eval-automate.js` remains the deterministic evaluator of hand-authored controls.
 
 | Capture    | Actual in-agent execution                                                            | Independent native execution                                                      | CLI outcome                                                                           |
@@ -12,7 +12,7 @@ These captures execute the current merged Automate skill through Codex with pinn
 | `reviewed` | Nine generated API tests pass through the real HTTP service                          | Nine fixed tests pass; mutation produces three assertion failures                 | Request-bound controller exits 1 for the unreachable fixed-discount coverage branch   |
 
 Codex workspace-write sandboxing initially blocked local test services from listening on loopback.
-Command execution now passes `sandbox_workspace_write.network_access=true`, while explicit caller arguments retain precedence.
+The captured command execution passed `sandbox_workspace_write.network_access=true` to run those services. Current `tea-automate` requires `--allow-network` to grant that access for Codex.
 The controller validates native Playwright and ATDD reports, guards input and evidence files against JSON output collisions, and requires explicit checkpoint Resume after interrupted runs.
 
 In the test fixture catalog, `FLAT5` subtracts 5 and requires a cart total of at least 20, making capped fixed discounts unreachable.

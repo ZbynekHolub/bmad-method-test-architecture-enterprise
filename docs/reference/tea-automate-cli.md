@@ -10,7 +10,7 @@ It supplies project configuration and mode customizations, runs the agent, and v
 
 ```bash
 npm install -g bmad-method-test-architecture-enterprise
-tea-automate --agent codex --mode expand --target src \
+tea-automate --agent codex --allow-network --mode expand --target src \
   "Add API coverage for the voucher redemption rules"
 
 tea-automate --agent codex --mode red --story docs/stories/reserve-a-locker.md
@@ -26,10 +26,9 @@ Red retains skipped permanent scaffolds and verifies intended failures in a disp
 Expand keeps generated tests active.
 Product defects and execution blockers appear in the saved summary and JSON output.
 
-Codex command execution enables network access in its workspace sandbox so local HTTP services and project test commands can run.
-This grants unrestricted outbound network access.
-Read-only and artifact-write runs keep existing network settings.
-An explicit `--agent-arg=-c --agent-arg=sandbox_workspace_write.network_access=false` disables network access for this command.
+`tea-automate` does not grant Codex workspace network access by default. The user's Codex configuration can still enable it.
+Pass `--allow-network` when project tests need local HTTP services or other network calls. This grants unrestricted outbound network access for that Automate run.
+The flag requires `--agent codex`. An explicit `--agent-arg=-c --agent-arg=sandbox_workspace_write.network_access=false` takes precedence over the flag.
 OpenAI documents this setting in [agent approvals and security](https://developers.openai.com/codex/agent-approvals-security).
 
 ## Operations

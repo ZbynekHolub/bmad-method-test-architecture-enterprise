@@ -4,6 +4,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const yaml = require('js-yaml');
+if (process.env.TEA_AUTOMATE_STUB_CASE === 'argv') {
+  process.stdout.write(process.argv.slice(2).join(' '));
+  process.exit(0);
+}
 const prompt = fs.readFileSync(0, 'utf8');
 const manifestPath = JSON.parse(prompt.split('\n').find((line) => /^".*generation\.json"$/.test(line)));
 const match = prompt.match(/Authoritative generation mode: (red|expand)\. Authoritative operation: (\w+)\./);

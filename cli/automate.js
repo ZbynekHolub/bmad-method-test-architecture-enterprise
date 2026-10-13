@@ -97,6 +97,7 @@ async function main(argv) {
     .option('--project-skill', 'use the project-installed canonical skill')
     .option('--evidence-dir <dir>', 'directory for fresh per-attempt prompts, streams and manifests')
     .option('--json <path>', 'write validated result JSON to this file')
+    .option('--allow-network', 'allow unrestricted outbound network access in the Codex workspace sandbox')
     .exitOverride()
     .configureOutput({ writeErr: () => {} });
   addAgentOptions(program);
@@ -122,6 +123,7 @@ async function main(argv) {
   try {
     if (options.mode !== undefined && !MODES.includes(options.mode)) throw new Error(`--mode must be ${MODES.join(' or ')}`);
     if (!OPERATIONS.includes(options.operation)) throw new Error(`--operation must be ${OPERATIONS.join(', ')}`);
+    if (options.allowNetwork && options.agent !== 'codex') throw new Error('--allow-network requires --agent codex');
     root = fs.realpathSync(path.resolve(options.projectRoot));
     agentOptions(options, root);
     if (Number(options.retries) > 0 && options.operation !== 'validate')
@@ -211,6 +213,7 @@ async function main(argv) {
     process.stdout.write(`${prepare({ attemptDir: path.join(evidenceRoot, 'attempt-1') }).prompt}\n`);
     return 0;
   }
+  if (options.allowNetwork) options.agentArg = ['-c', 'sandbox_workspace_write.network_access=true', ...options.agentArg];
   try {
     const result = await runWithEvidence({
       name: NAME,
