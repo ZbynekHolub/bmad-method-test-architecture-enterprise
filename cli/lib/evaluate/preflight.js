@@ -85,7 +85,6 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const { performance } = require('node:perf_hooks');
 
 const { admissionRefusal, armVerdict, referenceTo } = require('./admission');
 const { causeNote, faultRecord, hostEnvironmentPort, persistableRequest, reasonNote, runArm } = require('./arm');
@@ -892,7 +891,7 @@ async function runInWorkspaces({
   };
   const progressStarted = progressStartedAt ?? Date.now();
   const progressCreatedAt = Date.now();
-  const progressCreatedTick = performance.now();
+  const progressCreatedTick = globalThis.performance.now();
   const setupBeforeRecordMs = Math.max(0, progressCreatedAt - progressStarted);
   let phaseStartedTick = progressCreatedTick;
   if (command === 'run') {
@@ -916,7 +915,7 @@ async function runInWorkspaces({
   const progress = (phase, fields = {}) => {
     if (command !== 'run' || state.sealed) return;
     const now = Date.now();
-    const tick = performance.now();
+    const tick = globalThis.performance.now();
     const sinceCreated = Math.max(0, tick - progressCreatedTick);
     if (phase !== run.progress.phase) {
       const prior = run.progress.phase;
