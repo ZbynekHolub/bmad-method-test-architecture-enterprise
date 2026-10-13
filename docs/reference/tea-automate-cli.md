@@ -86,7 +86,7 @@ Prepend steps, facts, append steps, and completion hooks retain their order.
 | `--skill-root <dir>`                         | Explicit canonical skill copy with sibling TEA knowledge       |
 | `--evidence-dir <dir>`                       | Project directory for retained run evidence                    |
 | `--json <path>`                              | Additional JSON result file inside the project                 |
-| `--model <name>`                             | Model override; default is the adapter's pinned model          |
+| `--model <name>`                             | Model override; Codex currently defaults to `gpt-6.1-sol`      |
 | `--timeout-ms <n>`                           | Wall-clock limit per attempt; default 1,200,000 ms             |
 | `--retries <n>`                              | Validate transport/timeout retries, 0-3; generation requires 0 |
 | `--agent-cmd <path>`                         | Agent executable override                                      |

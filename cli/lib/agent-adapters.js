@@ -35,7 +35,7 @@
  * here makes the local run and the CI run the same run. --model overrides it.
  *
  * The pinned values are aliases, not immutable snapshots: "sonnet" follows
- * Anthropic's current Sonnet and "gpt-5.6-sol" is a family slug. They hold the
+ * Anthropic's current Sonnet and "gpt-6.1-sol" is a family slug. They hold the
  * tier steady, not the exact weights. Pass a fully-qualified slug to --model
  * when a run has to be reproducible across model generations.
  *
@@ -343,7 +343,7 @@ const AGENT_ADAPTERS = {
   },
   codex: {
     command: 'codex',
-    defaultModel: 'gpt-5.6-sol',
+    defaultModel: 'gpt-6.1-sol',
     modelFlags: ['-m', '--model'],
     // `codex exec` reads the prompt from stdin when no PROMPT arg is given.
     // --sandbox workspace-write grants read/write/exec inside cwd without

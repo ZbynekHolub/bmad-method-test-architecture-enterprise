@@ -2623,8 +2623,8 @@ async function runTests() {
         'the scaled timeout is clamped to the 30-minute ceiling and never derives a nonpositive value from an empty review set',
         `${defaultTimeoutMs(50)} / ${defaultTimeoutMs(0)}`,
       );
-      const codexReadOnly = AGENT_ADAPTERS.codex.buildArgv([], 'gpt-5.6-sol', ['read-only']);
-      const codexDefault = AGENT_ADAPTERS.codex.buildArgv([], 'gpt-5.6-sol');
+      const codexReadOnly = AGENT_ADAPTERS.codex.buildArgv([], AGENT_ADAPTERS.codex.defaultModel, ['read-only']);
+      const codexDefault = AGENT_ADAPTERS.codex.buildArgv([], AGENT_ADAPTERS.codex.defaultModel);
       assert(
         codexReadOnly[codexReadOnly.indexOf('--sandbox') + 1] === 'read-only' &&
           codexDefault[codexDefault.indexOf('--sandbox') + 1] === 'workspace-write',

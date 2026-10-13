@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Built-in Codex CLI adapters now use `gpt-6.1-sol` as their current default model, including Automate and Test Review. Explicit `--model` overrides still take precedence.
 - The eight Evaluate how-to guides now keep the agent-led path and reader decisions in view, with shorter troubleshooting passages and links to CLI details.
 - Each Evaluate how-to guide now opens with the action, the reader's decisions, and the result. The openings explain that the coding agent normally handles the detailed steps.
 - The MCP Evaluate guide now explains what the coding agent does, states the expected result upfront, and adds a checkpoint before scoring.
