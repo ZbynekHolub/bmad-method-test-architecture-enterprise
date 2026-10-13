@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.3] - 2026-10-13
+
 ### Added
 
 - `tea-evaluate status --evaluation <path> --run <invocationId>` reads a run's phase, trial progress, elapsed time, heartbeat, and trial usage from another process. `--follow` reports updates until the run ends. Running commands print periodic heartbeats during long calls.
