@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-10-14
+
 ### Changed
 
 - Stable releases now set npm `latest` and `next` to the same version. The independent `next` prerelease path and its `release:next` command are retired. A `release:sync-tags` command repairs existing tag drift without publishing a new version.
