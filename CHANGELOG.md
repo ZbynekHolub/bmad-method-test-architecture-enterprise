@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Test Design risk guidance requires bare numeric probability, impact, and score cells after a live run put explanations inside those cells and failed CLI publication and evaluation shape checks.
 - Test Design evaluation recognizes observed descriptions of erased offline edits and a missing release flag, and reports the actual CLI selected by `--agent-cmd` in preflight and result provenance.
 - Test Design rejects required sections that appear only inside fenced examples and rejects unscored risk registers with noncanonical IDs before publishing a plan.
 - Test Design prefers normalized exact heading matches over substring matches when validating sections to select canonical headings over lookalike headings; evaluation artifact retention cleans incomplete attempt directories on failure.

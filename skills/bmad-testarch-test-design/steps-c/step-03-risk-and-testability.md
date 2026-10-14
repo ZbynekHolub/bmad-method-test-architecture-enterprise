@@ -70,6 +70,7 @@ Using `risk-governance.md` and `probability-impact.md` (if loaded):
 - Classify by category: TECH / SEC / PERF / DATA / BUS / OPS
 - Score Probability (1–3) and Impact (1–3)
 - Calculate Risk Score (P × I)
+- Put only a single bare integer in each Probability, Impact, and Score table cell. Keep likelihood and consequence explanations in the Description, Mitigation, or nearby prose. A cell such as `2: possible boundary error` is invalid even when its leading number is in range.
 - Flag high risks (score ≥ 6)
 - Define mitigation, owner, and timeline
 
