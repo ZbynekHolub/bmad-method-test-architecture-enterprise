@@ -131,7 +131,7 @@ The publisher must name the canonical repository and workflow in npm, and the wo
 Enable **Allow npm dist-tag** on that trusted publisher so the workflow can point `next` at the stable release. The release job installs a current npm CLI with OIDC dist-tag support.
 Stable releases also need `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY`, with the GitHub App allowed to push the release commit and tag.
 The workflow requests an OIDC token for npm, synchronizes metadata, and publishes with provenance.
-For a stable release, it also stamps the changelog, pushes the version commit and tag, and creates a GitHub Release. The release checks tag-management permission before the version bump, then waits for npm to finish processing the published version before aligning both tags.
+For a stable release, it also stamps the changelog, pushes the version commit and tag, and creates a GitHub Release. The release briefly creates and removes a temporary npm tag to check tag-management permission before the version bump, then waits for npm to finish processing the published version before aligning both tags.
 
 After publishing, check the version and dist-tags:
 

@@ -155,24 +155,33 @@ if (preflightIndex !== -1 && syncTagsIndex !== -1 && repairStep?.run) {
 const fs = require('node:fs');
 const args = process.argv.slice(2);
 const tags = JSON.parse(fs.readFileSync(process.env.NPM_TAGS_FILE, 'utf8'));
-if (args[0] === 'dist-tag' && args[1] === 'add' && args[2] === 'example-tea@9.9.9' && args[3] === 'next') {
+if (args[0] === 'dist-tag' && args[1] === 'add' && args[2] === 'example-tea@9.9.9' && args[3]) {
   const attempts = Number(fs.readFileSync(process.env.NPM_TAG_ATTEMPTS_FILE, 'utf8')) + 1;
   fs.writeFileSync(process.env.NPM_TAG_ATTEMPTS_FILE, String(attempts));
-  if (process.env.NPM_TAG_ADD_FAIL === '1' || (process.env.NPM_TAG_ADD_FAIL_ONCE === '1' && attempts === 1)) process.exit(1);
-  if (process.env.NPM_TAG_ADD_NOOP !== '1') tags.next = '9.9.9';
+  if (process.env.NPM_TAG_ADD_FAIL === '1' || (process.env.NPM_TAG_ADD_FAIL_ONCE === '1' && attempts === 1)) {
+    process.stderr.write('simulated npm tag write failure\\n');
+    process.exit(1);
+  }
+  if (args[3] !== 'next' || process.env.NPM_TAG_ADD_NOOP !== '1') tags[args[3]] = '9.9.9';
+  fs.writeFileSync(process.env.NPM_TAGS_FILE, JSON.stringify(tags));
+} else if (args[0] === 'dist-tag' && args[1] === 'rm' && args[2] === 'example-tea' && args[3]) {
+  delete tags[args[3]];
   fs.writeFileSync(process.env.NPM_TAGS_FILE, JSON.stringify(tags));
 } else if (args[0] === 'view' && args[1] === 'example-tea@latest' && args[2] === 'version') {
   process.stdout.write(tags.latest);
 } else if (args[0] === 'view' && args[1] === 'example-tea' && args[2] === 'dist-tags') {
   process.stdout.write(JSON.stringify(tags));
-} else process.exit(2);
+} else {
+  process.stderr.write('unexpected fake npm command: ' + args.join(' ') + '\\n');
+  process.exit(2);
+}
 `,
     );
     fs.writeFileSync(path.join(fakeBin, 'sleep'), '#!/bin/sh\nexit 0\n');
     fs.chmodSync(path.join(fakeBin, 'npm'), 0o755);
     fs.chmodSync(path.join(fakeBin, 'sleep'), 0o755);
     const runTagStep = (step, options = {}) => {
-      fs.writeFileSync(tagsFile, '{"latest":"9.9.9","next":"9.8.8"}');
+      fs.writeFileSync(tagsFile, JSON.stringify({ latest: '9.9.9', next: options.aligned ? '9.9.9' : '9.8.8' }));
       fs.writeFileSync(attemptsFile, '0');
       return spawnSync('bash', ['-e', '-c', step.run], {
         cwd: fixtureRoot,
@@ -186,6 +195,8 @@ if (args[0] === 'dist-tag' && args[1] === 'add' && args[2] === 'example-tea@9.9.
           NPM_TAG_ADD_NOOP: options.noOp ? '1' : '0',
           NPM_TAG_ADD_FAIL: options.fail ? '1' : '0',
           NPM_TAG_ADD_FAIL_ONCE: options.failOnce ? '1' : '0',
+          GITHUB_RUN_ID: '12345',
+          GITHUB_RUN_ATTEMPT: '1',
         },
       });
     };
@@ -195,7 +206,12 @@ if (args[0] === 'dist-tag' && args[1] === 'add' && args[2] === 'example-tea@9.9.
     }
     const stale = runTagStep(publishSteps[syncTagsIndex], { noOp: true });
     if (stale.status === 0) errors.push('publish.yaml accepted a next tag that still points at an older version.');
-    const denied = runTagStep(publishSteps[preflightIndex], { fail: true });
+    const preflight = runTagStep(publishSteps[preflightIndex], { aligned: true });
+    const preflightTags = JSON.parse(fs.readFileSync(tagsFile, 'utf8'));
+    if (preflight.status !== 0 || Number(fs.readFileSync(attemptsFile, 'utf8')) < 1 || Object.keys(preflightTags).length !== 2) {
+      errors.push(`publish.yaml did not write and remove the temporary permission-check tag: ${preflight.stderr || preflight.stdout}`);
+    }
+    const denied = runTagStep(publishSteps[preflightIndex], { aligned: true, fail: true });
     if (denied.status === 0) errors.push('publish.yaml did not fail before the version bump when npm denied tag management.');
     const repaired = runTagStep(repairStep);
     if (repaired.status !== 0 || JSON.parse(fs.readFileSync(tagsFile, 'utf8')).next !== '9.9.9') {

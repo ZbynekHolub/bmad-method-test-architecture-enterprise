@@ -81,7 +81,7 @@ jobs:
         run: npm ci
 
       - name: Align existing npm tags and confirm permission
-        run: TEA_TAG_SYNC_ATTEMPTS=1 bash tools/sync-npm-tags.sh "$(node -p 'require("./package.json").name')"
+        run: TEA_TAG_SYNC_ATTEMPTS=1 TEA_TAG_CHECK_PERMISSION=1 bash tools/sync-npm-tags.sh "$(node -p 'require("./package.json").name')"
 
       - name: Bump stable version
         run: npm version "${{ inputs.bump }}" --no-git-tag-version
