@@ -24,6 +24,7 @@ There is no user interface and no browser. Every endpoint speaks JSON over HTTP,
 
 ```text
 src/lockers.js     the inventory: three lockers, in memory
+src/reservations.js stable seeded reservation state for acceptance tests; routes are not wired yet
 src/server.js      the HTTP server and its routes
 docs/stories/      the stories the gateway team has scheduled for this service
 tests/             acceptance tests

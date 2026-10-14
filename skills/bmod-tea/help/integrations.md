@@ -6,7 +6,7 @@ Each setup answer is `modules.tea.<key>` in `_bmad/config.toml`. `bmad setup tea
 
 - `test_stack_type = "auto"` detects the project type from manifest files. Mobile: `.maestro/` or `maestro/` flows, `app.json` with expo or react-native, `Podfile`, `android/app/build.gradle`, `*.xcodeproj`, `pubspec.yaml`. Frontend: `package.json` with react, vue or angular, `playwright.config.*`, `vite.config.*`. Backend: `pyproject.toml`, `pom.xml`, `go.mod`, `*.csproj`, `Gemfile`, `Cargo.toml`. Full-stack: both frontend and backend indicators. Mobile is checked first, because a React Native project also has `package.json` with react.
 - `test_framework = "auto"` detects the framework the same way.
-- The CI platform is detected by `bmad-testarch-ci` from `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`, `azure-pipelines.yml`, `.harness/` or `.circleci/config.yml`. To fix one, set `ci_platform` in `_bmad/custom/bmad-testarch-ci.toml`.
+- The CI platform is detected by `bmad-testarch-framework` from `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`, `azure-pipelines.yml`, `.harness/` or `.circleci/config.yml`. To override detection, set `ci_platform` in `_bmad/custom/bmad-testarch-framework.toml`.
 
 ## Execution mode
 

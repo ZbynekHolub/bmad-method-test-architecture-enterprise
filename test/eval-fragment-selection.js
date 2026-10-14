@@ -465,6 +465,15 @@ function mustLoadApplicabilityProblems(suiteDir, item, selectionContext, fragmen
  * AND its index, because a fragment on disk with no index row can never be
  * selected and asserting that it must be is asserting a thing that cannot happen.
  */
+function workflowRootForSuite(suiteDir) {
+  const canonicalSkill =
+    {
+      'bmad-testarch-atdd': 'bmad-testarch-automate',
+      'bmad-testarch-ci': 'bmad-testarch-framework',
+    }[suiteDir] ?? suiteDir;
+  return path.join(WORKFLOW_ROOT, canonicalSkill);
+}
+
 async function validateSuites(suites) {
   const problems = [];
 
@@ -475,9 +484,9 @@ async function validateSuites(suites) {
     if (!workflow) problems.push(`${label}: no "workflow" field`);
     if (workflow && workflow !== suite.dir) problems.push(`${label}: workflow "${workflow}" does not match its directory "${suite.dir}"`);
 
-    const workflowDir = path.join(WORKFLOW_ROOT, suite.dir);
+    const workflowDir = workflowRootForSuite(suite.dir);
     if (!fs.existsSync(workflowDir)) {
-      problems.push(`${label}: no workflow at skills/${suite.dir}`);
+      problems.push(`${label}: no workflow at ${path.relative(PROJECT_ROOT, workflowDir)}`);
       continue;
     }
 
@@ -584,7 +593,7 @@ async function promptPart(file) {
 
 /** The prompt one case gets: the workflow's own routing rules, its index, and the scenario. */
 async function buildPrompt(suite, item) {
-  const workflowDir = path.join(WORKFLOW_ROOT, suite.dir);
+  const workflowDir = workflowRootForSuite(suite.dir);
   const sections = [];
   for (const relative of suite.data.contextFiles ?? []) {
     sections.push(`----- ${relative} -----\n${await promptPart(path.join(workflowDir, relative))}`);

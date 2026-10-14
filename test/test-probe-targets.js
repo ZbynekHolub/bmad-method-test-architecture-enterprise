@@ -1961,7 +1961,7 @@ async function checkAtddHarnessSmoke(runDir) {
 
   const groundTruth = loadAtddGroundTruth();
   const staged = stageAtddWorkspace(groundTruth);
-  const aliasOnly = stageAtddWorkspace(groundTruth);
+  const missingCanonical = stageAtddWorkspace(groundTruth);
   try {
     const generate = (directory) =>
       spawnSync(process.execPath, [ATDD_STUB_AGENT], {
@@ -1973,22 +1973,21 @@ async function checkAtddHarnessSmoke(runDir) {
       });
     const full = generate(staged.dir);
     assert(full.status === 0, 'ATDD stub opens the actual staged canonical red steps and shared resources before generation', full.stderr);
-    fs.renameSync(path.join(aliasOnly.dir, 'skill'), path.join(aliasOnly.dir, 'canonical-skill'));
-    fs.mkdirSync(path.join(aliasOnly.dir, 'skill'));
-    fs.copyFileSync(path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-atdd', 'SKILL.md'), path.join(aliasOnly.dir, 'skill', 'SKILL.md'));
-    const missing = generate(aliasOnly.dir);
+    fs.renameSync(path.join(missingCanonical.dir, 'skill'), path.join(missingCanonical.dir, 'canonical-skill'));
+    fs.mkdirSync(path.join(missingCanonical.dir, 'skill'));
+    const missing = generate(missingCanonical.dir);
     assert(
       missing.status === 4 && missing.stderr.includes('staged canonical red workflow unavailable'),
-      'ATDD stub refuses an alias-only staged install with no canonical red workflow',
+      'ATDD stub refuses a staged install with no canonical red workflow',
       missing.stderr,
     );
     assert(
-      fs.readdirSync(path.join(aliasOnly.projectDir, groundTruth.testDir)).length === 0,
+      fs.readdirSync(path.join(missingCanonical.projectDir, groundTruth.testDir)).length === 0,
       'missing canonical red instructions fail before the stub writes a scaffold',
     );
   } finally {
     fs.rmSync(staged.dir, { recursive: true, force: true });
-    fs.rmSync(aliasOnly.dir, { recursive: true, force: true });
+    fs.rmSync(missingCanonical.dir, { recursive: true, force: true });
   }
 
   // The fixture's default port held by a listener that answers nothing, the

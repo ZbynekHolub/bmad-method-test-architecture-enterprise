@@ -40,6 +40,7 @@ Gate broker calls on `pact_mcp_reachable`, not on `pact_mcp`. The mode says the 
 
 - 📖 Read this entire subagent file before acting
 - ✅ Generate API tests ONLY
+- ✅ Register each Playwright test with a direct `test('literal title', ...)` call. Literal `test.describe('literal title', ...)` suites may contain those calls. Do not register tests through loops, `test.each()`, helper functions, computed titles, or template titles; the CLI cannot verify those dynamic registrations against runner evidence.
 - ✅ Output structured JSON to temp file
 - ✅ Follow knowledge fragment patterns
 - ❌ Do NOT generate E2E tests (that's subagent 3B)

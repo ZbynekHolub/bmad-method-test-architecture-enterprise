@@ -29,7 +29,7 @@ oracleLedger: []
 
 ---
 
-Note: This workflow does not generate tests. If gaps exist, run `/bmad-testarch-atdd` or `/bmad-testarch-automate` to create coverage.
+Note: This workflow does not generate tests. If gaps exist, run `/bmad-testarch-automate` in red mode before implementation or expand mode for existing code.
 
 ## PHASE 1: REQUIREMENTS TRACEABILITY
 

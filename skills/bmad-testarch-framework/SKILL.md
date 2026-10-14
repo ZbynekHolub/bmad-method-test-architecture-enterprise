@@ -68,9 +68,9 @@ Activation is complete. Begin the workflow below.
 
 ## Workflow Architecture
 
-The existing framework steps at the skill root and the CI steps under `ci/` share scope and operation routing. `bmad-testarch-ci` is the compatibility entry point with CI scope preset. Both installed names and the TF/CI menu codes remain available.
+The existing framework steps at the skill root and the CI steps under `ci/` share scope and operation routing. Select CI setup by asking `bmad-testarch-framework` for CI scope.
 
-Create and edit CI phases detect `ci/evaluation-ci-plan.json` and render it through `{skill-root}/ci/steps-c/step-03b-render-evaluation-plans.md`. Evaluate can continue invoking `bmad-testarch-ci` in create or edit mode.
+Create and edit CI phases detect `ci/evaluation-ci-plan.json` and render it through `{skill-root}/ci/steps-c/step-03b-render-evaluation-plans.md`. Evaluate invokes `bmad-testarch-framework` with CI scope in create or edit mode.
 
 ## Initialization Sequence
 

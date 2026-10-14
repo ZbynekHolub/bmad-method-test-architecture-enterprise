@@ -50,7 +50,7 @@ npx skills add https://github.com/bmad-code-org/bmad-method-test-architecture-en
 
 ## Start with one skill
 
-Ten commands start the eight skills: Framework includes CI setup; Automate includes red and expand modes.
+Eight commands start the eight workflows: Framework includes CI setup; Automate includes red and expand modes.
 
 In Claude Code, Cursor, and Windsurf, type `/bmad-testarch-test-design` in chat.
 In Codex, type `$bmad-testarch-test-design`.
@@ -73,10 +73,10 @@ Evaluate:
 
 Framework and CI setup share one skill, `bmad-testarch-framework`.
 Ask for framework only, CI only, or both; TEA infers the scope from your prompt and asks "Do you want CI too?" once when CI scope is unclear in an interactive session. An unattended request with unclear scope runs framework setup only and states that CI was excluded.
-`/bmad-testarch-ci` and the `CI` menu code still work and start the same skill's CI setup, with your existing CI customizations.
+Request CI setup through `/bmad-testarch-framework` or the agent's `CI` menu code. Existing CI customizations remain usable.
 Create, Resume, Validate, and Edit remain available for the selected setup scope.
 
-Automation uses `red` mode before implementation and `expand` mode for existing code. Your prompt selects the mode. `/bmad-testarch-atdd` and `AT` default to red; `/bmad-testarch-automate` and `TA` default to expand. Existing commands and customization files keep working. Create runs execute the generated tests and repair test issues for up to three rounds. Red confirms the intended missing behavior; expand aims for passing coverage and reports product defects.
+Automation uses `red` mode before implementation and `expand` mode for existing code. Request red mode through `/bmad-testarch-automate` or the agent's `AT` menu code; the direct command defaults to expand. Existing customization files and saved progress remain usable. Create runs execute the generated tests and repair test issues for up to three rounds. Red confirms the intended missing behavior; expand aims for passing coverage and reports product defects.
 
 For Codex, replace the leading `/` in the table with `$`.
 The agent menu also accepts `GATE` to route you through test review, NFR evidence audit, and trace Phase 2.

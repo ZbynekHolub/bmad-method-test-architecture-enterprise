@@ -35,7 +35,7 @@
  * here makes the local run and the CI run the same run. --model overrides it.
  *
  * The pinned values are aliases, not immutable snapshots: "sonnet" follows
- * Anthropic's current Sonnet and "gpt-5.6-sol" is a family slug. They hold the
+ * Anthropic's current Sonnet and "gpt-6.1-sol" is a family slug. They hold the
  * tier steady, not the exact weights. Pass a fully-qualified slug to --model
  * when a run has to be reproducible across model generations.
  *
@@ -343,7 +343,7 @@ const AGENT_ADAPTERS = {
   },
   codex: {
     command: 'codex',
-    defaultModel: 'gpt-5.6-sol',
+    defaultModel: 'gpt-6.1-sol',
     modelFlags: ['-m', '--model'],
     // `codex exec` reads the prompt from stdin when no PROMPT arg is given.
     // --sandbox workspace-write grants read/write/exec inside cwd without
@@ -351,10 +351,9 @@ const AGENT_ADAPTERS = {
     // a workspace-write file write completes with no approval prompt and no
     // TTY, because approval is only for escalating past the sandbox. A caller
     // declaring read-only gets --sandbox read-only instead, which is the
-    // vendor's own enforcement of that tier. Command execution also grants
-    // sandbox network access so project-native HTTP tests can bind loopback
-    // and reach declared services. The filesystem stays workspace-write.
-    // Explicit config in `extra` follows this default and retains precedence.
+    // vendor's own enforcement of that tier. Command execution does not
+    // grant network access by itself. A caller can opt in through `extra`;
+    // Codex grants unrestricted outbound access when that setting is true.
     // --skip-git-repo-check matters under --isolate, where the agent's cwd
     // is a fresh tmpdir with no .git.
     //
@@ -377,7 +376,6 @@ const AGENT_ADAPTERS = {
       '--skip-git-repo-check',
       '--sandbox',
       codexSandbox(capabilities),
-      ...(strongestCapability(capabilities) === 'command-execution' ? ['-c', 'sandbox_workspace_write.network_access=true'] : []),
       '--color',
       'never',
       ...modelArgv(AGENT_ADAPTERS.codex.modelFlags, model, extra),
@@ -389,7 +387,6 @@ const AGENT_ADAPTERS = {
       '--skip-git-repo-check',
       '--sandbox',
       codexSandbox(capabilities),
-      ...(strongestCapability(capabilities) === 'command-execution' ? ['-c', 'sandbox_workspace_write.network_access=true'] : []),
       '--color',
       'never',
       ...modelArgv(AGENT_ADAPTERS.codex.modelFlags, model, extra),
