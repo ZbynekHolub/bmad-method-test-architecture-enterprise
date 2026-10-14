@@ -2683,7 +2683,20 @@ async function main() {
       const signatures = new Set();
       const caseScores = [];
       for (let runIndex = 0; runIndex < runs; runIndex += 1) {
-        const outcome = await runCase(set, options, agent, runIndex);
+        const label = `${set.id} run ${runIndex + 1}/${runs}`;
+        console.log(`  ${colors.dim}${label}: started${colors.reset}`);
+        let elapsedMinutes = 0;
+        const heartbeat = setInterval(() => {
+          elapsedMinutes += 1;
+          console.log(`  ${colors.dim}${label}: still running (${elapsedMinutes}m elapsed)${colors.reset}`);
+        }, 60_000);
+        heartbeat.unref();
+        let outcome;
+        try {
+          outcome = await runCase(set, options, agent, runIndex);
+        } finally {
+          clearInterval(heartbeat);
+        }
         if (!outcome.ok) {
           console.error(`  ${colors.red}${set.id} run ${runIndex + 1}: ${outcome.reason}${colors.reset}`);
           lostRunClasses.push(outcome.failureClass);
