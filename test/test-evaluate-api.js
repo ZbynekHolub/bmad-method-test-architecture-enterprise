@@ -5032,8 +5032,8 @@ async function confinedPipelineVariants(providerPort, tunneledCount) {
 /**
  * The confined started service's reads and the confined HTTP port (Story
  * 1.31): a started service that reads the evaluation folder's contract.json is
- * refused, and one that reads a file outside its workspace is let through; the
- * audit lists both paths, by their real paths, as the trial set's observed
+ * refused. Darwin also refuses a file outside its workspace; Linux records the
+ * read and lets it through. The audit lists both paths, by their real paths, as the trial set's observed
  * mounts, and the file drops out once the entry declares its directory in
  * `systemPaths`. The evaluation's HTTP port, which runs with the evaluation
  * folder read-only, is refused each write it tries under `runs/`, and notes
@@ -5130,10 +5130,8 @@ async function checkConfinedServiceReads() {
   for (let again = 0; again < 2 && process.platform === 'darwin' && lostOnly(confined); again += 1) confined = runReading('confined-reads');
   checkExit('confined-reads', confined, true);
   check(refusal.test(confined.evidence), `a confined started service's read of contract.json was not refused: ${confined.evidence}`);
-  check(
-    /outside: allowed/.test(confined.evidence),
-    `a confined started service could not read the ungranted file, so the case proves nothing: ${confined.evidence}`,
-  );
+  const outsideRead = process.platform === 'darwin' ? /outside: refused (EPERM|EACCES|ENOENT|EROFS)/ : /outside: allowed/;
+  check(outsideRead.test(confined.evidence), `a confined started service's ungranted read was unexpected: ${confined.evidence}`);
   check(
     JSON.stringify(confined.observed) === JSON.stringify(wanted(confined)),
     `a confined started service's trial set observed ${JSON.stringify(confined.observed)}; expected the contract and the file outside, recorded as ${JSON.stringify(wanted(confined))}`,
