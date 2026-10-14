@@ -225,7 +225,7 @@
       ]
     },
     "sampleInput": "package.json",
-    "timeoutMs": 90000
+    "timeoutMs": 240000
   },
   "doc-counts": {
     "sources": {

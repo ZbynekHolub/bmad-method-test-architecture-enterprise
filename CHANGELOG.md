@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Give documented test command invocations enough time under parallel CI load, including the full Test Review CLI suite.
 - Teach Me Testing evaluation heartbeats use interval counts while scored durations continue through the shared clock port.
 - `tea-teach` restores learner state after interrupted publication, rejects negated learner facts, and verifies that displayed quiz choices keep their canonical letters.
 - `tea-teach` preserves a completed quiz's caller evidence during practice retakes and lets below-pass learners replace an in-progress grade after answering a fresh round.
