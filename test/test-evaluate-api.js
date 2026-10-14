@@ -641,7 +641,7 @@ async function unitService() {
 
 async function checkPortUnits() {
   let reservedAddress = null;
-  const selected = await freePort('127.0.0.1', () => ({
+  const selected = await freePort(['127.0.0.1'], () => ({
     unref() {},
     once() {},
     listen(_port, address, ready) {
@@ -658,8 +658,29 @@ async function checkPortUnits() {
   const occupied = net.createServer();
   await new Promise((resolve) => occupied.listen(0, '127.0.0.1', resolve));
   try {
-    const available = await freePort('127.0.0.1');
+    const available = await freePort(['127.0.0.1']);
     check(available !== occupied.address().port, 'the allocator selected a port held by another IPv4 listener');
+    if (
+      Object.values(os.networkInterfaces())
+        .flat()
+        .some((address) => address?.address === '::1')
+    ) {
+      let first = true;
+      const acrossAddresses = await freePort(['::1', '127.0.0.1'], () => {
+        if (!first) return net.createServer();
+        first = false;
+        return {
+          unref() {},
+          once() {},
+          listen(_port, _address, ready) {
+            ready();
+          },
+          address: () => ({ port: occupied.address().port }),
+          close: (done) => done(),
+        };
+      });
+      check(acrossAddresses !== occupied.address().port, 'the allocator selected a port held on a later authorized address');
+    }
   } finally {
     await new Promise((resolve) => occupied.close(resolve));
   }
