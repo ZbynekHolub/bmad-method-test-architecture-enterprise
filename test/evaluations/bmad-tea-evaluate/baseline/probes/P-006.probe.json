@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 6,
+  "parentDigest": null,
+  "revisionCount": 0,
+  "probeId": "P-006",
+  "probeClass": "zero-action",
+  "behaviorId": "B-003",
+  "systemId": "bmad-tea-evaluate",
+  "implementationDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+  "artifactDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+  "commitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+  "rationale": "[representative] Clean control: the committed exit table holds thirteen rows, and Stage 11 lists every one with the class its row gives.",
+  "qualification": {
+    "route": "clean-control",
+    "baselinePassEvidence": {
+      "storage": "public",
+      "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-006/baseline-pass.json",
+      "privateRef": null,
+      "digest": "sha256:5bc9f74bfb90b9f8cc62e92687371eff313417830fc6dcd20fee87c2766bbe1a"
+    },
+    "revisionCommitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+    "noKnownDefectStatement": "The exit table in references/gaps.md holds the thirteen rows the contract's reference set names at this revision, which test:evaluate-dogfood holds."
+  },
+  "expectedClean": true,
+  "defects": []
+}

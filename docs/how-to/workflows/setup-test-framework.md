@@ -11,7 +11,7 @@ tableOfContents:
 
 Use TEA's `framework` skill to scaffold test directories, fixtures, configuration, and runner commands, and to configure CI when requested.
 
-`bmad-testarch-framework` owns framework and CI setup. Your prompt selects framework only, CI only, or both.
+`bmad-tea-framework` owns framework and CI setup. Your prompt selects framework only, CI only, or both.
 TEA infers the scope from your request. When CI scope is unclear in an interactive session, it asks once: "Do you want CI too?" An unattended request with unclear scope runs framework setup only and states that CI was excluded.
 Explicit framework-only requests skip the CI phase. For both, TEA agrees the stack, framework, and test commands first, then can generate the scaffold and pipeline in parallel and validate them together. If a working framework already exists, TEA reuses it and configures CI for its actual commands.
 
@@ -44,8 +44,8 @@ Choose [framework setup](#framework-setup), [CI setup](#ci-setup), or both. Exis
 
 #### 1. Run Framework Setup
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-framework`
-- **Codex:** `$bmad-testarch-framework`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-framework`
+- **Codex:** `$bmad-tea-framework`
 - **Inside a `/bmad-tea` chat:** `TF`
 
 For unattended runs, use [`tea-framework`](/docs/reference/tea-framework-cli.md): `tea-framework --agent codex --scope both`.
@@ -231,8 +231,8 @@ Use Framework to configure test jobs, sharding, burn-in runs, quality gates, and
 
 #### 1. Run CI Setup
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-framework`
-- **Codex:** `$bmad-testarch-framework`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-framework`
+- **Codex:** `$bmad-tea-framework`
 - **Inside a `/bmad-tea` chat:** `TF`
 
 Request CI scope explicitly:
@@ -1048,10 +1048,10 @@ Using too many CI minutes, hitting plan limit.
 
 ## Evaluation Plans
 
-If the repository holds an evaluation written with `bmad-testarch-evaluate`, Framework's CI phase finds its `ci/evaluation-ci-plan.json` and renders it into the same pipeline file.
+If the repository holds an evaluation written with `bmad-tea-evaluate`, Framework's CI phase finds its `ci/evaluation-ci-plan.json` and renders it into the same pipeline file.
 A standalone run picks up existing plans after the quality gates step, and an edit-mode run detects them first and renders them into the pipeline it loaded.
 Evaluate writes the plan and Framework writes every pipeline file.
-The last stage of `bmad-testarch-evaluate` invokes Framework in edit mode on the pipeline file once the plan is written, or in create mode when the repository has no pipeline file.
+The last stage of `bmad-tea-evaluate` invokes Framework in edit mode on the pipeline file once the plan is written, or in create mode when the repository has no pipeline file.
 
 For each tier the plan places a check on, the pipeline gets one job, `evaluation-pr` for the `pr` tier:
 

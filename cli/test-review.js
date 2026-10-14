@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * tea-test-review — headless runner for the bmad-testarch-test-review skill.
+ * tea-test-review — headless runner for the bmad-tea-test-review skill.
  *
  * Runs the review skill shipped in this package (or, with --project-skill, the
  * copy a consuming project vendored), splits the PR diff into
@@ -582,7 +582,7 @@ async function runReview(session) {
     .name('tea-test-review')
     .version(TEA_CLI_VERSION)
     .description(
-      "Headless runner for the bmad-testarch-test-review skill: scopes the review to the PR's changed test files, reads the rest of the diff as context, and emits a JSON verdict with CI-friendly exit codes. `tea-test-review render --help` renders a verdict into the comment, check-run and summary text.",
+      "Headless runner for the bmad-tea-test-review skill: scopes the review to the PR's changed test files, reads the rest of the diff as context, and emits a JSON verdict with CI-friendly exit codes. `tea-test-review render --help` renders a verdict into the comment, check-run and summary text.",
     )
     .option(
       '--base <ref>',
@@ -1014,7 +1014,7 @@ async function runReview(session) {
     fail(
       EXIT.ENV_ERROR,
       `The TEA knowledge base is not installed beside the skill (expected ${path.resolve(knowledgeIndex)}).\n` +
-        'Install bmod-tea next to bmad-testarch-test-review: npx skills add bmad-code-org/bmad-method-test-architecture-enterprise --skill bmod-tea',
+        'Install bmod-tea next to bmad-tea-test-review: npx skills add bmad-code-org/bmad-method-test-architecture-enterprise --skill bmod-tea',
     );
   }
 

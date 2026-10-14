@@ -6,7 +6,7 @@
  * source this repository already keeps:
  *
  *   - test/fixtures/test-review-eval/ground-truth.json for test-review.contract.json,
- *   - skills/bmad-testarch-test-review/steps-c/criteria-registry.md
+ *   - skills/bmad-tea-test-review/steps-c/criteria-registry.md
  *     for the severity of each planted row and for that contract's sourceSpecDigest,
  *   - test/evals/<workflow>/evals.json for each fragment-selection contract,
  *   - each workflow's deciding step file for that contract's sourceSpecDigest,
@@ -157,15 +157,15 @@ const GROUND_TRUTH_PATH = path.join(FIXTURE_ROOT, 'ground-truth.json');
 const FIXTURE_PREFIX = 'test/fixtures/test-review-eval/';
 const TRACE_FIXTURE_ROOT = path.join(PROJECT_ROOT, 'test', 'fixtures', 'trace-eval');
 const TRACE_GROUND_TRUTH_PATH = path.join(TRACE_FIXTURE_ROOT, 'ground-truth.json');
-const TRACE_STEP_05 = path.join(WORKFLOW_ROOT, 'bmad-testarch-trace', 'steps-c', 'step-05-gate-decision.md');
+const TRACE_STEP_05 = path.join(WORKFLOW_ROOT, 'bmad-tea-trace', 'steps-c', 'step-05-gate-decision.md');
 const TEST_DESIGN_FIXTURE_ROOT = path.join(PROJECT_ROOT, 'test', 'fixtures', 'test-design-eval');
 const TEST_DESIGN_GROUND_TRUTH_PATH = path.join(TEST_DESIGN_FIXTURE_ROOT, 'ground-truth.json');
 /** The step files whose rules this corpus is written against, digested as the specification. */
 const TEST_DESIGN_SPEC_FILES = [
-  path.join(WORKFLOW_ROOT, 'bmad-testarch-test-design', 'steps-c', 'step-03-risk-and-testability.md'),
-  path.join(WORKFLOW_ROOT, 'bmad-testarch-test-design', 'steps-c', 'step-04-coverage-plan.md'),
-  path.join(WORKFLOW_ROOT, 'bmad-testarch-test-design', 'steps-c', 'step-05-generate-output.md'),
-  path.join(WORKFLOW_ROOT, 'bmad-testarch-test-design', 'test-design-template.md'),
+  path.join(WORKFLOW_ROOT, 'bmad-tea-test-design', 'steps-c', 'step-03-risk-and-testability.md'),
+  path.join(WORKFLOW_ROOT, 'bmad-tea-test-design', 'steps-c', 'step-04-coverage-plan.md'),
+  path.join(WORKFLOW_ROOT, 'bmad-tea-test-design', 'steps-c', 'step-05-generate-output.md'),
+  path.join(WORKFLOW_ROOT, 'bmad-tea-test-design', 'test-design-template.md'),
 ];
 const NFR_FIXTURE_ROOT = path.join(PROJECT_ROOT, 'test', 'fixtures', 'nfr-eval');
 const NFR_GROUND_TRUTH_PATH = path.join(NFR_FIXTURE_ROOT, 'ground-truth.json');
@@ -215,7 +215,7 @@ function numberWord(count) {
  * The hashing is the shared helper's, which length-prefixes each part. Plain
  * concatenation collided across a file boundary: moving a byte from the tail of
  * one step file to the head of the next left the digest unchanged, and
- * bmad-testarch-ci's contract pins a multi-file contextFiles list.
+ * bmad-tea-ci's contract pins a multi-file contextFiles list.
  */
 function digestOf(absolutePaths) {
   return digest(absolutePaths.map((file) => fs.readFileSync(file)));
@@ -927,7 +927,7 @@ const SELECTION_REQUEST_SHAPE = Object.fromEntries(
  */
 const FRAGMENT_SELECTION = [
   {
-    workflow: 'bmad-testarch-atdd',
+    workflow: 'bmad-tea-atdd',
     witnessCases: ['atdd-frontend-playwright', 'atdd-backend-pytest'],
     cases: {
       'atdd-frontend-playwright': {
@@ -965,7 +965,7 @@ const FRAGMENT_SELECTION = [
     },
   },
   {
-    workflow: 'bmad-testarch-automate',
+    workflow: 'bmad-tea-automate',
     witnessCases: ['automate-playwright-ui-utils-on', 'automate-mobile-maestro'],
     cases: {
       'automate-playwright-ui-utils-on': {
@@ -1023,7 +1023,7 @@ const FRAGMENT_SELECTION = [
     },
   },
   {
-    workflow: 'bmad-testarch-ci',
+    workflow: 'bmad-tea-ci',
     witnessCases: ['ci-gitlab-python', 'ci-pact-consumer-pipeline'],
     cases: {
       'ci-gitlab-python': {
@@ -1051,7 +1051,7 @@ const FRAGMENT_SELECTION = [
     },
   },
   {
-    workflow: 'bmad-testarch-framework',
+    workflow: 'bmad-tea-framework',
     witnessCases: ['framework-mobile-scaffold', 'framework-python-backend'],
     cases: {
       'framework-mobile-scaffold': {
@@ -1089,7 +1089,7 @@ const FRAGMENT_SELECTION = [
     },
   },
   {
-    workflow: 'bmad-testarch-nfr',
+    workflow: 'bmad-tea-nfr',
     witnessCases: ['nfr-backend-junit-no-browser', 'nfr-browser-automation-cli'],
     cases: {
       'nfr-backend-junit-no-browser': {
@@ -1117,7 +1117,7 @@ const FRAGMENT_SELECTION = [
     },
   },
   {
-    workflow: 'bmad-testarch-test-design',
+    workflow: 'bmad-tea-test-design',
     witnessCases: ['test-design-system-level', 'test-design-epic-level'],
     cases: {
       'test-design-system-level': {
@@ -1176,7 +1176,7 @@ const FRAGMENT_SELECTION = [
     },
   },
   {
-    workflow: 'bmad-testarch-test-review',
+    workflow: 'bmad-tea-test-review',
     witnessCases: ['test-review-maestro-flow-set', 'test-review-java-suite'],
     cases: {
       'test-review-maestro-flow-set': {
@@ -1205,7 +1205,7 @@ const FRAGMENT_SELECTION = [
     },
   },
   {
-    workflow: 'bmad-testarch-trace',
+    workflow: 'bmad-tea-trace',
     witnessCases: null,
     cases: {
       'trace-go-service-no-js': {
@@ -1395,7 +1395,7 @@ async function buildFragmentSelectionContract(spec) {
     schemaVersion: EVAL_CONTRACT_SCHEMA_VERSION,
     parentDigest: null,
     revisionCount: 0,
-    contractId: `tea-fragment-selection-${workflow.replace('bmad-testarch-', '')}`,
+    contractId: `tea-fragment-selection-${workflow.replace('bmad-tea-', '')}`,
     // The deciding step files, concatenated in the order evals.json lists them.
     // An edit to what the run is asked changes this digest.
     sourceSpecDigest: digestOf(evals.contextFiles.map((file) => path.join(workflowDir, file))),
@@ -2648,7 +2648,7 @@ function buildTraceContract() {
       setup:
         `Each plan step stages one fixture set from test/fixtures/trace-eval/ into a disposable workspace: the set's files under its own project root ` +
         `(${sets.map((set) => `${set.projectRoot}/ for ${set.id}`).join(', ')}), a resolved _bmad/config.toml whose test_artifacts points inside that ` +
-        `workspace, and the bmad-testarch-trace workflow under skill/. ground-truth.json is never staged, and the harness asserts that no staged file carries ` +
+        `workspace, and the bmad-tea-trace workflow under skill/. ground-truth.json is never staged, and the harness asserts that no staged file carries ` +
         `its bytes or its keys before the run. The workspace is the authorization's working directory, and the prompt on standard input names the project root ` +
         `and skill/ and resolves every placeholder against them. The project root is the one fact about the set the prompt carries, and it carries the epic the ` +
         `set traces rather than the set's role, so it says which set a leg is asking for and suggests no coverage status. ` +
@@ -3154,7 +3154,7 @@ function buildNfrContract() {
       setup:
         `Each plan step stages one evidence bundle from test/fixtures/nfr-eval/ into a disposable workspace: the bundle's files under its own project root ` +
         `(${sets.map((set) => `${set.projectRoot}/ for ${set.id}`).join(', ')}), a resolved _bmad/config.toml whose test_artifacts points inside that ` +
-        `workspace, and the bmad-testarch-nfr workflow under skill/. ground-truth.json is never staged, and the harness asserts that no staged file carries ` +
+        `workspace, and the bmad-tea-nfr workflow under skill/. ground-truth.json is never staged, and the harness asserts that no staged file carries ` +
         `its bytes or its keys before the run. The workspace is the authorization's working directory, and the prompt on standard input names the project root ` +
         `and skill/ and resolves every placeholder against them. The project root is the one fact about the bundle the prompt carries, and it names the service ` +
         `rather than the bundle's role, so it says which bundle a step is asking for and suggests no status. ` +
@@ -3671,9 +3671,9 @@ function buildCiContract() {
       setup:
         `Each plan step stages one project from test/fixtures/ci-eval/ into a disposable workspace: the project's files under its own root ` +
         `(${sets.map((set) => `${set.projectRoot}/ for ${set.id}`).join(', ')}), a resolved _bmad/config.toml, a minimal .git/ directory, and ` +
-        `the canonical skill under bmad-testarch-framework/ and its real bmad-testarch-ci/ entry beside it. ground-truth.json is never staged, and the harness asserts that no staged file carries its ` +
+        `the canonical skill under bmad-tea-framework/ and its real bmad-tea-ci/ entry beside it. ground-truth.json is never staged, and the harness asserts that no staged file carries its ` +
         `bytes or its keys before the run. The workspace is the authorization's working directory, and the prompt on standard input names the ` +
-        `project root and bmad-testarch-ci/SKILL.md and resolves every placeholder against them. The project root is the one fact about the project the prompt ` +
+        `project root and bmad-tea-ci/SKILL.md and resolves every placeholder against them. The project root is the one fact about the project the prompt ` +
         `carries, and it names the service rather than the project's role. ` +
         `The sensitivity witness differs its two legs on ci_platform rather than between the two projects: the two workflows differ because of ` +
         `the staged project, so a differential between the projects would attribute to the prompt a difference the project produced. Both ` +
@@ -3892,7 +3892,7 @@ function buildAtddContract() {
       setup:
         'The one plan step stages the reservations fixture project into a disposable workspace: its files under ' +
         `${groundTruth.projectRoot}/, a resolved _bmad/config.toml, an empty ${groundTruth.testDir}/, and the ` +
-        'canonical bmad-testarch-automate workflow under skill/, with red mode selected. ground-truth.json is never staged, and the harness asserts that ' +
+        'canonical bmad-tea-automate workflow under skill/, with red mode selected. ground-truth.json is never staged, and the harness asserts that ' +
         'no staged file carries its bytes or its keys before the run. The prompt names the one path generation must ' +
         `write, ${groundTruth.testDir}/${ATDD_SCAFFOLD_RELATIVE_PATH}, which is what makes the scaffold addressable ` +
         'at all: a path an agent were free to invent is not one a contract can point at before the run. ' +
@@ -4684,9 +4684,9 @@ function projectionIsCoherent(projection, artifactText) {
  *
  * WHY MATERIAL ORACLES KEEP THE WEAK READING
  *
- * `bmad-testarch-test-design` declares one output and it is prose:
+ * `bmad-tea-test-design` declares one output and it is prose:
  * `{test_artifacts}/test-design/test-design-epic-{epic_num}.md` and nothing machine-readable
- * beside it. `bmad-testarch-trace` is the contrast, and the comment in
+ * beside it. `bmad-tea-trace` is the contrast, and the comment in
  * buildTraceContract says why it matters: its markdown matrix "is markdown, which
  * the operator vocabulary addresses only as a whole document", so trace states the
  * matrix's content through the arithmetic consequences its JSON summary carries and
@@ -5014,7 +5014,7 @@ function buildTestDesignContract() {
       setup:
         `Each plan step stages one fixture set from test/fixtures/test-design-eval/ into a disposable workspace: the set's epic under its own project ` +
         `root (${sets.map((set) => `${set.projectRoot}/ for ${set.id}`).join(', ')}), an empty test-artifacts/, a resolved _bmad/config.toml whose ` +
-        `test_artifacts points inside that workspace, and the bmad-testarch-test-design workflow under skill/ with the bmod-tea knowledge base beside it. Both sit outside the project root ` +
+        `test_artifacts points inside that workspace, and the bmad-tea-test-design workflow under skill/ with the bmod-tea knowledge base beside it. Both sit outside the project root ` +
         `because three of its files carry worked risk registers with their own R-001 rows and a fourth carries one numbered from R-002 ` +
         `(test-design-template.md, checklist.md, resources/test-design-epic-3.example.md and ` +
         `{tea-knowledge}/adr-quality-readiness-checklist.md), and a source tree containing them would let a run lift its register from ` +

@@ -2,7 +2,7 @@
  * Validate TEA workflow description quote style for Gemini compatibility.
  *
  * Rules for TEA workflow definitions under skills/<workflow>/workflow.yaml
- * and teach-me-testing frontmatter in skills/bmad-teach-me-testing/SKILL.md:
+ * and teach-me-testing frontmatter in skills/bmad-tea-teach-me-testing/SKILL.md:
  * - `description:` must be a single-line YAML scalar on one line
  * - the raw YAML scalar must be wrapped in single quotes
  * - parsed description text must not contain single-quote characters

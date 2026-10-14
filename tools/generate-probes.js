@@ -1034,7 +1034,7 @@ function testDesignEvidenceField(kind) {
  *
  * WHAT A TEST-DESIGN PROBE CAN SAY, AND WHAT IT CANNOT
  *
- * `bmad-testarch-test-design` declares one output and it is prose, so every
+ * `bmad-tea-test-design` declares one output and it is prose, so every
  * material-risk oracle reads the whole document. Unsupported-risk oracles read
  * scored register rows above the 1–3 guard band. The probes below use the same
  * reading through `documentMentions`. Arithmetic, band placement, coverage

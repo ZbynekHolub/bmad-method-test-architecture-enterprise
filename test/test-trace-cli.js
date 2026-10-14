@@ -90,10 +90,7 @@ try {
     path.join(root, '_bmad', 'config.toml'),
     '[core]\nuser_name = "CLI tester"\n[modules.tea]\ntest_artifacts = "artifacts"\n',
   );
-  fs.writeFileSync(
-    path.join(root, '_bmad', 'custom', 'bmad-testarch-trace.toml'),
-    '[workflow]\npersistent_facts = ["trace policy applies"]\n',
-  );
+  fs.writeFileSync(path.join(root, '_bmad', 'custom', 'bmad-tea-trace.toml'), '[workflow]\npersistent_facts = ["trace policy applies"]\n');
 
   check('packaged skill, resolved config, scope-specific artifacts, raw evidence', () => {
     const result = run('pass', ['--json', 'result.json']);
@@ -102,7 +99,7 @@ try {
     assert.equal(result.payload.run_key, 'epic-4');
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, 'result.json'), 'utf8')), result.payload);
     const prompt = fs.readFileSync(path.join(result.payload.evidence, 'attempt-1', 'prompt.txt'), 'utf8');
-    assert.match(prompt, /bmad-testarch-trace\/SKILL.md/);
+    assert.match(prompt, /bmad-tea-trace\/SKILL.md/);
     assert.match(prompt, /CLI tester/);
     assert.match(prompt, /trace policy applies/);
     assert.match(prompt, /artifacts\/live-verification-results.json/);
@@ -175,10 +172,7 @@ try {
     assert.equal(run('stale-failure').payload.gate_status, 'PASS');
   });
   check('Step 5 executable rules cap fresh failures without lifting existing FAIL decisions', () => {
-    const step = fs.readFileSync(
-      path.join(__dirname, '..', 'skills', 'bmad-testarch-trace', 'steps-c', 'step-05-gate-decision.md'),
-      'utf8',
-    );
+    const step = fs.readFileSync(path.join(__dirname, '..', 'skills', 'bmad-tea-trace', 'steps-c', 'step-05-gate-decision.md'), 'utf8');
     const script = step.slice(step.indexOf("let gateDecision = 'NOT_EVALUATED'")).split('\n```')[0];
     for (const [freshness, failed, p0Coverage, expected, freshFailed] of [
       ['fresh', 1, 100, 'CONCERNS'],

@@ -1,6 +1,6 @@
 /**
  * Proof that the install-time isolation Story 6.9's suite runs under actually
- * holds, before the suite is registered as covering `bmad-testarch-framework`.
+ * holds, before the suite is registered as covering `bmad-tea-framework`.
  * House style of `test/test-atdd-isolation.js`: every check spawns a real
  * process and observes what a hostile attempt actually does on this machine,
  * never what the code says it should do.

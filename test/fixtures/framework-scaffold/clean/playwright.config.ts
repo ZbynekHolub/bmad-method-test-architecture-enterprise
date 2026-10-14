@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
-// Canonical frontend/Playwright/TypeScript scaffold config, as bmad-testarch-framework's
+// Canonical frontend/Playwright/TypeScript scaffold config, as bmad-tea-framework's
 // step-03-scaffold-framework.md section 2 describes it: standardized timeouts, an
 // env-fallback base URL, failure-focused artifacts, and HTML + JUnit + console reporters.
 export default defineConfig({

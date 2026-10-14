@@ -1,7 +1,7 @@
 /**
  * trace eval harness.
  *
- * `bmad-testarch-trace` reads a set of acceptance criteria, reads the tests that
+ * `bmad-tea-trace` reads a set of acceptance criteria, reads the tests that
  * claim to cover them, and derives a gate decision. This measures whether it does
  * that against a corpus whose true answers were written from the fixture design,
  * never from a run.
@@ -217,7 +217,7 @@ const {
 const PROJECT_ROOT = path.join(__dirname, '..');
 const FIXTURE_ROOT = path.join(__dirname, 'fixtures', 'trace-eval');
 const GROUND_TRUTH = path.join(FIXTURE_ROOT, 'ground-truth.json');
-const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-trace');
+const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-trace');
 const SUITE_ID = 'trace';
 
 // A complete trace run reads five step files, the whole fixture set, and writes two
@@ -1403,7 +1403,7 @@ function configToml() {
  * Layout, with the workspace itself as the agent's working directory:
  *
  *   <projectRoot>/   the fixture set, plus a resolved _bmad/config.toml
- *   skill/           the bmad-testarch-trace workflow, copied verbatim
+ *   skill/           the bmad-tea-trace workflow, copied verbatim
  *   bmod-tea/        the shared TEA knowledge base the skill reads as {tea-knowledge}
  *
  * The project root is the set's own, so the prompt that names it says which set the
@@ -1553,7 +1553,7 @@ function buildPrompt(set, { allowGate = true } = {}) {
   const matrixPath = traceReportPathOf(set);
   const summaryPath = path.posix.join(root, 'test-artifacts', 'trace', `e2e-trace-summary-${runKey}.json`);
   return [
-    `You are running the TEA workflow \`bmad-testarch-trace\` against the project in \`${root}/\`.`,
+    `You are running the TEA workflow \`bmad-tea-trace\` against the project in \`${root}/\`.`,
     '',
     'The workflow is in `skill/`. Read `skill/instructions.md` first, then execute every step file it',
     'names in order, in full, without skipping or reordering. The step files are under `skill/steps-c/`.',

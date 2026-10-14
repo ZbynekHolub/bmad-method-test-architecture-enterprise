@@ -34,8 +34,8 @@ A stdio tool server follows [How to Evaluate an MCP Tool Server with TEA](/docs/
 
 ### 1. Start the Evaluate Skill
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-evaluate`
-- **Codex:** `$bmad-testarch-evaluate`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-evaluate`
+- **Codex:** `$bmad-tea-evaluate`
 - **Inside a `/bmad-tea` chat:** `EV`
 
 Full invocation rules: [Invoking a TEA Skill](/docs/reference/commands.md#invoking-a-tea-skill).

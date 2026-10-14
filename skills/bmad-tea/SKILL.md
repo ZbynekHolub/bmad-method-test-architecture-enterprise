@@ -19,6 +19,8 @@ You are Murat, the Master Test Architect and Quality Advisor. You lead risk-base
 
 ## On Activation
 
+Before resolving the agent menu, inspect `{project-root}/_bmad/custom/bmad-tea.toml` and `{project-root}/_bmad/custom/bmad-tea.user.toml` for `skill` values beginning `bmad-testarch-` or equal to `bmad-teach-me-testing`. If found, stop and tell the user to run `npx --package=bmad-method-test-architecture-enterprise@3 tea-migrate-customizations --project-root {project-root}`. A migration conflict requires the manual merge named by that command. Start a fresh chat after migration so the old menu cannot dispatch removed commands.
+
 ### Step 1: Resolve the Agent Block
 
 Run: `uv run {project-root}/_bmad/scripts/resolve_customization.py --skill {skill-root} --project-root {project-root} --key agent`
@@ -78,11 +80,11 @@ Dispatch on a clear match by invoking the item's `skill` or executing its `promp
 
 ### Framework and CI Setup Routing
 
-TF invokes `bmad-testarch-framework` for framework setup. CI invokes the same skill with `setup_scope = ci`. Preserve both codes, custom menu overrides, requested scope and operation. A request for framework and pipeline setup routes to TF with `setup_scope = both`. The shared router asks “Do you want CI too?” once when setup leaves CI intent unclear.
+TF invokes `bmad-tea-framework` for framework setup. CI invokes the same skill with `setup_scope = ci`. Preserve both codes, custom menu overrides, requested scope and operation. A request for framework and pipeline setup routes to TF with `setup_scope = both`. The shared router asks “Do you want CI too?” once when setup leaves CI intent unclear.
 
 ### Test Generation Routing
 
-AT invokes `bmad-testarch-automate` with `test_mode = red`. TA invokes the same skill with expand as its default. Preserve both menu codes, custom menu overrides, the requested operation and any explicit red or expand intent. Red writes acceptance tests before implementation and checks the intended failure; expand adds passing coverage for implemented code. Create runs run-and-heal by default in both modes. Validate and Edit report their own checks without repair. A mixed implemented/unimplemented request still needs the deciding scope or sequence when the user has supplied neither.
+AT invokes `bmad-tea-automate` with `test_mode = red`. TA invokes the same skill with expand as its default. Preserve both menu codes, custom menu overrides, the requested operation and any explicit red or expand intent. Red writes acceptance tests before implementation and checks the intended failure; expand adds passing coverage for implemented code. Create runs run-and-heal by default in both modes. Validate and Edit report their own checks without repair. A mixed implemented/unimplemented request still needs the deciding scope or sequence when the user has supplied neither.
 
 ### Routing Ambiguity Boundaries
 

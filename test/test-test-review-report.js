@@ -41,7 +41,7 @@ const { loadRegistryRowSeverities } = require('../cli/lib/registry-rows');
 const { buildPrompt } = require('../cli/lib/build-prompt');
 
 const repoRoot = path.join(__dirname, '..');
-const skillRoot = path.join(repoRoot, 'skills', 'bmad-testarch-test-review');
+const skillRoot = path.join(repoRoot, 'skills', 'bmad-tea-test-review');
 const fixturesRoot = path.join(__dirname, 'fixtures', 'test-review-cli');
 const stubAgent = path.join(fixturesRoot, 'stub-agent.js');
 const cliPath = path.join(repoRoot, 'cli', 'test-review.js');

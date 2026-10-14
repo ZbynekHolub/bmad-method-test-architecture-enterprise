@@ -74,7 +74,7 @@ function isReferenceHeading(heading) {
  *   second risk table, an explanatory sentence, an HTML comment). `Reference:` and
  *   `References:` open citations, so they label nothing; so does `For example:`.
  *
- * The shipped worked example, `bmad-testarch-test-design/resources/test-design-epic-3.example.md`,
+ * The shipped worked example, `bmad-tea-test-design/resources/test-design-epic-3.example.md`,
  * shows the register this rule keeps: the three band tables under `## Risk Assessment`
  * (`### High Risks: Score 6 or Greater`, `### Medium Risks: Score 3 to 4`,
  * `### Low Risks: Score 1 to 2`), none of whose headings or lead-ins labels anything.

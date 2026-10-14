@@ -1,6 +1,6 @@
 {
   "$comment": [
-    "Ground truth for the bmad-testarch-atdd behavioral eval. It was authored from the fixture design,",
+    "Ground truth for the bmad-tea-atdd behavioral eval. It was authored from the fixture design,",
     "from the story it is written against, and from the workflow's own step files. No ATDD run produced",
     "any value in this file.",
     "",
@@ -27,22 +27,22 @@
   "testDir": "tests",
   "skillRuleCitations": {
     "redPhaseIsSkipped": {
-      "file": "skills/bmad-testarch-automate/red/steps-c/step-04a-subagent-api-failing.md",
+      "file": "skills/bmad-tea-automate/red/steps-c/step-04a-subagent-api-failing.md",
       "section": "CRITICAL ATDD Requirements",
       "requiredPhrase": "Use `test.skip()` to mark tests as red-phase scaffolds"
     },
     "noPlaceholderAssertions": {
-      "file": "skills/bmad-testarch-automate/red/steps-c/step-04c-aggregate.md",
+      "file": "skills/bmad-tea-automate/red/steps-c/step-04c-aggregate.md",
       "section": "2. Verify TDD Red Phase Compliance",
       "requiredPhrase": "has placeholder assertions - must assert EXPECTED behavior"
     },
     "confirmRedBeforeGreen": {
-      "file": "skills/bmad-testarch-automate/red/checklist.md",
+      "file": "skills/bmad-tea-automate/red/checklist.md",
       "section": "Red-Phase Scaffolds Verified",
       "requiredPhrase": "Implementation activation guidance is documented: remove the current task's leaf `test.skip()` when development begins, then confirm RED before implementing"
     },
     "workflowDoesNotRunTests": {
-      "file": "skills/bmad-testarch-automate/red/steps-c/step-04a-subagent-api-failing.md",
+      "file": "skills/bmad-tea-automate/red/steps-c/step-04a-subagent-api-failing.md",
       "section": "MANDATORY EXECUTION RULES",
       "requiredPhrase": "Do NOT run tests (that's step 5)"
     }

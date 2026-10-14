@@ -2,7 +2,7 @@
  * framework-scaffold install-and-smoke eval harness.
  *
  * Story 6.8 (`test/test-framework-scaffold.js`) scores the generated
- * `bmad-testarch-framework` scaffold's contents statically -- zero execution.
+ * `bmad-tea-framework` scaffold's contents statically -- zero execution.
  * Nothing proves the scaffold actually installs or runs: a scaffold can be
  * structurally perfect and still be dead on arrival. This harness is that
  * execution: copy the committed clean fixture

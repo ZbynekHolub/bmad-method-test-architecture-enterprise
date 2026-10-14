@@ -1,0 +1,670 @@
+[
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-002",
+    "probeClass": "defect",
+    "behaviorId": "B-001",
+    "systemId": "bmad-tea-evaluate",
+    "implementationDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+    "artifactDigest": "sha256:ab01ca6c0edfd2c6842fb066a92ba0a993634f5b3ce533b34b31345f58d19053",
+    "commitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+    "rationale": "[representative] Seeded defect: M-001 gives exit 11 the infrastructure class, so Stage 11 sends an evaluation weakness to an infrastructure repair.",
+    "qualification": {
+      "route": "controlled-mutation",
+      "mutationSource": "references/gaps.md: the tea-evaluate 11 row of the AD-10 exit table gives the infrastructure class",
+      "mutationOperator": "replace-exact: \"| `tea-evaluate 11`       | evaluation weakness                           |\" -> \"| `tea-evaluate 11`       | infrastructure                                |\" (occurrences 1)",
+      "targetArtifact": {
+        "storage": "public",
+        "path": "skills/bmad-tea-evaluate/references/gaps.md",
+        "privateRef": null,
+        "digest": "sha256:ab01ca6c0edfd2c6842fb066a92ba0a993634f5b3ce533b34b31345f58d19053"
+      },
+      "expectedObservableFailure": "Asked about a run that exited 11, Stage 11 names infrastructure, so the classify-exits reply carries exit11 \"infrastructure\".",
+      "baselinePassEvidence": {
+        "storage": "public",
+        "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-002/baseline-pass.json",
+        "privateRef": null,
+        "digest": "sha256:78144bac71bcede19636bf18f099060b36c79b2648f9595862b6424dd360ec2c"
+      },
+      "mutatedFailEvidence": {
+        "storage": "public",
+        "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-002/mutated-fail.json",
+        "privateRef": null,
+        "digest": "sha256:b62f9f49ee451f93fb0ae3e29503ddba0ce12f0c703ddcf7c538cbb3820d6622"
+      },
+      "rollbackVerified": true
+    },
+    "expectedClean": false,
+    "defects": [
+      {
+        "defectId": "D-001",
+        "behaviorId": "B-001",
+        "summary": "The exit table classes an evaluation weakness (exit 11) as infrastructure.",
+        "severity": "material",
+        "oracleEvidence": [
+          {
+            "storage": "public",
+            "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-002/mutated-fail.json",
+            "privateRef": null,
+            "digest": "sha256:b62f9f49ee451f93fb0ae3e29503ddba0ce12f0c703ddcf7c538cbb3820d6622"
+          }
+        ],
+        "source": "controlled-mutation",
+        "manifestationWitness": {
+          "legId": "manifest-exit-11",
+          "interfaceId": "evaluate-skill",
+          "operationId": "run-skill",
+          "inputs": {
+            "argument": {},
+            "option": {
+              "agent": "claude",
+              "agent-arg": "--json-schema={\"type\":\"object\",\"properties\":{\"basis\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"answered\",\"refused\"]},\"exit11\":{\"type\":\"string\"},\"exit12\":{\"type\":\"string\"}},\"required\":[\"basis\",\"status\",\"exit11\",\"exit12\"],\"additionalProperties\":false}",
+              "capability": "read-only",
+              "model": "claude-sonnet-5",
+              "skill-root": "skills/bmad-tea-evaluate",
+              "timeout-ms": "300000"
+            },
+            "environment": {},
+            "stdin": {
+              "kind": "text",
+              "value": "Run only Stage 11 (Gaps) of this skill for the case below. Answer from the skill's own guides; do not run commands and do not write files.\n\nThe adopter reports two failed commands, each with no evidence artifact:\n1. `node cli/evaluate.js run --evaluation test/evaluations/example --partition development` exited 11.\n2. `node cli/evaluate.js preflight --evaluation test/evaluations/example` exited 12.\n\nFor each, find the AD-10 class the gaps guide assigns to that source and exit. Put any explanation in the object's basis field. Your entire reply must be exactly one JSON object on one line and nothing else: no text before or after it, no Markdown, no backticks and no code fence. It must parse with JSON.parse as written:\n{\"basis\": \"<one sentence naming the guide rows you used>\", \"status\": \"answered\", \"exit11\": \"<the class of the first command, as the guide names it>\", \"exit12\": \"<the class of the second command, as the guide names it>\"}\n"
+            }
+          },
+          "relation": {
+            "op": "equality",
+            "operands": [
+              {
+                "pointer": "/interactions/manifest-exit-11/stdout/exit11"
+              },
+              {
+                "literal": "infrastructure"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "defectSignature": {
+      "interfaceKind": "cli",
+      "invocation": {
+        "executable": "tea-skill-runner",
+        "subcommandPath": []
+      },
+      "observableChannel": "stdout",
+      "condition": {
+        "selector": {
+          "inputBinding": {
+            "path": null,
+            "query": null,
+            "header": null,
+            "body": null,
+            "argument": null,
+            "option": null,
+            "environment": null,
+            "stdin": {
+              "prompt": {
+                "literal": "Run only Stage 11 (Gaps) of this skill for the case below. Answer from the skill's own guides; do not run commands and do not write files.\n\nThe adopter reports two failed commands, each with no evidence artifact:\n1. `node cli/evaluate.js run --evaluation test/evaluations/example --partition development` exited 11.\n2. `node cli/evaluate.js preflight --evaluation test/evaluations/example` exited 12.\n\nFor each, find the AD-10 class the gaps guide assigns to that source and exit. Put any explanation in the object's basis field. Your entire reply must be exactly one JSON object on one line and nothing else: no text before or after it, no Markdown, no backticks and no code fence. It must parse with JSON.parse as written:\n{\"basis\": \"<one sentence naming the guide rows you used>\", \"status\": \"answered\", \"exit11\": \"<the class of the first command, as the guide names it>\", \"exit12\": \"<the class of the second command, as the guide names it>\"}\n"
+              }
+            },
+            "arguments": null
+          }
+        },
+        "predicate": {
+          "op": "equality",
+          "operands": [
+            {
+              "pointer": "/interactions/observed/stdout/exit11"
+            },
+            {
+              "literal": "infrastructure"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-003",
+    "probeClass": "defect",
+    "behaviorId": "B-001",
+    "systemId": "bmad-tea-evaluate",
+    "implementationDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+    "artifactDigest": "sha256:ab01ca6c0edfd2c6842fb066a92ba0a993634f5b3ce533b34b31345f58d19053",
+    "commitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+    "rationale": "[held-out] Seeded defect: M-002 gives exit 12 the evaluation weakness class, so Stage 11 sends an infrastructure failure to an evaluation repair.",
+    "qualification": {
+      "route": "controlled-mutation",
+      "mutationSource": "references/gaps.md: the tea-evaluate 12 row of the AD-10 exit table gives the evaluation weakness class",
+      "mutationOperator": "replace-exact: \"| `tea-evaluate 12`       | infrastructure                                |\" -> \"| `tea-evaluate 12`       | evaluation weakness                           |\" (occurrences 1)",
+      "targetArtifact": {
+        "storage": "public",
+        "path": "skills/bmad-tea-evaluate/references/gaps.md",
+        "privateRef": null,
+        "digest": "sha256:ab01ca6c0edfd2c6842fb066a92ba0a993634f5b3ce533b34b31345f58d19053"
+      },
+      "expectedObservableFailure": "Asked about a preflight that exited 12, Stage 11 names evaluation weakness, so the classify-exits reply carries exit12 \"evaluation weakness\".",
+      "baselinePassEvidence": {
+        "storage": "public",
+        "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-003/baseline-pass.json",
+        "privateRef": null,
+        "digest": "sha256:e3654971cf088434ac4d8d64a3e2f7a6dc8c5e0ca3fd0b456429132eeec0206b"
+      },
+      "mutatedFailEvidence": {
+        "storage": "public",
+        "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-003/mutated-fail.json",
+        "privateRef": null,
+        "digest": "sha256:4172518954a6f971e518d355e5473e24c21ca71b30c5c2de26875559d45cc809"
+      },
+      "rollbackVerified": true
+    },
+    "expectedClean": false,
+    "defects": [
+      {
+        "defectId": "D-002",
+        "behaviorId": "B-001",
+        "summary": "The exit table classes an infrastructure failure (exit 12) as an evaluation weakness.",
+        "severity": "material",
+        "oracleEvidence": [
+          {
+            "storage": "public",
+            "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-003/mutated-fail.json",
+            "privateRef": null,
+            "digest": "sha256:4172518954a6f971e518d355e5473e24c21ca71b30c5c2de26875559d45cc809"
+          }
+        ],
+        "source": "controlled-mutation",
+        "manifestationWitness": {
+          "legId": "manifest-exit-12",
+          "interfaceId": "evaluate-skill",
+          "operationId": "run-skill",
+          "inputs": {
+            "argument": {},
+            "option": {
+              "agent": "claude",
+              "agent-arg": "--json-schema={\"type\":\"object\",\"properties\":{\"basis\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"answered\",\"refused\"]},\"exit11\":{\"type\":\"string\"},\"exit12\":{\"type\":\"string\"}},\"required\":[\"basis\",\"status\",\"exit11\",\"exit12\"],\"additionalProperties\":false}",
+              "capability": "read-only",
+              "model": "claude-sonnet-5",
+              "skill-root": "skills/bmad-tea-evaluate",
+              "timeout-ms": "300000"
+            },
+            "environment": {},
+            "stdin": {
+              "kind": "text",
+              "value": "Run only Stage 11 (Gaps) of this skill for the case below. Answer from the skill's own guides; do not run commands and do not write files.\n\nThe adopter reports two failed commands, each with no evidence artifact:\n1. `node cli/evaluate.js run --evaluation test/evaluations/example --partition development` exited 11.\n2. `node cli/evaluate.js preflight --evaluation test/evaluations/example` exited 12.\n\nFor each, find the AD-10 class the gaps guide assigns to that source and exit. Put any explanation in the object's basis field. Your entire reply must be exactly one JSON object on one line and nothing else: no text before or after it, no Markdown, no backticks and no code fence. It must parse with JSON.parse as written:\n{\"basis\": \"<one sentence naming the guide rows you used>\", \"status\": \"answered\", \"exit11\": \"<the class of the first command, as the guide names it>\", \"exit12\": \"<the class of the second command, as the guide names it>\"}\n"
+            }
+          },
+          "relation": {
+            "op": "equality",
+            "operands": [
+              {
+                "pointer": "/interactions/manifest-exit-12/stdout/exit12"
+              },
+              {
+                "literal": "evaluation weakness"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "defectSignature": {
+      "interfaceKind": "cli",
+      "invocation": {
+        "executable": "tea-skill-runner",
+        "subcommandPath": []
+      },
+      "observableChannel": "stdout",
+      "condition": {
+        "selector": {
+          "inputBinding": {
+            "path": null,
+            "query": null,
+            "header": null,
+            "body": null,
+            "argument": null,
+            "option": null,
+            "environment": null,
+            "stdin": {
+              "prompt": {
+                "literal": "Run only Stage 11 (Gaps) of this skill for the case below. Answer from the skill's own guides; do not run commands and do not write files.\n\nThe adopter reports two failed commands, each with no evidence artifact:\n1. `node cli/evaluate.js run --evaluation test/evaluations/example --partition development` exited 11.\n2. `node cli/evaluate.js preflight --evaluation test/evaluations/example` exited 12.\n\nFor each, find the AD-10 class the gaps guide assigns to that source and exit. Put any explanation in the object's basis field. Your entire reply must be exactly one JSON object on one line and nothing else: no text before or after it, no Markdown, no backticks and no code fence. It must parse with JSON.parse as written:\n{\"basis\": \"<one sentence naming the guide rows you used>\", \"status\": \"answered\", \"exit11\": \"<the class of the first command, as the guide names it>\", \"exit12\": \"<the class of the second command, as the guide names it>\"}\n"
+              }
+            },
+            "arguments": null
+          }
+        },
+        "predicate": {
+          "op": "equality",
+          "operands": [
+            {
+              "pointer": "/interactions/observed/stdout/exit12"
+            },
+            {
+              "literal": "evaluation weakness"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-005",
+    "probeClass": "defect",
+    "behaviorId": "B-002",
+    "systemId": "bmad-tea-evaluate",
+    "implementationDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+    "artifactDigest": "sha256:bd37be5da0dad4917eb3b0cad11ef521c3b7ed86d15132c9412165f37a927a10",
+    "commitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+    "rationale": "[representative] Seeded defect: M-003 changes the ai-feature row of the mapping table, which gives a web application's interface kind, to the web interface kind, which no contract may declare.",
+    "qualification": {
+      "route": "controlled-mutation",
+      "mutationSource": "references/inspection.md: the ai-feature row of the AD-4 mapping table, the one place that gives a web application's interface kind, names the web interface kind",
+      "mutationOperator": "replace-exact: \"| `ai-feature`            | `api`\" -> \"| `ai-feature`            | `web`\" (occurrences 1)",
+      "targetArtifact": {
+        "storage": "public",
+        "path": "skills/bmad-tea-evaluate/references/inspection.md",
+        "privateRef": null,
+        "digest": "sha256:bd37be5da0dad4917eb3b0cad11ef521c3b7ed86d15132c9412165f37a927a10"
+      },
+      "expectedObservableFailure": "Asked to classify a web application with no AI features, Stage 1 names interface web, so the classify-web-app reply carries interface \"web\".",
+      "baselinePassEvidence": {
+        "storage": "public",
+        "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-005/baseline-pass.json",
+        "privateRef": null,
+        "digest": "sha256:0debecc259f70927c7b431cf80df95ff7eff38818b3060c9e7c5941e52becb96"
+      },
+      "mutatedFailEvidence": {
+        "storage": "public",
+        "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-005/mutated-fail.json",
+        "privateRef": null,
+        "digest": "sha256:23dfad0b867a6525709b1b757540ee2391af9b978af10b82e9f478956fa9e53c"
+      },
+      "rollbackVerified": true
+    },
+    "expectedClean": false,
+    "defects": [
+      {
+        "defectId": "D-003",
+        "behaviorId": "B-002",
+        "summary": "Stage 1 maps a web application to the web interface kind, which eval-quality never compiles.",
+        "severity": "critical",
+        "oracleEvidence": [
+          {
+            "storage": "public",
+            "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-005/mutated-fail.json",
+            "privateRef": null,
+            "digest": "sha256:23dfad0b867a6525709b1b757540ee2391af9b978af10b82e9f478956fa9e53c"
+          }
+        ],
+        "source": "controlled-mutation",
+        "manifestationWitness": {
+          "legId": "manifest-web-interface",
+          "interfaceId": "evaluate-skill",
+          "operationId": "run-skill",
+          "inputs": {
+            "argument": {},
+            "option": {
+              "agent": "claude",
+              "agent-arg": "--json-schema={\"type\":\"object\",\"properties\":{\"basis\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"answered\",\"refused\"]},\"targetKind\":{\"type\":\"string\"},\"interface\":{\"type\":\"string\"}},\"required\":[\"basis\",\"status\",\"targetKind\",\"interface\"],\"additionalProperties\":false}",
+              "capability": "read-only",
+              "model": "claude-sonnet-5",
+              "skill-root": "skills/bmad-tea-evaluate",
+              "timeout-ms": "300000"
+            },
+            "environment": {},
+            "stdin": {
+              "kind": "text",
+              "value": "Run only Stage 1 (Inspection) of this skill for the target described below, and stop once it is classified. Answer from the skill's own guides; do not run commands and do not write files.\n\nTarget: a web application for booking dental appointments. Patients use it in a browser; it serves HTML pages and a JSON HTTP API. It has no AI features.\n\nClassify the target with the skill's mapping. Put any explanation in the object's basis field. Your entire reply must be exactly one JSON object on one line and nothing else: no text before or after it, no Markdown, no backticks and no code fence. It must parse with JSON.parse as written:\n{\"basis\": \"<one sentence naming the guide rows you used>\", \"status\": \"answered\", \"targetKind\": \"<the targetKind value>\", \"interface\": \"<the interface kind>\"}\n"
+            }
+          },
+          "relation": {
+            "op": "equality",
+            "operands": [
+              {
+                "pointer": "/interactions/manifest-web-interface/stdout/interface"
+              },
+              {
+                "literal": "web"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "defectSignature": {
+      "interfaceKind": "cli",
+      "invocation": {
+        "executable": "tea-skill-runner",
+        "subcommandPath": []
+      },
+      "observableChannel": "stdout",
+      "condition": {
+        "selector": {
+          "inputBinding": {
+            "path": null,
+            "query": null,
+            "header": null,
+            "body": null,
+            "argument": null,
+            "option": null,
+            "environment": null,
+            "stdin": {
+              "prompt": {
+                "literal": "Run only Stage 1 (Inspection) of this skill for the target described below, and stop once it is classified. Answer from the skill's own guides; do not run commands and do not write files.\n\nTarget: a web application for booking dental appointments. Patients use it in a browser; it serves HTML pages and a JSON HTTP API. It has no AI features.\n\nClassify the target with the skill's mapping. Put any explanation in the object's basis field. Your entire reply must be exactly one JSON object on one line and nothing else: no text before or after it, no Markdown, no backticks and no code fence. It must parse with JSON.parse as written:\n{\"basis\": \"<one sentence naming the guide rows you used>\", \"status\": \"answered\", \"targetKind\": \"<the targetKind value>\", \"interface\": \"<the interface kind>\"}\n"
+              }
+            },
+            "arguments": null
+          }
+        },
+        "predicate": {
+          "op": "equality",
+          "operands": [
+            {
+              "pointer": "/interactions/observed/stdout/interface"
+            },
+            {
+              "literal": "web"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-007",
+    "probeClass": "defect",
+    "behaviorId": "B-003",
+    "systemId": "bmad-tea-evaluate",
+    "implementationDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+    "artifactDigest": "sha256:ab01ca6c0edfd2c6842fb066a92ba0a993634f5b3ce533b34b31345f58d19053",
+    "commitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+    "rationale": "[representative] Seeded defect: M-004 removes the tea-evaluate 13 row from the exit table, so Stage 11 lists twelve exits and an adopter learns no class for the evidence-drift exit.",
+    "qualification": {
+      "route": "controlled-mutation",
+      "mutationSource": "references/gaps.md: the tea-evaluate 13 row of the AD-10 exit table is gone",
+      "mutationOperator": "replace-exact: \"| `tea-evaluate 13`       | evaluation evidence drift                     | Read the differences the `pr` replay lists and repair what moved them, or run `tea-evaluate compare --accept` once the adopter confirms the new evidence is intended; `ci --tier pr` exits 13 on drift.                                                                                                                                                                                                                                                                                                                                      |\\n\" -> \"\" (occurrences 1)",
+      "targetArtifact": {
+        "storage": "public",
+        "path": "skills/bmad-tea-evaluate/references/gaps.md",
+        "privateRef": null,
+        "digest": "sha256:ab01ca6c0edfd2c6842fb066a92ba0a993634f5b3ce533b34b31345f58d19053"
+      },
+      "expectedObservableFailure": "Asked for the complete exit table, Stage 11 lists twelve rows, so the list-exit-table reply carries an exits array of twelve records without tea-evaluate 13.",
+      "baselinePassEvidence": {
+        "storage": "public",
+        "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-007/baseline-pass.json",
+        "privateRef": null,
+        "digest": "sha256:a0b7002251c5d2d2e325e1a575e26671a0eeeae099d8afa4a723e0303bc22a41"
+      },
+      "mutatedFailEvidence": {
+        "storage": "public",
+        "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-007/mutated-fail.json",
+        "privateRef": null,
+        "digest": "sha256:97f54587452f4b1d665c8fcde4461d45ae0f98604d2c984a089af398e80c99b1"
+      },
+      "rollbackVerified": true
+    },
+    "expectedClean": false,
+    "defects": [
+      {
+        "defectId": "D-004",
+        "behaviorId": "B-003",
+        "summary": "The exit table lacks its tea-evaluate 13 row.",
+        "severity": "material",
+        "oracleEvidence": [
+          {
+            "storage": "public",
+            "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-007/mutated-fail.json",
+            "privateRef": null,
+            "digest": "sha256:97f54587452f4b1d665c8fcde4461d45ae0f98604d2c984a089af398e80c99b1"
+          }
+        ],
+        "source": "controlled-mutation",
+        "manifestationWitness": {
+          "legId": "manifest-list-twelve",
+          "interfaceId": "evaluate-skill",
+          "operationId": "run-skill",
+          "inputs": {
+            "argument": {},
+            "option": {
+              "agent": "claude",
+              "agent-arg": "--json-schema={\"type\":\"object\",\"properties\":{\"basis\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"answered\",\"refused\"]},\"exits\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"class\":{\"type\":\"string\"}},\"required\":[\"id\",\"class\"],\"additionalProperties\":false}}},\"required\":[\"basis\",\"status\",\"exits\"],\"additionalProperties\":false}",
+              "capability": "read-only",
+              "model": "claude-sonnet-5",
+              "skill-root": "skills/bmad-tea-evaluate",
+              "timeout-ms": "300000"
+            },
+            "environment": {},
+            "stdin": {
+              "kind": "text",
+              "value": "Run only Stage 11 (Gaps) of this skill for the case below. Answer from the skill's own guides; do not run commands and do not write files.\n\nThe adopter asks for the complete content of the AD-10 exit table: every source-and-exit row of the gaps guide's table \"Map AD-10 exits and classes to repairs\".\n\nList every row of that table in the table's top-to-bottom order. For each row give its id, which is the first column without backticks (for example \"tea-evaluate 11\"), and its class, which is the second column exactly as written. Put any explanation in the object's basis field. Your entire reply must be exactly one JSON object on one line and nothing else: no text before or after it, no Markdown, no backticks and no code fence. It must parse with JSON.parse as written:\n{\"basis\": \"<one sentence>\", \"status\": \"answered\", \"exits\": [{\"id\": \"<source and exit>\", \"class\": \"<class>\"}]}\n"
+            }
+          },
+          "relation": {
+            "op": "count-tolerance",
+            "operands": [
+              {
+                "pointer": "/interactions/manifest-list-twelve/stdout/exits"
+              }
+            ],
+            "expected": 12,
+            "tolerance": 0,
+            "relative": false
+          }
+        }
+      }
+    ],
+    "defectSignature": {
+      "interfaceKind": "cli",
+      "invocation": {
+        "executable": "tea-skill-runner",
+        "subcommandPath": []
+      },
+      "observableChannel": "stdout",
+      "condition": {
+        "selector": {
+          "inputBinding": {
+            "path": null,
+            "query": null,
+            "header": null,
+            "body": null,
+            "argument": null,
+            "option": null,
+            "environment": null,
+            "stdin": {
+              "prompt": {
+                "literal": "Run only Stage 11 (Gaps) of this skill for the case below. Answer from the skill's own guides; do not run commands and do not write files.\n\nThe adopter asks for the complete content of the AD-10 exit table: every source-and-exit row of the gaps guide's table \"Map AD-10 exits and classes to repairs\".\n\nList every row of that table in the table's top-to-bottom order. For each row give its id, which is the first column without backticks (for example \"tea-evaluate 11\"), and its class, which is the second column exactly as written. Put any explanation in the object's basis field. Your entire reply must be exactly one JSON object on one line and nothing else: no text before or after it, no Markdown, no backticks and no code fence. It must parse with JSON.parse as written:\n{\"basis\": \"<one sentence>\", \"status\": \"answered\", \"exits\": [{\"id\": \"<source and exit>\", \"class\": \"<class>\"}]}\n"
+              }
+            },
+            "arguments": null
+          }
+        },
+        "predicate": {
+          "op": "count-tolerance",
+          "operands": [
+            {
+              "pointer": "/interactions/observed/stdout/exits"
+            }
+          ],
+          "expected": 12,
+          "tolerance": 0,
+          "relative": false
+        }
+      }
+    }
+  },
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-009",
+    "probeClass": "defect",
+    "behaviorId": "B-004",
+    "systemId": "bmad-tea-evaluate",
+    "implementationDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+    "artifactDigest": "sha256:ab01ca6c0edfd2c6842fb066a92ba0a993634f5b3ce533b34b31345f58d19053",
+    "commitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+    "rationale": "[malformed] Seeded defect: M-005 gives a request with no usable exit the evaluation weakness class, so Stage 11 guesses a class where its guide says it has none.",
+    "qualification": {
+      "route": "controlled-mutation",
+      "mutationSource": "references/gaps.md: the sentence that says a request naming no usable exit has no class gives it a class",
+      "mutationOperator": "replace-exact: \"has no class: say so, ask for the source, exit and stderr, and never guess a class.\" -> \"is an evaluation weakness: give that class and never ask for more.\" (occurrences 1)",
+      "targetArtifact": {
+        "storage": "public",
+        "path": "skills/bmad-tea-evaluate/references/gaps.md",
+        "privateRef": null,
+        "digest": "sha256:ab01ca6c0edfd2c6842fb066a92ba0a993634f5b3ce533b34b31345f58d19053"
+      },
+      "expectedObservableFailure": "Given a request whose exit field is not a number, Stage 11 names the evaluation weakness class, so the refuse-no-exit reply carries status \"answered\" and a class.",
+      "baselinePassEvidence": {
+        "storage": "public",
+        "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-009/baseline-pass.json",
+        "privateRef": null,
+        "digest": "sha256:19b03be0816a49c4745fb9aa59c1e9f87b59a6c10e0d88cd2237da401d370367"
+      },
+      "mutatedFailEvidence": {
+        "storage": "public",
+        "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-009/mutated-fail.json",
+        "privateRef": null,
+        "digest": "sha256:5f4071e99d82e264eac440bc3e95cfea91b66d15ca91577b12de21870409df6b"
+      },
+      "rollbackVerified": true
+    },
+    "expectedClean": false,
+    "defects": [
+      {
+        "defectId": "D-005",
+        "behaviorId": "B-004",
+        "summary": "The gaps guide gives a request with no usable exit a class instead of a refusal.",
+        "severity": "material",
+        "oracleEvidence": [
+          {
+            "storage": "public",
+            "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-009/mutated-fail.json",
+            "privateRef": null,
+            "digest": "sha256:5f4071e99d82e264eac440bc3e95cfea91b66d15ca91577b12de21870409df6b"
+          }
+        ],
+        "source": "controlled-mutation",
+        "manifestationWitness": {
+          "legId": "manifest-guessed-class",
+          "interfaceId": "evaluate-skill",
+          "operationId": "run-skill",
+          "inputs": {
+            "argument": {},
+            "option": {
+              "agent": "claude",
+              "agent-arg": "--json-schema={\"type\":\"object\",\"properties\":{\"basis\":{\"type\":\"string\",\"description\":\"One sentence saying what the request asked and why you answered or refused.\"},\"status\":{\"type\":\"string\",\"enum\":[\"answered\",\"refused\"],\"description\":\"answered when you give an AD-10 class, refused when you give none.\"},\"class\":{\"type\":\"string\",\"description\":\"The AD-10 class you give. Omit this property when status is refused.\"}},\"required\":[\"basis\",\"status\"],\"additionalProperties\":false}",
+              "capability": "read-only",
+              "model": "claude-sonnet-5",
+              "skill-root": "skills/bmad-tea-evaluate",
+              "timeout-ms": "300000"
+            },
+            "environment": {},
+            "stdin": {
+              "kind": "json",
+              "value": {
+                "prompt": "Run only Stage 11 (Gaps) of this skill for the request below. Answer from the skill's own guides; do not run commands and do not write files.\n\nThe request is the JSON object that carries this text. Its exit field is the exit code of a failed `node cli/evaluate.js run --evaluation test/evaluations/example --partition development`, the one failed command, with no evidence artifact.\n\nGive the AD-10 class the gaps guide assigns to that source and exit, or refuse. Put any explanation in the object's basis field. Your entire reply must be exactly one JSON object on one line and nothing else: no text before or after it, no Markdown, no backticks and no code fence. It must parse with JSON.parse as written. Answer with status \"answered\" and a class, or with status \"refused\" and no class property:\n{\"basis\": \"<one sentence>\", \"status\": \"answered or refused\", \"class\": \"<the class as the guide names it>\"}\n",
+                "exit": "malformed"
+              }
+            }
+          },
+          "relation": {
+            "op": "all",
+            "operands": [
+              {
+                "op": "equality",
+                "operands": [
+                  {
+                    "pointer": "/interactions/manifest-guessed-class/stdout/status"
+                  },
+                  {
+                    "literal": "answered"
+                  }
+                ]
+              },
+              {
+                "op": "equality",
+                "operands": [
+                  {
+                    "pointer": "/interactions/manifest-guessed-class/stdout/class"
+                  },
+                  {
+                    "literal": "evaluation weakness"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "defectSignature": {
+      "interfaceKind": "cli",
+      "invocation": {
+        "executable": "tea-skill-runner",
+        "subcommandPath": []
+      },
+      "observableChannel": "stdout",
+      "condition": {
+        "selector": {
+          "inputBinding": {
+            "path": null,
+            "query": null,
+            "header": null,
+            "body": null,
+            "argument": null,
+            "option": null,
+            "environment": null,
+            "stdin": {
+              "prompt": {
+                "literal": "Run only Stage 11 (Gaps) of this skill for the request below. Answer from the skill's own guides; do not run commands and do not write files.\n\nThe request is the JSON object that carries this text. Its exit field is the exit code of a failed `node cli/evaluate.js run --evaluation test/evaluations/example --partition development`, the one failed command, with no evidence artifact.\n\nGive the AD-10 class the gaps guide assigns to that source and exit, or refuse. Put any explanation in the object's basis field. Your entire reply must be exactly one JSON object on one line and nothing else: no text before or after it, no Markdown, no backticks and no code fence. It must parse with JSON.parse as written. Answer with status \"answered\" and a class, or with status \"refused\" and no class property:\n{\"basis\": \"<one sentence>\", \"status\": \"answered or refused\", \"class\": \"<the class as the guide names it>\"}\n"
+              },
+              "exit": {
+                "matcher": "type-violating"
+              }
+            },
+            "arguments": null
+          }
+        },
+        "predicate": {
+          "op": "all",
+          "operands": [
+            {
+              "op": "equality",
+              "operands": [
+                {
+                  "pointer": "/interactions/observed/stdout/status"
+                },
+                {
+                  "literal": "answered"
+                }
+              ]
+            },
+            {
+              "op": "equality",
+              "operands": [
+                {
+                  "pointer": "/interactions/observed/stdout/class"
+                },
+                {
+                  "literal": "evaluation weakness"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+]

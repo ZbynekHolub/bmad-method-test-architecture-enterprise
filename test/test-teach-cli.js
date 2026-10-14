@@ -383,8 +383,8 @@ test('consumed config, legacy config, customization and policy bytes and topolog
   for (const [relative, text] of [
     ['_bmad/config.toml', '[core]\nuser_name="Murat"\n'],
     ['_bmad/tea/config.yaml', 'user_name: Murat\n'],
-    ['_bmad/custom/bmad-teach-me-testing.toml', '[workflow]\n'],
-    ['_bmad/custom/bmad-teach-me-testing.user.toml', '[workflow]\n'],
+    ['_bmad/custom/bmad-tea-teach-me-testing.toml', '[workflow]\n'],
+    ['_bmad/custom/bmad-tea-teach-me-testing.user.toml', '[workflow]\n'],
     ['policies/learn.md', 'Preserve learner answers.\n'],
   ]) {
     for (const operation of ['bytes', 'mode', 'replace', 'link', 'delete']) {
@@ -396,7 +396,7 @@ test('consumed config, legacy config, customization and policy bytes and topolog
       if (relative.startsWith('policies')) {
         fs.mkdirSync(path.join(f.root, '_bmad/custom'), { recursive: true });
         fs.writeFileSync(
-          path.join(f.root, '_bmad/custom/bmad-teach-me-testing.toml'),
+          path.join(f.root, '_bmad/custom/bmad-tea-teach-me-testing.toml'),
           '[workflow]\npersistent_facts=["file:policies/*.md"]\n',
         );
       }
@@ -413,7 +413,10 @@ test('new optional config and matching customization policies fail without publi
   fs.mkdirSync(path.join(f.root, '_bmad/custom'), { recursive: true });
   fs.mkdirSync(path.join(f.root, 'policies'));
   fs.writeFileSync(path.join(f.root, 'policies/learn.md'), 'Policy');
-  fs.writeFileSync(path.join(f.root, '_bmad/custom/bmad-teach-me-testing.toml'), '[workflow]\npersistent_facts=["file:policies/*.md"]\n');
+  fs.writeFileSync(
+    path.join(f.root, '_bmad/custom/bmad-tea-teach-me-testing.toml'),
+    '[workflow]\npersistent_facts=["file:policies/*.md"]\n',
+  );
   assert.equal(f.run().status, 0);
   const saved = fs.readFileSync(path.join(f.root, 'learner/conversation.json'));
   for (const mode of ['input:create:_bmad/config.user.toml', 'input:member:policies/learn.md']) {

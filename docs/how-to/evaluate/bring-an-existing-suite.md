@@ -15,8 +15,8 @@ Start with an evaluation folder whose contract, oracles and registry pass `check
 
 Start or resume Evaluate:
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-evaluate`
-- **Codex:** `$bmad-testarch-evaluate`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-evaluate`
+- **Codex:** `$bmad-tea-evaluate`
 - **Inside a `/bmad-tea` chat:** `EV`
 
 ```text

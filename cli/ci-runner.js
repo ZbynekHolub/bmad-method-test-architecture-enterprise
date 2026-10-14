@@ -2,7 +2,7 @@
 /**
  * tea-ci-runner: the command the CI behavioral contract names.
  *
- * `bmad-testarch-ci` scaffolds a pipeline for the project it is run in and
+ * `bmad-tea-ci` scaffolds a pipeline for the project it is run in and
  * writes one deliverable a linter can hold to account, the platform's own
  * workflow file, which for GitHub Actions is `.github/workflows/test.yml`.
  * Measuring that needs a command to point at, and this file is that command.

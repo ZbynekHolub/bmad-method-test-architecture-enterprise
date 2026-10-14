@@ -324,8 +324,8 @@ function run(argv) {
   if (options.scope === 'system' && inputs.length < 2)
     throw new WorkflowError('usage', 'system scope requires two distinct input documents');
   const inputDigests = inputs.map((file) => [file, digest(file)]);
-  const skillRoot = resolveWorkflowSkill({ projectRoot, skillName: 'bmad-testarch-test-design', skillRoot: options.skillRoot });
-  const resolvedConfig = resolveTeaConfig({ projectRoot, skillRoot, skillName: 'bmad-testarch-test-design' });
+  const skillRoot = resolveWorkflowSkill({ projectRoot, skillName: 'bmad-tea-test-design', skillRoot: options.skillRoot });
+  const resolvedConfig = resolveTeaConfig({ projectRoot, skillRoot, skillName: 'bmad-tea-test-design' });
   const outputValue =
     options.outputDir || resolvedConfig.configSnapshot.modules.tea.test_artifacts.replaceAll('{project-root}', projectRoot);
   const outputDir = projectPath(projectRoot, outputValue, '--output-dir');

@@ -11,7 +11,7 @@ inputDocuments:
   - 'docs/stories/5-2-notification-preferences.md'
   - 'test-artifacts/test-design/test-design-epic-5.md'
   - 'playwright.config.ts'
-  - 'skills/bmad-testarch-test-review/steps-c/criteria-registry.md'
+  - 'skills/bmad-tea-test-review/steps-c/criteria-registry.md'
 ---
 
 # Test Quality Review: profile-notifications.spec.ts

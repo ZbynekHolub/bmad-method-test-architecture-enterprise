@@ -630,7 +630,8 @@ async function checkFragmentSelectionOracles(evaluator) {
       continue;
     }
     const [, workflow, caseId] = match;
-    const suite = suites.find((candidate) => candidate.dir === workflow);
+    const currentWorkflow = workflow.replace('bmad-testarch-', 'bmad-tea-');
+    const suite = suites.find((candidate) => candidate.dir === currentWorkflow);
     const caseIndex = suite?.data.cases.findIndex((candidate) => candidate.id === caseId) ?? -1;
     if (!suite || caseIndex === -1) {
       assert(false, `${item.id}: its source case ${workflow}/${caseId} still exists`);
@@ -639,8 +640,8 @@ async function checkFragmentSelectionOracles(evaluator) {
     const selection = parseSelection(fs.readFileSync(path.join(item.directory, 'stdout.txt'), 'utf8'));
     checkSelectionCase(
       evaluator,
-      contracts.get(workflow),
-      workflow,
+      contracts.get(currentWorkflow),
+      currentWorkflow,
       suite.data.cases[caseIndex],
       caseIndex,
       selection,
@@ -917,7 +918,7 @@ function constructedRoutingAnswers(expected) {
   const wrong = {
     action: otherAction,
     menuCode: otherAction === 'route' ? 'TMT' : null,
-    workflow: otherAction === 'route' ? 'bmad-teach-me-testing' : null,
+    workflow: otherAction === 'route' ? 'bmad-tea-teach-me-testing' : null,
     scope: null,
     reason: 'no particular feature of the message decided it',
     question: null,
@@ -927,7 +928,7 @@ function constructedRoutingAnswers(expected) {
   // oracles are concerned, so it names a target that is never this case's own.
   if (expected.expectedAction === 'route' && expected.expectedMenuCode === 'TMT') {
     wrong.menuCode = 'TR';
-    wrong.workflow = 'bmad-testarch-trace';
+    wrong.workflow = 'bmad-tea-trace';
   }
   const answers = [
     { label: 'the answer the oracles are written for', answer: correct, expectHold: true },
@@ -946,7 +947,7 @@ function constructedRoutingAnswers(expected) {
       answer: {
         ...correct,
         menuCode: expected.expectedMenuCode === 'TMT' ? 'TR' : 'TMT',
-        workflow: expected.expectedMenuCode === 'TMT' ? 'bmad-testarch-trace' : 'bmad-teach-me-testing',
+        workflow: expected.expectedMenuCode === 'TMT' ? 'bmad-tea-trace' : 'bmad-tea-teach-me-testing',
       },
       expectHold: false,
     });
@@ -1867,7 +1868,7 @@ async function checkTestDesignOracles(evaluator) {
   }
   // The rule is documented against the shipped worked example, a real test design: its register is the
   // seven rows under "## Risk Assessment", and a labeled copy of its band tables added to it changes nothing.
-  const exampleRoot = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-test-design');
+  const exampleRoot = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-test-design');
   const shipped = fs.readFileSync(path.join(exampleRoot, 'resources', 'test-design-epic-3.example.md'), 'utf8');
   const shippedRead = readTestDesign({ kind: 'text', value: shipped });
   assert(shippedRead.ok && shippedRead.design.risks.length === 7, 'the shipped worked example reads as a seven-row register');
@@ -2323,7 +2324,7 @@ async function checkWholeBodyCoverage() {
       suiteId === 'test-review'
         ? { scheme: 'tea-cli-contract', id: 'verdict-whole-body' }
         : suiteId === 'trace'
-          ? { scheme: 'tea-workflow-step', id: 'bmad-testarch-trace/steps-c/step-05-gate-decision.md' }
+          ? { scheme: 'tea-workflow-step', id: 'bmad-tea-trace/steps-c/step-05-gate-decision.md' }
           : { scheme: 'tea-cli-contract', id: 'routing-answer-whole-body' };
     // The `shape` inside each oracle is the contract's own response descriptor, read from the file on disk: a shape that
     // required a key the descriptor does not (the conditional gate keys of a trace summary, the five optional keys of a routing
@@ -2749,7 +2750,7 @@ async function checkWholeBodyDeclarations() {
   // `JSON.stringify` drops a key whose value is `undefined`, so a key of step-05's literal is always written only when its
   // line cannot read as `undefined`. The read refuses a line that reads the coverage matrix or an optional chain with no
   // fallback, and a fallback to `undefined`, which is shown on the step's own text with each fallback removed in turn.
-  const step05Path = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-trace', 'steps-c', 'step-05-gate-decision.md');
+  const step05Path = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-trace', 'steps-c', 'step-05-gate-decision.md');
   const step05 = fs.readFileSync(step05Path, 'utf8');
   assert(
     (() => {

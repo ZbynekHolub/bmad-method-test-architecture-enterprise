@@ -22,7 +22,7 @@ const { resolvePlaywrightCli } = require('../cli/atdd-red-check');
 
 const ROOT = path.join(__dirname, '..');
 const FIXTURE = path.join(__dirname, 'fixtures', 'test-generation-healing');
-const SKILL = path.join(ROOT, 'skills', 'bmad-testarch-automate');
+const SKILL = path.join(ROOT, 'skills', 'bmad-tea-automate');
 const LIVE_CAPTURE = path.join(__dirname, 'results', 'test-generation-healing');
 const DEPENDENCIES = path.join(ROOT, 'node_modules');
 const CLI = resolvePlaywrightCli([ROOT]);

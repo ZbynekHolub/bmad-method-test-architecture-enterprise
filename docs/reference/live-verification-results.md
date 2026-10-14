@@ -52,7 +52,7 @@ When the file is absent, `trace` uses static test discovery only.
 }
 ```
 
-A longer example covering a passing record, a blocked one, and one recorded against an older commit ships with the skill at `skills/bmad-testarch-trace/resources/live-verification-results.example.json`.
+A longer example covering a passing record, a blocked one, and one recorded against an older commit ships with the skill at `skills/bmad-tea-trace/resources/live-verification-results.example.json`.
 
 **Enforced** fields determine whether a record or the whole file counts.
 **Recorded** fields add context to the report.

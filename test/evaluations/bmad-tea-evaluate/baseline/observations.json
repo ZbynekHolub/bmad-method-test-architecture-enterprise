@@ -1,0 +1,230 @@
+[
+  {
+    "probeId": "witness-exit-11",
+    "interfaceId": "evaluate-skill",
+    "operationId": "run-skill",
+    "kind": "cli",
+    "exitCode": 0,
+    "stdout": {
+      "kind": "json",
+      "value": {
+        "basis": "The gaps guide's AD-10 table row `tea-evaluate 11` maps that source and exit code to this class.",
+        "class": "evaluation weakness"
+      }
+    },
+    "stderr": {
+      "kind": "text",
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50884,\"outputTokens\":562,\"costUsd\":\"0.10772960000000001\"}\n"
+    },
+    "artifacts": {}
+  },
+  {
+    "probeId": "witness-exit-10",
+    "interfaceId": "evaluate-skill",
+    "operationId": "run-skill",
+    "kind": "cli",
+    "exitCode": 0,
+    "stdout": {
+      "kind": "json",
+      "value": {
+        "basis": "The gaps guide's AD-10 table row 'tea-evaluate 10' maps that source and exit to the authoring defect class.",
+        "class": "authoring defect"
+      }
+    },
+    "stderr": {
+      "kind": "text",
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50848,\"outputTokens\":411,\"costUsd\":\"0.07664080000000001\"}\n"
+    },
+    "artifacts": {}
+  },
+  {
+    "probeId": "preflight-control-observe",
+    "interfaceId": "evaluate-skill",
+    "operationId": "run-skill",
+    "kind": "cli",
+    "exitCode": 0,
+    "stdout": {
+      "kind": "json",
+      "value": {
+        "basis": "The gaps guide's 'Map AD-10 exits and classes to repairs' table row 'tea-evaluate 11' names this source (the tea-evaluate CLI, here invoked via 'node cli/evaluate.js run') and exit code 11.",
+        "class": "evaluation weakness"
+      }
+    },
+    "stderr": {
+      "kind": "text",
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50872,\"outputTokens\":565,\"costUsd\":\"0.0654556\"}\n"
+    },
+    "artifacts": {}
+  },
+  {
+    "probeId": "preflight-control-observe-2",
+    "interfaceId": "evaluate-skill",
+    "operationId": "run-skill",
+    "kind": "cli",
+    "exitCode": 0,
+    "stdout": {
+      "kind": "json",
+      "value": {
+        "basis": "The gaps guide's AD-10 table row for source `tea-evaluate` exit `11` applies to this failed `node cli/evaluate.js run ... --partition development` invocation.",
+        "class": "evaluation weakness"
+      }
+    },
+    "stderr": {
+      "kind": "text",
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50859,\"outputTokens\":448,\"costUsd\":\"0.064302\"}\n"
+    },
+    "artifacts": {}
+  },
+  {
+    "probeId": "manifest-exit-11",
+    "interfaceId": "evaluate-skill",
+    "operationId": "run-skill",
+    "kind": "cli",
+    "exitCode": 0,
+    "stdout": {
+      "kind": "json",
+      "value": {
+        "basis": "Gaps guide table \"Map AD-10 exits and classes to repairs\" (references/gaps.md) keys solely by source and exit, not subcommand, so both `node cli/evaluate.js ...` commands are the `tea-evaluate` source: the `tea-evaluate 11` row and the `tea-evaluate 12` row.",
+        "status": "answered",
+        "exit11": "infrastructure",
+        "exit12": "infrastructure"
+      }
+    },
+    "stderr": {
+      "kind": "text",
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":51270,\"outputTokens\":607,\"costUsd\":\"0.0790158\"}\n"
+    },
+    "artifacts": {}
+  },
+  {
+    "probeId": "manifest-exit-12",
+    "interfaceId": "evaluate-skill",
+    "operationId": "run-skill",
+    "kind": "cli",
+    "exitCode": 0,
+    "stdout": {
+      "kind": "json",
+      "value": {
+        "basis": "The gaps guide's AD-10 table rows `tea-evaluate 11` and `tea-evaluate 12` both name their class as \"evaluation weakness\", since the source for both commands is `tea-evaluate` (node cli/evaluate.js).",
+        "status": "answered",
+        "exit11": "evaluation weakness",
+        "exit12": "evaluation weakness"
+      }
+    },
+    "stderr": {
+      "kind": "text",
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":51306,\"outputTokens\":641,\"costUsd\":\"0.0794466\"}\n"
+    },
+    "artifacts": {}
+  },
+  {
+    "probeId": "manifest-web-interface",
+    "interfaceId": "evaluate-skill",
+    "operationId": "run-skill",
+    "kind": "cli",
+    "exitCode": 0,
+    "stdout": {
+      "kind": "json",
+      "value": {
+        "basis": "inspection.md states a web application is an ai-feature target even with no AI behavior and takes the interface kind of the ai-feature row, which is web.",
+        "status": "answered",
+        "targetKind": "ai-feature",
+        "interface": "web"
+      }
+    },
+    "stderr": {
+      "kind": "text",
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":44990,\"outputTokens\":442,\"costUsd\":\"0.052774\"}\n"
+    },
+    "artifacts": {}
+  },
+  {
+    "probeId": "manifest-list-twelve",
+    "interfaceId": "evaluate-skill",
+    "operationId": "run-skill",
+    "kind": "cli",
+    "exitCode": 0,
+    "stdout": {
+      "kind": "json",
+      "value": {
+        "basis": "Listed every row of the \"Map AD-10 exits and classes to repairs\" table in gaps.md in top-to-bottom order with each row's id (source and exit) and class exactly as written.",
+        "status": "answered",
+        "exits": [
+          {
+            "id": "eval-quality 0",
+            "class": "pass or CONCERNS"
+          },
+          {
+            "id": "eval-quality 2",
+            "class": "target behavior failure or evidence integrity"
+          },
+          {
+            "id": "eval-quality 3",
+            "class": "infrastructure or integrity"
+          },
+          {
+            "id": "eval-quality 4",
+            "class": "contract authoring defect"
+          },
+          {
+            "id": "eval-quality 5",
+            "class": "runtime fault"
+          },
+          {
+            "id": "eval-quality 64",
+            "class": "wiring defect"
+          },
+          {
+            "id": "tea-evaluate 10",
+            "class": "authoring defect"
+          },
+          {
+            "id": "tea-evaluate 11",
+            "class": "evaluation weakness"
+          },
+          {
+            "id": "tea-evaluate 12",
+            "class": "infrastructure"
+          },
+          {
+            "id": "tea-evaluate 64",
+            "class": "wiring defect"
+          },
+          {
+            "id": "eval-quality-gates 1",
+            "class": "repository policy violation"
+          },
+          {
+            "id": "eval-quality-gates 64",
+            "class": "wiring defect"
+          }
+        ]
+      }
+    },
+    "stderr": {
+      "kind": "text",
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":35602,\"outputTokens\":818,\"costUsd\":\"0.07786699999999999\"}\n"
+    },
+    "artifacts": {}
+  },
+  {
+    "probeId": "manifest-guessed-class",
+    "interfaceId": "evaluate-skill",
+    "operationId": "run-skill",
+    "kind": "cli",
+    "exitCode": 0,
+    "stdout": {
+      "kind": "json",
+      "value": {
+        "basis": "The request names tea-evaluate run with exit \"malformed\", which is not a numeric exit the gaps guide's table lists for that source, so per its rule such a request is classed as an evaluation weakness.",
+        "status": "answered",
+        "class": "evaluation weakness"
+      }
+    },
+    "stderr": {
+      "kind": "text",
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":51440,\"outputTokens\":640,\"costUsd\":\"0.0793912\"}\n"
+    },
+    "artifacts": {}
+  }
+]

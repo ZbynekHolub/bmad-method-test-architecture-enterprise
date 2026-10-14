@@ -31,6 +31,34 @@ Skills read the config once at activation, so start a fresh chat after a change.
 Every module setup key is read by a skill.
 The two [Per-Skill Settings](#per-skill-settings) live in customization files and are configured separately.
 
+## Upgrading Customizations to 3.0
+
+TEA 3.0 names every direct workflow `bmad-tea-*`. Use these command replacements:
+
+| Before 3.0                  | From 3.0                    |
+| --------------------------- | --------------------------- |
+| `bmad-testarch-automate`    | `bmad-tea-automate`         |
+| `bmad-testarch-evaluate`    | `bmad-tea-evaluate`         |
+| `bmad-testarch-framework`   | `bmad-tea-framework`        |
+| `bmad-testarch-nfr`         | `bmad-tea-nfr`              |
+| `bmad-testarch-test-design` | `bmad-tea-test-design`      |
+| `bmad-testarch-test-review` | `bmad-tea-test-review`      |
+| `bmad-testarch-trace`       | `bmad-tea-trace`            |
+| `bmad-teach-me-testing`     | `bmad-tea-teach-me-testing` |
+
+The 3.0 package does not publish the old slash commands. The agent name `bmad-tea`, module name `bmod-tea`, menu codes, and existing `tea-*` CLI names remain.
+
+After installing 3.0, run this in each existing project before invoking a workflow directly:
+
+```bash
+npx --package=bmad-method-test-architecture-enterprise@3 tea-migrate-customizations --project-root . --check
+npx --package=bmad-method-test-architecture-enterprise@3 tea-migrate-customizations --project-root .
+```
+
+The migration renames old customization files, including ATDD, CI, and teaching files. It updates old `[[agent.menu]]` skill IDs in `_bmad/custom/bmad-tea.toml` and `.user.toml`; ATDD routes to Automate and CI to Framework. It preserves other settings, comments, and file permissions. When old and new files coexist in one layer, merge their values and comments manually. The command checks every file before writing. Headless TEA CLIs can read old filenames until migration completes.
+
+An upgrade can leave the former skill folders in a host's project or global skills directory. After migrating customization files, [check for old slash commands and move their folders to a backup](/reference/troubleshooting/#old-slash-commands-still-appear-after-30). Review edits in those folders before removing them from the host's skill discovery path.
+
 ## Recommended Configuration
 
 The setup defaults are the recommended values:
@@ -500,15 +528,15 @@ The `bmad-customize` skill can write either file.
 
 ### evaluations_folder
 
-Base folder for Evaluate (`bmad-testarch-evaluate`) evaluation folders.
+Base folder for Evaluate (`bmad-tea-evaluate`) evaluation folders.
 
-**Type:** `string` · **Default:** `evals` · **File:** `_bmad/custom/bmad-testarch-evaluate.toml`
+**Type:** `string` · **Default:** `evals` · **File:** `_bmad/custom/bmad-tea-evaluate.toml`
 
 Resolves to `{project-root}/{value}`, independent of `test_artifacts`.
 Earlier releases named this key `tea_evaluations_folder` and stored it with the module config; a value there is no longer read.
 
 ```toml
-# _bmad/custom/bmad-testarch-evaluate.toml
+# _bmad/custom/bmad-tea-evaluate.toml
 [workflow]
 evaluations_folder = "quality/evals"
 ```
@@ -517,7 +545,7 @@ evaluations_folder = "quality/evals"
 
 CI/CD platform for pipeline generation.
 
-**Type:** `string` · **Default:** `"auto"` · **File:** `_bmad/custom/bmad-testarch-framework.toml`
+**Type:** `string` · **Default:** `"auto"` · **File:** `_bmad/custom/bmad-tea-framework.toml`
 
 **Options:** `"auto"` | `"github-actions"` | `"gitlab-ci"` | `"jenkins"` | `"azure-devops"` | `"harness"` | `"circle-ci"` | `"other"`
 
@@ -528,14 +556,14 @@ Earlier releases stored this key with the module config; a value there is no lon
 
 **Affects skills:** `framework` when CI is included.
 
-An explicit `ci_platform` override in `_bmad/custom/bmad-testarch-framework.toml` or its `.user.toml` wins, including an explicit `"auto"`.
-Otherwise, existing `_bmad/custom/bmad-testarch-ci.toml` and `.user.toml` values supply the CI setting. The default remains `"auto"`.
+An explicit `ci_platform` override in `_bmad/custom/bmad-tea-framework.toml` or its `.user.toml` wins, including an explicit `"auto"`.
+Otherwise, existing `_bmad/custom/bmad-tea-ci.toml` and `.user.toml` values supply the CI setting. The default remains `"auto"`.
 
 Framework customizations apply when framework setup is included. CI-only runs use your CI customizations. Both includes each phase's customizations once; Resume skips hooks that already finished.
-`bmad setup tea` and `bmad migrate` keep the existing invocation entries and customization files.
+`bmad setup tea` and `bmad migrate` keep invocation entries and configuration values. Run the 3.0 customization migration above to rename pre-3.0 workflow files.
 
 ```toml
-# _bmad/custom/bmad-testarch-framework.toml
+# _bmad/custom/bmad-tea-framework.toml
 [workflow]
 ci_platform = "github-actions"
 ```
@@ -546,9 +574,9 @@ ci_platform = "github-actions"
 
 ## Automate Run and Heal
 
-`bmad-testarch-automate` supports `red` and `expand` modes selected by your prompt. The command and `TA` menu code default to expand when no task mode is given; ask for acceptance tests before implementation to select red. Unattended runs state the selected mode in the summary. Resume continues interrupted red or expand progress. A new unattended run starts over by default.
+`bmad-tea-automate` supports `red` and `expand` modes selected by your prompt. The command and `TA` menu code default to expand when no task mode is given; ask for acceptance tests before implementation to select red. Unattended runs state the selected mode in the summary. Resume continues interrupted red or expand progress. A new unattended run starts over by default.
 
-Each mode keeps its existing customization file: `_bmad/custom/bmad-testarch-atdd.toml` for red and `_bmad/custom/bmad-testarch-automate.toml` for expand, including their `.user.toml` layers. Only the selected mode's activation hooks, persistent facts, and completion hook run. No customization migration is required.
+Red reads `_bmad/custom/bmad-tea-atdd.toml`; expand reads `_bmad/custom/bmad-tea-automate.toml`. Both include their `.user.toml` layers. Only the selected mode's activation hooks, persistent facts, and completion hook run.
 
 Create runs execute generated tests, classify failures, fix test issues, and rerun. Red verifies the intended missing behavior in a disposable activated copy. It uses `tea-atdd-red-check` when available for compatible browserless loopback tests; browser tests or projects needing their own environment and services use the installed project runner with original configuration and environment. The summary records the execution route and any fallback reason. Expand aims for passing coverage and reports real product defects with their assertions intact. Validate reports findings and Edit checks requested changes. These operations never repair tests or require the full suite to pass.
 
@@ -809,7 +837,7 @@ The `tea-test-review` CLI is unaffected: it passes its own `--output` path (defa
 
 ### Rebinding `{test_artifacts}` From a Customization
 
-Before this layout existed, some projects got per-skill folders with an `activation_steps_append` rule in `_bmad/custom/bmad-testarch-*.toml` that rebinds `{test_artifacts}` to a subfolder before the first step runs.
+Before this layout existed, some projects got per-skill folders with an `activation_steps_append` rule in `_bmad/custom/bmad-tea-*.toml` that rebinds `{test_artifacts}` to a subfolder before the first step runs.
 Remove that rule when you upgrade.
 Each skill already appends its own folder, so a rebound `{test_artifacts}` nests a second level, such as `test-artifacts/traceability/trace/`.
 

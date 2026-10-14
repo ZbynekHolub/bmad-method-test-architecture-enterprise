@@ -6,7 +6,7 @@ const path = require('node:path');
 const yaml = require('js-yaml');
 const { createHash } = require('node:crypto');
 const { gunzipSync } = require('node:zlib');
-const skill = path.join(__dirname, '..', 'skills', 'bmad-teach-me-testing');
+const skill = path.join(__dirname, '..', 'skills', 'bmad-tea-teach-me-testing');
 const init = fs.readFileSync(path.join(skill, 'steps-c', 'step-01-init.md'), 'utf8');
 const blocks = [...init.matchAll(/```yaml\n([\s\S]*?)\n```/g)];
 const example = blocks.find((block) => block[1].includes('# TEA Academy Progress Tracking'))?.[1];

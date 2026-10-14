@@ -5,7 +5,7 @@ description: Audit supplied NFR implementation evidence and publish a verified r
 
 # tea-nfr CLI
 
-`tea-nfr` runs the packaged `bmad-testarch-nfr` Create workflow against existing project evidence.
+`tea-nfr` runs the packaged `bmad-tea-nfr` Create workflow against existing project evidence.
 It supplies resolved TEA configuration and NFR customizations, runs the workflow, validates the report and its canonical context, and publishes both files together.
 
 ```bash

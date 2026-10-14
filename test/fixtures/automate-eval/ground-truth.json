@@ -1,9 +1,9 @@
 {
   "$comment": [
-    "Ground truth for the bmad-testarch-automate behavioral eval. It was authored from",
+    "Ground truth for the bmad-tea-automate behavioral eval. It was authored from",
     "voucher-service/docs/stories/6-6-voucher-redemption.md, from vouchers.js's own catalog",
     "of rules, and from the seeded regression qualification.json records (the minimum-spend",
-    "boundary flipped from inclusive to exclusive). No bmad-testarch-automate run produced",
+    "boundary flipped from inclusive to exclusive). No bmad-tea-automate run produced",
     "any value in this file: every spec file under cases/ is hand-authored, standing in for",
     "what a real run could produce against the fixed implementation.",
     "",

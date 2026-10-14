@@ -11,8 +11,8 @@ description: Distinguish evaluation weaknesses from target defects and invalid m
 
 Have the evaluation folder and command output or run ID ready. A failed preflight is enough to start.
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-evaluate`
-- **Codex:** `$bmad-testarch-evaluate`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-evaluate`
+- **Codex:** `$bmad-tea-evaluate`
 - **Inside a `/bmad-tea` chat:** `EV`
 
 ```text

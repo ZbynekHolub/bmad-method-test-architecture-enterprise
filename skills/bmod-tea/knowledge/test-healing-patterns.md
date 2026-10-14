@@ -4,7 +4,7 @@
 
 Run generated tests, diagnose the cause from runtime and source evidence, repair confirmed test defects, and execute again. Acceptance criteria and assertions define the behavior to preserve. Error text suggests a hypothesis; it cannot establish that a test is wrong.
 
-The merged `bmad-testarch-automate` skill applies these patterns during Create in red and expand modes through `resources/run-and-heal.md`. Execution and healing default to enabled, with at most three repair rounds. Validate and Edit never heal. Expand seeks passing tests. Red verifies that the criterion executes and fails for the intended missing behavior, which remains unchanged.
+The merged `bmad-tea-automate` skill applies these patterns during Create in red and expand modes through `resources/run-and-heal.md`. Execution and healing default to enabled, with at most three repair rounds. Validate and Edit never heal. Expand seeks passing tests. Red verifies that the criterion executes and fails for the intended missing behavior, which remains unchanged.
 
 ## Diagnose Before Editing
 

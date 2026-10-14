@@ -41,8 +41,8 @@ If using Cypress, commands and syntax will differ.
 
 #### 1. Run the Automate Skill
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-automate`
-- **Codex:** `$bmad-testarch-automate`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-automate`
+- **Codex:** `$bmad-tea-automate`
 - **Inside a `/bmad-tea` chat:** `TA`
 
 Acceptance scaffolds before implementation select red; coverage for existing code selects expand. With no task mode signal, Automate and `TA` default to expand. Conflicting task mode signals prompt one mode question in an interactive run; an unattended run uses expand. Every default fallback states the selected mode in the final summary. Existing customization files and interrupted progress remain usable.
@@ -533,8 +533,8 @@ Component tests use separate tooling from E2E tests:
 Run `test-design` before `automate` for better results:
 
 ```text
-/bmad-testarch-test-design   # risk assessment, priorities
-/bmad-testarch-automate      # generate tests based on those priorities
+/bmad-tea-test-design   # risk assessment, priorities
+/bmad-tea-automate      # generate tests based on those priorities
 ```
 
 TEA will focus on P0/P1 scenarios and skip low-value tests.
@@ -691,7 +691,7 @@ See [Configure Browser Automation](/docs/how-to/customization/configure-browser-
 
 ## Red Mode
 
-Use the Automate skill's `red` mode to generate acceptance test scaffolds before implementation. Ask `/bmad-testarch-automate`, `$bmad-testarch-automate`, or `TA` for red mode.
+Use the Automate skill's `red` mode to generate acceptance test scaffolds before implementation. Ask `/bmad-tea-automate`, `$bmad-tea-automate`, or `TA` for red mode.
 TEA emits these scaffolds with `test.skip()` so they can be reviewed, linked into the story, and activated task-by-task during implementation.
 
 <a id="red-when-to-use-this"></a>
@@ -723,8 +723,8 @@ Adapt the commands and selectors for Cypress.
 
 #### 1. Run Automate in Red Mode
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-automate`
-- **Codex:** `$bmad-testarch-automate`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-automate`
+- **Codex:** `$bmad-tea-automate`
 - **Inside a `/bmad-tea` chat:** `TA`
 
 Request red mode explicitly:
@@ -1141,8 +1141,8 @@ That completes the red → green → refactor cycle for the generated scaffolds.
 Run `test-design` before Automate red mode for better results:
 
 ```text
-/bmad-testarch-test-design   # risk assessment and priorities
-/bmad-testarch-automate      # request red mode to generate tests based on that design
+/bmad-tea-test-design   # risk assessment and priorities
+/bmad-tea-automate      # request red mode to generate tests based on that design
 ```
 
 <a id="red-browser-automation-optional"></a>

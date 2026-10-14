@@ -1,7 +1,7 @@
 /**
  * automate eval harness.
  *
- * `bmad-testarch-automate` is deferred in `test/evals/suite-manifest.json` with
+ * `bmad-tea-automate` is deferred in `test/evals/suite-manifest.json` with
  * nothing behind it but fragment selection: no suite proves its generated tests
  * pass on working code, fail on a real regression, or avoid vacuous or
  * duplicate coverage. This is that suite.
@@ -20,9 +20,9 @@
  * corpus and Playwright resolve, and starts no server and runs no spec file.
  * Four hand-authored Playwright spec sets under
  * `test/fixtures/automate-eval/cases/` stand in for what a real
- * `bmad-testarch-automate` expand-mode run could produce. Running the suite against a real
+ * `bmad-tea-automate` expand-mode run could produce. Running the suite against a real
  * model is the residual `test/docs/eval-quality-roadmap.md` records on
- * this skill's row, the same way it is recorded on `bmad-testarch-atdd`'s.
+ * this skill's row, the same way it is recorded on `bmad-tea-atdd`'s.
  *
  * `--agent` / `--agent-cmd` / `--runs` are still accepted, only so this
  * harness's argv shape matches every other suite's for `test/eval-all.js` and

@@ -28,7 +28,7 @@
     "direction. It is an array because a suite can need more than one: `bmad-tea-routing` is nineteen intents and",
     "eval-quality's AD-39 scripting bound caps an interaction plan at sixteen steps, so its corpus is expressed as",
     "an intents contract and a controls contract. test/contracts/README.md records the split.",
-    "`bmad-teach-me-testing` ships no knowledge index at all, so fragment selection does not apply to it; its own",
+    "`bmad-tea-teach-me-testing` ships no knowledge index at all, so fragment selection does not apply to it; its own",
     "behavioral suite, `teach-me-testing`, is what discharges it."
   ],
   "manifestVersion": 1,
@@ -37,7 +37,7 @@
       "$comment": [
         "One story, quay-locker-service, staged into a disposable workspace and generated against by a",
         "vendor run, then executed under NFR9's isolation by the deterministic tea-atdd-red-check, which",
-        "spends no vendor call of its own. Generation reads bmad-testarch-automate red mode through the existing ATDD suite identity.",
+        "spends no vendor call of its own. Generation reads bmad-tea-automate red mode through the existing ATDD suite identity.",
         "",
         "Five acceptance criteria, four asking for a route the fixture does not have and one extending a",
         "route it already has, which is what makes a vacuous pass possible: a scaffold that asserts only",
@@ -55,7 +55,7 @@
         "by test/test-atdd-isolation.js before this suite is registered."
       ],
       "id": "atdd",
-      "skill": "bmad-testarch-automate",
+      "skill": "bmad-tea-automate",
       "evalType": "behavioral",
       "harness": "test/eval-atdd.js",
       "harnessOptions": {
@@ -92,7 +92,7 @@
     {
       "$comment": [
         "No live agent and no generation step, unlike every other suite here. Four hand-authored Playwright spec",
-        "sets under test/fixtures/automate-eval/cases/ stand in for what a real bmad-testarch-automate expand-mode run could",
+        "sets under test/fixtures/automate-eval/cases/ stand in for what a real bmad-tea-automate expand-mode run could",
         "produce against the Story 6.6 voucher-service fixture, and every one of them actually runs, twice: once",
         "against the fixed implementation and once against a scratch copy carrying the fixture's seeded",
         "regression (the minimum-spend boundary flipped from inclusive to exclusive).",
@@ -122,7 +122,7 @@
         "deterministic half, because that half is not a vendor-calling interaction either."
       ],
       "id": "automate",
-      "skill": "bmad-testarch-automate",
+      "skill": "bmad-tea-automate",
       "evalType": "behavioral",
       "harness": "test/eval-automate.js",
       "harnessOptions": {
@@ -206,12 +206,12 @@
       ],
       "id": "fragment-selection",
       "skills": [
-        "bmad-testarch-automate",
-        "bmad-testarch-framework",
-        "bmad-testarch-nfr",
-        "bmad-testarch-test-design",
-        "bmad-testarch-test-review",
-        "bmad-testarch-trace"
+        "bmad-tea-automate",
+        "bmad-tea-framework",
+        "bmad-tea-nfr",
+        "bmad-tea-test-design",
+        "bmad-tea-test-review",
+        "bmad-tea-trace"
       ],
       "evalType": "fragment-selection",
       "harness": "test/eval-fragment-selection.js",
@@ -221,34 +221,34 @@
         "acceptsWorkflowFilter": true
       },
       "fixtures": [
-        "test/evals/bmad-testarch-atdd/evals.json",
-        "test/evals/bmad-testarch-automate/evals.json",
-        "test/evals/bmad-testarch-ci/evals.json",
-        "test/evals/bmad-testarch-framework/evals.json",
-        "test/evals/bmad-testarch-nfr/evals.json",
-        "test/evals/bmad-testarch-test-design/evals.json",
-        "test/evals/bmad-testarch-test-review/evals.json",
-        "test/evals/bmad-testarch-trace/evals.json"
+        "test/evals/bmad-tea-atdd/evals.json",
+        "test/evals/bmad-tea-automate/evals.json",
+        "test/evals/bmad-tea-ci/evals.json",
+        "test/evals/bmad-tea-framework/evals.json",
+        "test/evals/bmad-tea-nfr/evals.json",
+        "test/evals/bmad-tea-test-design/evals.json",
+        "test/evals/bmad-tea-test-review/evals.json",
+        "test/evals/bmad-tea-trace/evals.json"
       ],
       "groundTruth": [
-        "test/evals/bmad-testarch-atdd/evals.json",
-        "test/evals/bmad-testarch-automate/evals.json",
-        "test/evals/bmad-testarch-ci/evals.json",
-        "test/evals/bmad-testarch-framework/evals.json",
-        "test/evals/bmad-testarch-nfr/evals.json",
-        "test/evals/bmad-testarch-test-design/evals.json",
-        "test/evals/bmad-testarch-test-review/evals.json",
-        "test/evals/bmad-testarch-trace/evals.json"
+        "test/evals/bmad-tea-atdd/evals.json",
+        "test/evals/bmad-tea-automate/evals.json",
+        "test/evals/bmad-tea-ci/evals.json",
+        "test/evals/bmad-tea-framework/evals.json",
+        "test/evals/bmad-tea-nfr/evals.json",
+        "test/evals/bmad-tea-test-design/evals.json",
+        "test/evals/bmad-tea-test-review/evals.json",
+        "test/evals/bmad-tea-trace/evals.json"
       ],
       "contracts": [
-        "test/contracts/fragment-selection/bmad-testarch-atdd.contract.json",
-        "test/contracts/fragment-selection/bmad-testarch-automate.contract.json",
-        "test/contracts/fragment-selection/bmad-testarch-ci.contract.json",
-        "test/contracts/fragment-selection/bmad-testarch-framework.contract.json",
-        "test/contracts/fragment-selection/bmad-testarch-nfr.contract.json",
-        "test/contracts/fragment-selection/bmad-testarch-test-design.contract.json",
-        "test/contracts/fragment-selection/bmad-testarch-test-review.contract.json",
-        "test/contracts/fragment-selection/bmad-testarch-trace.contract.json"
+        "test/contracts/fragment-selection/bmad-tea-atdd.contract.json",
+        "test/contracts/fragment-selection/bmad-tea-automate.contract.json",
+        "test/contracts/fragment-selection/bmad-tea-ci.contract.json",
+        "test/contracts/fragment-selection/bmad-tea-framework.contract.json",
+        "test/contracts/fragment-selection/bmad-tea-nfr.contract.json",
+        "test/contracts/fragment-selection/bmad-tea-test-design.contract.json",
+        "test/contracts/fragment-selection/bmad-tea-test-review.contract.json",
+        "test/contracts/fragment-selection/bmad-tea-trace.contract.json"
       ],
       "thresholds": {
         "requiredRecall": 0.9,
@@ -283,7 +283,7 @@
         "fragment selection, and two is the smallest number that can say whether the answer is reproducible."
       ],
       "id": "ci",
-      "skills": ["bmad-testarch-framework"],
+      "skills": ["bmad-tea-framework"],
       "evalType": "behavioral",
       "harness": "test/eval-ci.js",
       "harnessOptions": {
@@ -379,7 +379,7 @@
         "so a workflow that never passes anything fails this suite as surely as one that passes everything."
       ],
       "id": "nfr",
-      "skill": "bmad-testarch-nfr",
+      "skill": "bmad-tea-nfr",
       "evalType": "behavioral",
       "harness": "test/eval-nfr.js",
       "harnessOptions": {
@@ -446,7 +446,7 @@
         "The thresholds above are the harness's, and the harness is the only thing that checks them. The",
         "contract this suite links is deliberately weaker than the harness, because the workflow declares",
         "one output and it is prose: `{test_artifacts}/test-design/test-design-epic-{epic_num}.md`, with nothing",
-        "machine-readable beside it. bmad-testarch-trace writes e2e-trace-summary-{run_key}.json next to its markdown",
+        "machine-readable beside it. bmad-tea-trace writes e2e-trace-summary-{run_key}.json next to its markdown",
         "matrix, which is how the trace contract states the matrix's content through arithmetic its oracles",
         "can reach. Test-design has no summary to point at, so every oracle here addresses the document as a",
         "whole and can only ask which vocabulary it carries. The arithmetic, the band placement, the",
@@ -461,7 +461,7 @@
         "consumer side."
       ],
       "id": "test-design",
-      "skill": "bmad-testarch-test-design",
+      "skill": "bmad-tea-test-design",
       "evalType": "behavioral",
       "harness": "test/eval-test-design.js",
       "harnessOptions": {
@@ -504,7 +504,7 @@
         "The runner needs a scoped write because the workflow's deliverable is a report file it must create."
       ],
       "id": "test-review",
-      "skill": "bmad-testarch-test-review",
+      "skill": "bmad-tea-test-review",
       "evalType": "behavioral",
       "harness": "test/eval-test-review.js",
       "harnessOptions": {
@@ -547,7 +547,7 @@
         "fragment selection, and two is the smallest number that can say whether the answer is reproducible."
       ],
       "id": "trace",
-      "skill": "bmad-testarch-trace",
+      "skill": "bmad-tea-trace",
       "evalType": "behavioral",
       "harness": "test/eval-trace.js",
       "harnessOptions": {
@@ -602,7 +602,7 @@
         "transcript-driving engine, test/lib/transcript-harness.js's runTranscript, against a trivial",
         "scripted three-turn session. It discharges no skill's coverage obligation and declares neither",
         "skill nor skills, the same way fragment-selection's evalType already withholds coverage while",
-        "measuring something real. bmad-teach-me-testing stays in deferred until Story 6.11 actually",
+        "measuring something real. bmad-tea-teach-me-testing stays in deferred until Story 6.11 actually",
         "measures it with this engine; this suite proving the engine works is not that measurement.",
         "",
         "The one registered case always drives test/fixtures/transcript-runner/stub-agent.js through",
@@ -640,7 +640,7 @@
     {
       "$comment": [
         "Why this doesn't fit the existing agent-eval shape cleanly, and why it's registered in suites[] anyway: all",
-        "other behavioral suites here invoke a live agent and score what it produced. bmad-testarch-framework's",
+        "other behavioral suites here invoke a live agent and score what it produced. bmad-tea-framework's",
         "'generation' step is a parameterized template copy, not a live-agent judgment call -- Story 6.8 already",
         "scored the committed fixture's contents statically with zero agent involvement. This suite is 100%",
         "execution and 0% generation: it copies the committed clean fixture into a disposable workspace, runs a real",
@@ -666,7 +666,7 @@
         "what rules that out on every live run, not only once by hand."
       ],
       "id": "framework",
-      "skill": "bmad-testarch-framework",
+      "skill": "bmad-tea-framework",
       "evalType": "behavioral",
       "harness": "test/eval-framework-scaffold.js",
       "harnessOptions": {
@@ -701,7 +701,7 @@
     },
     {
       "$comment": [
-        "The suite that retires bmad-teach-me-testing from deferred, reusing Story 6.10's transcript-driving",
+        "The suite that retires bmad-tea-teach-me-testing from deferred, reusing Story 6.10's transcript-driving",
         "engine and runner completely unchanged: one case, two turns, against a real vendor. Turn 1 plays the",
         "whole first-session path through the real skill, itself supplying both the facilitator (following the",
         "real step files exactly) and a scripted learner (role, Beginner experience, learning goals, session",
@@ -721,7 +721,7 @@
         "functions this suite shares with the story spec (placementHolds, correctionHolds, reTeachingHolds,",
         "masteryClaimHolds) actually fails on a hand-built violation before this suite is trusted to run one.",
         "",
-        "AC2 was rewritten before this suite was built: bmad-teach-me-testing has no mechanism, in any",
+        "AC2 was rewritten before this suite was built: bmad-tea-teach-me-testing has no mechanism, in any",
         "session, where a wrong answer on one topic pulls in a different topic the pre-correction plan did not",
         "already have (see _bmad-output/planning-artifacts/epics.md's Story 6.11 finding). The real branch is",
         "[R] review the same session's content again, or [C] continue anyway, and reTeachingHolds scores that",
@@ -739,7 +739,7 @@
         "deterministic tier."
       ],
       "id": "teach-me-testing",
-      "skill": "bmad-teach-me-testing",
+      "skill": "bmad-tea-teach-me-testing",
       "evalType": "behavioral",
       "harness": "test/eval-teach-me-testing.js",
       "harnessOptions": {
@@ -748,34 +748,34 @@
         "acceptsWorkflowFilter": false
       },
       "fixtures": [
-        "skills/bmad-teach-me-testing/checklist.md",
-        "skills/bmad-teach-me-testing/customize.toml",
-        "skills/bmad-teach-me-testing/data/curriculum.yaml",
-        "skills/bmad-teach-me-testing/data/quiz-questions.yaml",
-        "skills/bmad-teach-me-testing/data/role-paths.yaml",
-        "skills/bmad-teach-me-testing/data/session-content-map.yaml",
-        "skills/bmad-teach-me-testing/data/tea-resources-index.yaml",
-        "skills/bmad-teach-me-testing/instructions.md",
-        "skills/bmad-teach-me-testing/resources/tea-completion-summary.example.md",
-        "skills/bmad-teach-me-testing/SKILL.md",
-        "skills/bmad-teach-me-testing/steps-c/step-01-init.md",
-        "skills/bmad-teach-me-testing/steps-c/step-01b-continue.md",
-        "skills/bmad-teach-me-testing/steps-c/step-02-assess.md",
-        "skills/bmad-teach-me-testing/steps-c/step-03-session-menu.md",
-        "skills/bmad-teach-me-testing/steps-c/step-04-session-01.md",
-        "skills/bmad-teach-me-testing/steps-c/step-04-session-02.md",
-        "skills/bmad-teach-me-testing/steps-c/step-04-session-03.md",
-        "skills/bmad-teach-me-testing/steps-c/step-04-session-04.md",
-        "skills/bmad-teach-me-testing/steps-c/step-04-session-05.md",
-        "skills/bmad-teach-me-testing/steps-c/step-04-session-06.md",
-        "skills/bmad-teach-me-testing/steps-c/step-04-session-07.md",
-        "skills/bmad-teach-me-testing/steps-c/step-05-completion.md",
-        "skills/bmad-teach-me-testing/steps-e/step-e-01-assess-workflow.md",
-        "skills/bmad-teach-me-testing/steps-e/step-e-02-apply-edits.md",
-        "skills/bmad-teach-me-testing/steps-v/step-v-01-validate.md",
-        "skills/bmad-teach-me-testing/templates/completion-summary-template.md",
-        "skills/bmad-teach-me-testing/templates/progress-template.yaml",
-        "skills/bmad-teach-me-testing/templates/session-notes-template.md"
+        "skills/bmad-tea-teach-me-testing/checklist.md",
+        "skills/bmad-tea-teach-me-testing/customize.toml",
+        "skills/bmad-tea-teach-me-testing/data/curriculum.yaml",
+        "skills/bmad-tea-teach-me-testing/data/quiz-questions.yaml",
+        "skills/bmad-tea-teach-me-testing/data/role-paths.yaml",
+        "skills/bmad-tea-teach-me-testing/data/session-content-map.yaml",
+        "skills/bmad-tea-teach-me-testing/data/tea-resources-index.yaml",
+        "skills/bmad-tea-teach-me-testing/instructions.md",
+        "skills/bmad-tea-teach-me-testing/resources/tea-completion-summary.example.md",
+        "skills/bmad-tea-teach-me-testing/SKILL.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-01-init.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-01b-continue.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-02-assess.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-03-session-menu.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-04-session-01.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-04-session-02.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-04-session-03.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-04-session-04.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-04-session-05.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-04-session-06.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-04-session-07.md",
+        "skills/bmad-tea-teach-me-testing/steps-c/step-05-completion.md",
+        "skills/bmad-tea-teach-me-testing/steps-e/step-e-01-assess-workflow.md",
+        "skills/bmad-tea-teach-me-testing/steps-e/step-e-02-apply-edits.md",
+        "skills/bmad-tea-teach-me-testing/steps-v/step-v-01-validate.md",
+        "skills/bmad-tea-teach-me-testing/templates/completion-summary-template.md",
+        "skills/bmad-tea-teach-me-testing/templates/progress-template.yaml",
+        "skills/bmad-tea-teach-me-testing/templates/session-notes-template.md"
       ],
       "groundTruth": ["test/fixtures/teach-me-testing-eval/ground-truth.json"],
       "contracts": [],
@@ -802,9 +802,9 @@
         "(catchThreshold, minimumTrialCount, severityFloor); tools/validate-eval-schemas.js fails on any drift."
       ],
       "id": "evaluate",
-      "skill": "bmad-testarch-evaluate",
+      "skill": "bmad-tea-evaluate",
       "evalType": "evaluate-authored",
-      "evaluation": "test/evaluations/bmad-testarch-evaluate/evaluation.json",
+      "evaluation": "test/evaluations/bmad-tea-evaluate/evaluation.json",
       "thresholds": {
         "trials": 5,
         "strengthFloor": {

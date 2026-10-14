@@ -1,5 +1,5 @@
 /**
- * Scores a generated `bmad-testarch-framework` scaffold's contents.
+ * Scores a generated `bmad-tea-framework` scaffold's contents.
  *
  * No generated scaffold is ever inspected: the workflow's own step files (config,
  * fixtures, sample tests, package.json scripts, and a three-part hook registration)
@@ -47,7 +47,7 @@ const path = require('node:path');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const CLEAN_FIXTURE_DIR = path.join(__dirname, 'fixtures', 'framework-scaffold', 'clean');
-const REAL_HOOK_PATH = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-framework', 'resources', 'hooks', 'tea-enforce.cjs');
+const REAL_HOOK_PATH = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-framework', 'resources', 'hooks', 'tea-enforce.cjs');
 
 const colors = {
   reset: '\u001B[0m',
@@ -638,7 +638,7 @@ function runMutationCase({ label, mutate, category, expectedProblemSubstring, ex
 
 function main() {
   console.log(`${colors.cyan}========================================`);
-  console.log('bmad-testarch-framework scaffold scoring');
+  console.log('bmad-tea-framework scaffold scoring');
   console.log(`========================================${colors.reset}\n`);
   console.log(
     `${colors.dim}Scores one canonical scaffold path only: frontend, Playwright, TypeScript, Playwright Utils enabled, no Pact.${colors.reset}\n`,

@@ -3,7 +3,7 @@ title: 'Teach CLI'
 description: 'Learn testing one caller-owned message at a time with durable teaching progress.'
 ---
 
-`tea-teach` runs the packaged `bmad-teach-me-testing` skill for one learner message.
+`tea-teach` runs the packaged `bmad-tea-teach-me-testing` skill for one learner message.
 It saves the tutor's next question or menu, the conversation, and the skill's progress YAML.
 Run the command again with your answer to continue.
 

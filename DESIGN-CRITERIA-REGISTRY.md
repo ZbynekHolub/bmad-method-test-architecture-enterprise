@@ -2,7 +2,7 @@
 
 This design record began on 2026-08-04 after couture-cast PR #103 produced conflicting review recommendations.
 The dated sections describe the implementation and evidence available at the time.
-For current behavior, read the [criteria registry](./skills/bmad-testarch-test-review/steps-c/criteria-registry.md) and [CLI reference](./docs/reference/tea-test-review-cli.md).
+For current behavior, read the [criteria registry](./skills/bmad-tea-test-review/steps-c/criteria-registry.md) and [CLI reference](./docs/reference/tea-test-review-cli.md).
 
 ## What the #103 comparison exposed
 

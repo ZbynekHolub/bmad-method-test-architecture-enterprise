@@ -1,4 +1,4 @@
-// EVAL FIXTURE. Part of the bmad-testarch-trace behavioral eval corpus.
+// EVAL FIXTURE. Part of the bmad-tea-trace behavioral eval corpus.
 // Ground truth lives in test/fixtures/trace-eval/ground-truth.json. Do not repair,
 // extend, rename, or reformat anything here: the harness measures a trace run against
 // these exact files, so an edit silently moves the benchmark.

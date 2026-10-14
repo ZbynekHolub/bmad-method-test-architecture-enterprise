@@ -55,13 +55,13 @@ Eight workflows have eight direct capability commands, plus the TEA agent and it
 
 Automation uses one skill with two modes: red before implementation and expand after implementation. Request red mode through Automate for acceptance tests before implementation. Automate and `TA` default to expand when no task mode is given. Create runs execute and repair tests for up to three rounds while keeping real product defects visible.
 
-Invoke a skill as `/bmad-testarch-<skill>` in Claude Code, Cursor, and Windsurf, or `$bmad-testarch-<skill>` in Codex.
-NFR uses `/bmad-testarch-nfr` or `$bmad-testarch-nfr`; its stored identifier is `nfr-assess`. Teach Me Testing uses `/bmad-teach-me-testing` or `$bmad-teach-me-testing`, with no `testarch` segment.
+Invoke a skill as `/bmad-tea-<skill>` in Claude Code, Cursor, and Windsurf, or `$bmad-tea-<skill>` in Codex.
+NFR uses `/bmad-tea-nfr` or `$bmad-tea-nfr`; its stored identifier is `nfr-assess`. Teach Me Testing uses `/bmad-tea-teach-me-testing` or `$bmad-tea-teach-me-testing`, with no `testarch` segment.
 Inside an active TEA agent session, use the menu codes: `TD`, `TF`, `CI`, `AT`, `TA`, `EV`, `RV`, `NR`, `TR`, plus `TMT` for TEA Academy and `GATE`. `AT` selects Automate red mode; `CI` selects Framework CI scope.
 
-`bmad-testarch-framework` owns both setup phases.
+`bmad-tea-framework` owns both setup phases.
 Request framework only, CI only, or both. It infers scope from the prompt and asks "Do you want CI too?" once when CI scope is unclear in an interactive session. An unattended request with unclear scope runs framework setup only and states that CI was excluded.
-Request CI setup through `bmad-testarch-framework` with CI scope or use the agent's `CI` menu code.
+Request CI setup through `bmad-tea-framework` with CI scope or use the agent's `CI` menu code.
 Create starts setup, Resume continues an interrupted run, Validate reports checks without repairing outputs, and Edit revises the selected outputs and checks those changes.
 
 <a id="tea-workflow-lifecycle"></a>
@@ -179,18 +179,18 @@ Make the scope explicit in your prompt.
 #### Phase 3 system-level example
 
 ```text
-/bmad-testarch-test-design
+/bmad-tea-test-design
 Run system-level test-design for Phase 3 using docs/prd.md, docs/architecture.md, and docs/adr/*.md. Focus on architecture testability, ASRs, NFR thresholds, planned NFR evidence, integration risks, and Sprint 0 setup. Produce test-design/test-design-architecture.md and test-design/test-design-qa.md before implementation-readiness.
 ```
 
 #### Phase 4 per-epic example
 
 ```text
-/bmad-testarch-test-design
+/bmad-tea-test-design
 Run epic-level test-design for Phase 4 on Epic 3 using docs/epics/epic-3.md and its stories. Use prior system-level test-design outputs if present. Produce test-design/test-design-epic-3.md with risk scores, P0-P3 scenarios, regression/integration/NFR coverage, and follow-on guidance for Automate red and expand modes.
 ```
 
-Codex users run `$bmad-testarch-test-design` with the same scope-setting prompt.
+Codex users run `$bmad-tea-test-design` with the same scope-setting prompt.
 
 ## Why TEA Is Different from Other BMM Agents
 

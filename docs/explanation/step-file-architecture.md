@@ -25,7 +25,7 @@ These boundaries let independent workers produce outputs the aggregation step ca
 Layout in the repository, per skill:
 
 ```text
-bmad-testarch-automate/
+bmad-tea-automate/
 ├── SKILL.md             # Entry point: loads config and customization, picks the mode
 ├── workflow.yaml        # Metadata, variables, output paths
 ├── instructions.md      # Workflow summary and operator notes

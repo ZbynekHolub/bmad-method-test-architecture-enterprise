@@ -8,7 +8,7 @@ description: Diagnose and resolve common issues when using TEA
 ## Installation Issues
 
 TEA installs as skills.
-`npx skills add` copies each one into your host's skills folder, such as `.claude/skills/` or `.agents/skills/`.
+`npx skills add` installs each one into your host's skills folder, such as `.claude/skills/` or `.agents/skills/`. It may use symlinks or copies.
 The commands below use `.claude/skills/`; substitute your host's folder.
 
 ### TEA Skills Not Found After Installation
@@ -18,12 +18,28 @@ The commands below use `.claude/skills/`; substitute your host's folder.
 **Cause**: The install did not finish, it went to a different scope (project or global) than the one your host reads, or the host was started before the skills existed.
 
 ```bash
-ls .claude/skills/ | grep -E 'bmad-tea|bmad-testarch|bmad-teach|bmod-tea'
+ls .claude/skills/ | grep -E 'bmad-tea|bmod-tea'
 npx skills add bmad-code-org/bmad-method-test-architecture-enterprise   # re-run to add what is missing
 ```
 
-Expect the `bmad-tea` agent, `bmod-tea` module, and eight direct workflows: `bmad-teach-me-testing` and seven `bmad-testarch-*` entries. Automate handles ATDD through red mode; Framework handles CI setup through CI scope.
+Expect the `bmad-tea` agent, `bmod-tea` module, and eight direct workflows: `bmad-tea-teach-me-testing` and seven `bmad-tea-*` entries. Automate handles ATDD through red mode; Framework handles CI setup through CI scope.
 Restart the host or start a fresh chat after installing.
+
+### Old Slash Commands Still Appear After 3.0
+
+An upgrade may leave old skill folders. Check project and global scopes; substitute your host's skills directory for `.claude/skills/`.
+
+```bash
+ls .claude/skills/ | grep -E '^(bmad-testarch-(automate|evaluate|framework|nfr|test-design|test-review|trace)|bmad-teach-me-testing)$'
+```
+
+After [migrating customizations](/reference/configuration/#upgrading-customizations-to-30), inspect and back up the listed folders outside the skills directory. For a project install managed by the skills CLI, run:
+
+```bash
+npx skills remove bmad-testarch-automate bmad-testarch-evaluate bmad-testarch-framework bmad-testarch-nfr bmad-testarch-test-design bmad-testarch-test-review bmad-testarch-trace bmad-teach-me-testing
+```
+
+For a global install, add `--global`. Move unmanaged old folders out after backup. Keep `bmad-tea`, `bmod-tea`, and new `bmad-tea-*` folders. Restart the host and verify its command list.
 
 ### Install Hangs or Cannot Reach GitHub
 
@@ -67,17 +83,17 @@ Skills find the knowledge base at `../bmod-tea/knowledge` from their own folder,
 **Cause**: Skills are missing from the install.
 
 ```bash
-ls .claude/skills/ | grep bmad-testarch   # seven workflow folders must be present
-# bmad-testarch-automate   bmad-testarch-framework   bmad-testarch-nfr
-# bmad-testarch-evaluate   bmad-testarch-test-design bmad-testarch-test-review
-# bmad-testarch-trace
+ls .claude/skills/ | grep '^bmad-tea-'   # eight workflow folders must be present
+# bmad-tea-automate   bmad-tea-framework   bmad-tea-nfr
+# bmad-tea-evaluate   bmad-tea-test-design bmad-tea-test-review
+# bmad-tea-trace
 ```
 
 Try invoking the skill by its full skill name:
 
 ```text
-/bmad-testarch-test-design    # Claude Code, Cursor, Windsurf
-$bmad-testarch-test-design    # Codex
+/bmad-tea-test-design    # Claude Code, Cursor, Windsurf
+$bmad-tea-test-design    # Codex
 ```
 
 If a skill is missing, [reset TEA to a fresh state](#reset-tea-to-a-fresh-state).
@@ -133,7 +149,7 @@ When a run stops early, the last step it names is where to look.
 
 ```bash
 # 1. The subagent step files must exist
-ls .claude/skills/bmad-testarch-automate/steps-c/step-03*.md
+ls .claude/skills/bmad-tea-automate/steps-c/step-03*.md
 # step-03-generate-tests.md plus step-03a-*, step-03b-*, step-03c-aggregate.md
 
 # 2. Workers hand off through one JSON file per suite in /tmp
@@ -166,7 +182,7 @@ head -1 .claude/skills/bmod-tea/knowledge/tea-index.csv
 
 # Workflows load knowledge through a `knowledgeIndex` key in step-file frontmatter,
 # so workflow.yaml never mentions fragments
-grep -r knowledgeIndex .claude/skills/bmad-testarch-test-design/steps-c/
+grep -r knowledgeIndex .claude/skills/bmad-tea-test-design/steps-c/
 # knowledgeIndex: '{tea-knowledge}/tea-index.csv'
 ```
 
@@ -197,7 +213,7 @@ uv run _bmad/scripts/resolve_config.py --project-root . --key modules.tea   # th
 
 TEA keys belong under `[modules.tea]`.
 `_bmad/custom/config.user.toml` wins over `_bmad/custom/config.toml`, which wins over `_bmad/config.toml`.
-`evaluations_folder` and `ci_platform` are skill keys. Put them under `[workflow]` in `_bmad/custom/bmad-testarch-evaluate.toml` and `_bmad/custom/bmad-testarch-framework.toml`, respectively. Existing CI platform overrides in `_bmad/custom/bmad-testarch-ci.toml` remain usable unless the framework customization explicitly overrides them.
+`evaluations_folder` and `ci_platform` are skill keys. Put them under `[workflow]` in `_bmad/custom/bmad-tea-evaluate.toml` and `_bmad/custom/bmad-tea-framework.toml`, respectively. Existing CI platform overrides in `_bmad/custom/bmad-tea-ci.toml` remain usable unless the framework customization explicitly overrides them.
 A `_bmad/tea/config.yaml` from an earlier install is not read by any skill.
 
 If the key name matches [Configuration](/reference/configuration/), save the file, start a fresh chat, and re-run the skill.

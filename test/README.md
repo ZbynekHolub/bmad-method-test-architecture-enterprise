@@ -85,7 +85,7 @@ best-effort design already tolerates this, the fixture just pins it down.
 
 ## test-design eval suite
 
-`eval-test-design.js` measures `bmad-testarch-test-design` against `fixtures/test-design-eval/`.
+`eval-test-design.js` measures `bmad-tea-test-design` against `fixtures/test-design-eval/`.
 The two fixture sets each contain one epic.
 The seeded set has five material risks and four ruled-out risks; the clean set has four ruled-out risks and a ceiling of three risks total.
 They run in separate disposable workspaces through `tea-test-design-runner` with `scoped-artifact-writes`.
@@ -117,7 +117,7 @@ It reports 2 fixture sets, 5 material risks, 8 ruled-out risks, and 9 ordering c
 
 ## trace eval suite
 
-`eval-trace.js` measures `bmad-testarch-trace` against `fixtures/trace-eval/`.
+`eval-trace.js` measures `bmad-tea-trace` against `fixtures/trace-eval/`.
 The seeded and clean sets run separately, each with its own oracle and gate.
 
 The harness stages the fixture, resolved config, and skill, then invokes `tea-trace-runner` through the command adapter.
@@ -179,7 +179,7 @@ Constructed replay cases establish scorer regression behavior; recorded live evi
 
 ## nfr eval suite
 
-`eval-nfr.js` measures `bmad-testarch-nfr` against separate gapped and clean bundles under `fixtures/nfr-eval/`.
+`eval-nfr.js` measures `bmad-tea-nfr` against separate gapped and clean bundles under `fixtures/nfr-eval/`.
 Each bundle has its own service and thresholds.
 
 The gapped bundle offers a healthy load report with no performance target and a coverage claim with no coverage report.
@@ -202,7 +202,7 @@ It has no Codex or Gemini calibration in that record.
 
 ## ci eval suite
 
-`eval-ci.js` measures `bmad-testarch-ci` against six independent Node projects in `fixtures/ci-eval/`:
+`eval-ci.js` measures `bmad-tea-ci` against six independent Node projects in `fixtures/ci-eval/`:
 
 | Project            | What it checks                                                          |
 | ------------------ | ----------------------------------------------------------------------- |
@@ -283,7 +283,7 @@ It exits before any model call, and it is what `eval:all --preflight-only` passe
 
 ## Repository counts
 
-`npm test` chains 176 checks; `npm run test:ci-coverage` derives the count from `package.json`.
+`npm test` chains 177 checks; `npm run test:ci-coverage` derives the count from `package.json`.
 The fragment-selection corpus contains 24 cases.
 A preflight run checks 12 suites, including 10 that probe the selected agent executable, version, and credentials.
 The remaining suites check corpus and execution tooling.
@@ -338,16 +338,16 @@ npm run eval:test-design -- --agent codex --agent-cmd "$codex_path"
 
 Fragment selection accepts a workflow ID. These examples run one repetition; use `--runs 2` for stability measurement:
 
-| Skill       | Command                                                                                          |
-| ----------- | ------------------------------------------------------------------------------------------------ |
-| ATDD        | `npm run eval:fragment-selection -- --agent codex --workflow bmad-testarch-atdd --runs 1`        |
-| Automate    | `npm run eval:fragment-selection -- --agent codex --workflow bmad-testarch-automate --runs 1`    |
-| CI          | `npm run eval:fragment-selection -- --agent codex --workflow bmad-testarch-ci --runs 1`          |
-| Framework   | `npm run eval:fragment-selection -- --agent codex --workflow bmad-testarch-framework --runs 1`   |
-| NFR         | `npm run eval:fragment-selection -- --agent codex --workflow bmad-testarch-nfr --runs 1`         |
-| Test design | `npm run eval:fragment-selection -- --agent codex --workflow bmad-testarch-test-design --runs 1` |
-| Test review | `npm run eval:fragment-selection -- --agent codex --workflow bmad-testarch-test-review --runs 1` |
-| Trace       | `npm run eval:fragment-selection -- --agent codex --workflow bmad-testarch-trace --runs 1`       |
+| Skill       | Command                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------- |
+| ATDD        | `npm run eval:fragment-selection -- --agent codex --workflow bmad-tea-atdd --runs 1`        |
+| Automate    | `npm run eval:fragment-selection -- --agent codex --workflow bmad-tea-automate --runs 1`    |
+| CI          | `npm run eval:fragment-selection -- --agent codex --workflow bmad-tea-ci --runs 1`          |
+| Framework   | `npm run eval:fragment-selection -- --agent codex --workflow bmad-tea-framework --runs 1`   |
+| NFR         | `npm run eval:fragment-selection -- --agent codex --workflow bmad-tea-nfr --runs 1`         |
+| Test design | `npm run eval:fragment-selection -- --agent codex --workflow bmad-tea-test-design --runs 1` |
+| Test review | `npm run eval:fragment-selection -- --agent codex --workflow bmad-tea-test-review --runs 1` |
+| Trace       | `npm run eval:fragment-selection -- --agent codex --workflow bmad-tea-trace --runs 1`       |
 
 Omit `--workflow` to run every fragment-selection case. Add `--json` for machine-readable evidence:
 

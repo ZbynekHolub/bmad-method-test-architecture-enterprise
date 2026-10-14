@@ -109,7 +109,7 @@ const traceHarness = require('./eval-trace');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const REVIEW_FIXTURE_DIR = path.join('test', 'fixtures', 'test-review-eval');
-const REVIEW_SKILL_DIR = path.join('skills', 'bmad-testarch-test-review');
+const REVIEW_SKILL_DIR = path.join('skills', 'bmad-tea-test-review');
 // The review skill reads its knowledge from {skill-root}/../bmod-tea/knowledge.
 const TEA_KNOWLEDGE_SKILL_DIR = path.join('skills', 'bmod-tea');
 const DEFAULT_OUT = path.join(PROJECT_ROOT, 'test', 'eval-artifacts', 'contract-strength');

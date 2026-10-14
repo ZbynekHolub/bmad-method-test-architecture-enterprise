@@ -15,32 +15,32 @@ Eight workflows have eight direct capability commands, plus the TEA agent and it
 
 The same skill can be invoked in three ways:
 
-| Surface                         | Form                     | Example                   |
-| ------------------------------- | ------------------------ | ------------------------- |
-| Claude Code / Cursor / Windsurf | `/bmad-testarch-<skill>` | `/bmad-testarch-automate` |
-| Codex                           | `$bmad-testarch-<skill>` | `$bmad-testarch-automate` |
-| Inside a `bmad-tea` chat        | the skill's menu code    | `TA`                      |
+| Surface                         | Form                  | Example              |
+| ------------------------------- | --------------------- | -------------------- |
+| Claude Code / Cursor / Windsurf | `/bmad-tea-<skill>`   | `/bmad-tea-automate` |
+| Codex                           | `$bmad-tea-<skill>`   | `$bmad-tea-automate` |
+| Inside a `bmad-tea` chat        | the skill's menu code | `TA`                 |
 
 Load the TEA agent with `/bmad-tea` or `$bmad-tea` to use its menu codes and `GATE` router.
 Each workflow also runs directly.
 
-Framework and CI setup share `bmad-testarch-framework`. Request CI setup explicitly through that command or the agent's `CI` menu code. Existing CI customizations remain usable.
+Framework and CI setup share `bmad-tea-framework`. Request CI setup explicitly through that command or the agent's `CI` menu code. Existing CI customizations remain usable.
 
-Automation uses `bmad-testarch-automate` with `red` and `expand` modes. Acceptance scaffolds before implementation select red; coverage for existing code selects expand. The agent's `AT` menu code selects red. With no task mode signal, the Automate command and `TA` menu code default to expand. Conflicting task mode signals prompt one mode question in an interactive run; an unattended run uses expand. Every default fallback states the selected mode in the final summary.
+Automation uses `bmad-tea-automate` with `red` and `expand` modes. Acceptance scaffolds before implementation select red; coverage for existing code selects expand. The agent's `AT` menu code selects red. With no task mode signal, the Automate command and `TA` menu code default to expand. Conflicting task mode signals prompt one mode question in an interactive run; an unattended run uses expand. Every default fallback states the selected mode in the final summary.
 
 The table uses the skill names shown in navigation.
 Teach Me Testing carries no `testarch` segment in its command; NFR uses `-nfr`, and its stored identifier is `nfr-assess`.
 
 | Skill            | Command                                                     | Menu code |
 | ---------------- | ----------------------------------------------------------- | --------- |
-| Automate         | `/bmad-testarch-automate` · `$bmad-testarch-automate`       | `TA`      |
-| Test Review      | `/bmad-testarch-test-review` · `$bmad-testarch-test-review` | `RV`      |
-| Test Design      | `/bmad-testarch-test-design` · `$bmad-testarch-test-design` | `TD`      |
-| Framework        | `/bmad-testarch-framework` · `$bmad-testarch-framework`     | `TF`      |
-| NFR              | `/bmad-testarch-nfr` · `$bmad-testarch-nfr`                 | `NR`      |
-| Trace            | `/bmad-testarch-trace` · `$bmad-testarch-trace`             | `TR`      |
-| Teach Me Testing | `/bmad-teach-me-testing` · `$bmad-teach-me-testing`         | `TMT`     |
-| Evaluate         | `/bmad-testarch-evaluate` · `$bmad-testarch-evaluate`       | `EV`      |
+| Automate         | `/bmad-tea-automate` · `$bmad-tea-automate`                 | `TA`      |
+| Test Review      | `/bmad-tea-test-review` · `$bmad-tea-test-review`           | `RV`      |
+| Test Design      | `/bmad-tea-test-design` · `$bmad-tea-test-design`           | `TD`      |
+| Framework        | `/bmad-tea-framework` · `$bmad-tea-framework`               | `TF`      |
+| NFR              | `/bmad-tea-nfr` · `$bmad-tea-nfr`                           | `NR`      |
+| Trace            | `/bmad-tea-trace` · `$bmad-tea-trace`                       | `TR`      |
+| Teach Me Testing | `/bmad-tea-teach-me-testing` · `$bmad-tea-teach-me-testing` | `TMT`     |
+| Evaluate         | `/bmad-tea-evaluate` · `$bmad-tea-evaluate`                 | `EV`      |
 
 The agent also accepts `AT` for Automate red mode and `CI` for Framework CI scope. These codes invoke the canonical skills and have no separate direct commands.
 
@@ -71,7 +71,7 @@ Modes, scopes, and agent routing:
 
 ## Automate
 
-Generate tests through the automation skill. `expand` mode adds coverage after implementation; `red` mode writes acceptance scaffolds before implementation. `/bmad-testarch-automate` and `TA` default to expand. Request red mode explicitly for acceptance tests before implementation.
+Generate tests through the automation skill. `expand` mode adds coverage after implementation; `red` mode writes acceptance scaffolds before implementation. `/bmad-tea-automate` and `TA` default to expand. Request red mode explicitly for acceptance tests before implementation.
 
 Create executes the generated tests and repairs selector, timing, data, network, hard-wait, or setup issues for up to three rounds. Expand aims for passing tests. Real product defects remain findings with their assertions intact. Red verifies that each test fails for its intended missing behavior. The summary lists repairs and remaining failures. Validate reports findings and Edit checks the requested changes; these operations never repair tests.
 
@@ -101,7 +101,7 @@ Create executes the generated tests and repairs selector, timing, data, network,
 
 ### ATDD Through Automate
 
-Request [Automate red mode](#automate) with `/bmad-testarch-automate` or `$bmad-testarch-automate` and specify acceptance tests before implementation. The agent's `AT` code selects red directly. Existing ATDD customizations and interrupted progress remain usable.
+Request [Automate red mode](#automate) with `/bmad-tea-automate` or `$bmad-tea-automate` and specify acceptance tests before implementation. The agent's `AT` code selects red directly. Existing ATDD customizations and interrupted progress remain usable.
 
 **How-To Guide:** [Automate Red Mode](/docs/how-to/workflows/run-automate.md#red-mode)
 
@@ -240,7 +240,7 @@ See [Execution Targets](/docs/reference/execution-targets.md) for supported fram
 
 ### CI Through Framework
 
-Request [Framework CI setup](#framework) with `/bmad-testarch-framework` or `$bmad-testarch-framework` and specify CI scope. The agent's `CI` code selects that scope directly. Existing CI customizations and saved progress remain usable. Create, Resume, Validate, and Edit remain available.
+Request [Framework CI setup](#framework) with `/bmad-tea-framework` or `$bmad-tea-framework` and specify CI scope. The agent's `CI` code selects that scope directly. Existing CI customizations and saved progress remain usable. Create, Resume, Validate, and Edit remain available.
 
 **How-To Guide:** [Framework CI Setup](/docs/how-to/workflows/setup-test-framework.md#ci-setup)
 
@@ -372,7 +372,7 @@ Identify gaps and produce a CI plan.
 
 - The target to evaluate, which the skill inspects
 - Behavioral requirements you confirm
-- The `evaluations_folder` setting in `_bmad/custom/bmad-testarch-evaluate.toml` (default `evals`)
+- The `evaluations_folder` setting in `_bmad/custom/bmad-tea-evaluate.toml` (default `evals`)
 
 **Key Outputs:**
 

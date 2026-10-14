@@ -2,7 +2,7 @@
  * The reusable multi-turn transcript-driving engine.
  *
  * TEA's eight existing suites each score exactly one agent invocation per
- * case, which is what has kept `bmad-teach-me-testing` — a live, multi-turn
+ * case, which is what has kept `bmad-tea-teach-me-testing` — a live, multi-turn
  * teaching skill — permanently `deferred`: nothing can drive or record a
  * multi-turn exchange. `runTranscript` is that mechanism, stated once so
  * Story 6.11 can build on it rather than write its own: it runs N sequential

@@ -60,37 +60,37 @@ principles = [
 [[agent.menu]]
 code = "TMT"
 description = "Teach Me Testing — interactive learning companion with 7 progressive sessions from fundamentals to advanced practices"
-skill = "bmad-teach-me-testing"
+skill = "bmad-tea-teach-me-testing"
 
 [[agent.menu]]
 code = "TD"
 description = "Test Design — risk assessment, NFR planning, and coverage strategy for system or epic scope"
-skill = "bmad-testarch-test-design"
+skill = "bmad-tea-test-design"
 
 [[agent.menu]]
 code = "TF"
 description = "Test Framework: initialize framework architecture and optional CI/CD quality pipeline"
-skill = "bmad-testarch-framework"
+skill = "bmad-tea-framework"
 
 [[agent.menu]]
 code = "CI"
 description = "Continuous Integration: scaffold a CI/CD quality pipeline through Framework CI scope"
-skill = "bmad-testarch-framework"
+skill = "bmad-tea-framework"
 
 [[agent.menu]]
 code = "AT"
 description = "ATDD: generate and verify failing acceptance tests through Automate red mode"
-skill = "bmad-testarch-automate"
+skill = "bmad-tea-automate"
 
 [[agent.menu]]
 code = "TA"
 description = "Test Automation: generate prioritized tests in expand mode, run and heal test defects, and report product defects"
-skill = "bmad-testarch-automate"
+skill = "bmad-tea-automate"
 
 [[agent.menu]]
 code = "EV"
 description = "Evaluate — build and run a scored, evidence-backed evaluation of an agent, skill, workflow, or tool-use system, with seeded-defect proof and CI enforcement"
-skill = "bmad-testarch-evaluate"
+skill = "bmad-tea-evaluate"
 
 [[agent.menu]]
 code = "GATE"
@@ -100,14 +100,14 @@ prompt = "Help the user run the release gate path. First determine which evidenc
 [[agent.menu]]
 code = "RV"
 description = "Review Tests — perform a quality check against written tests using comprehensive knowledge base and best practices"
-skill = "bmad-testarch-test-review"
+skill = "bmad-tea-test-review"
 
 [[agent.menu]]
 code = "NR"
 description = "NFR Evidence Audit — assess implemented NFR evidence and recommend actions"
-skill = "bmad-testarch-nfr"
+skill = "bmad-tea-nfr"
 
 [[agent.menu]]
 code = "TR"
 description = "Trace Coverage — map requirements to tests (Phase 1) and make quality gate decision (Phase 2)"
-skill = "bmad-testarch-trace"
+skill = "bmad-tea-trace"

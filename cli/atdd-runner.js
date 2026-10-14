@@ -3,7 +3,7 @@
  * tea-atdd-runner — the command the ATDD behavioral contract names for
  * generation.
  *
- * `bmad-testarch-atdd` reads a story's acceptance criteria and writes red-phase
+ * `bmad-tea-atdd` reads a story's acceptance criteria and writes red-phase
  * test scaffolds under the project's `tests/` directory, one deliverable this
  * eval measures by executing rather than reading. Generation and execution are
  * two separate commands: this one drives the workflow and leaves the scaffolds

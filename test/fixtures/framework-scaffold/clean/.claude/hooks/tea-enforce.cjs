@@ -8,7 +8,7 @@
  *
  * WHAT IT ENFORCES, AND WHAT IT DELIBERATELY DOES NOT
  *
- * Every rule here is a row from `bmad-testarch-test-review/steps-c/criteria-registry.md`,
+ * Every rule here is a row from `bmad-tea-test-review/steps-c/criteria-registry.md`,
  * gated `Absolute` there, and mechanically decidable by pattern. That is a small
  * subset on purpose. The registry's Absolute rows that need a judgment a regex
  * cannot make (C5 mock-asserted-against-itself, C6 unreachable assertion, H3
@@ -79,7 +79,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const REGISTRY_PATH = 'bmad-testarch-test-review/steps-c/criteria-registry.md';
+const REGISTRY_PATH = 'bmad-tea-test-review/steps-c/criteria-registry.md';
 
 // ---------------------------------------------------------------------------
 // Configuration

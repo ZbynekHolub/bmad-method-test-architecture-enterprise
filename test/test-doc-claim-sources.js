@@ -46,7 +46,7 @@ function check(name, fn) {
 // file, guarded by SIGINT/SIGTERM handlers so an interrupted run doesn't
 // leave the probe file behind in the skill folder -- the same lifecycle
 // test/test-clock-port.js uses around its own probe skill.
-const stagingRoot = path.join(__dirname, '..', 'skills', 'bmad-testarch-automate');
+const stagingRoot = path.join(__dirname, '..', 'skills', 'bmad-tea-automate');
 const stagingFile = path.join(stagingRoot, `doc-claim-sources-test-${process.pid}.md`);
 const probeKey = `probe_key_${process.pid}`;
 fs.writeFileSync(stagingFile, `if ${probeKey} is set, do the thing\n`);
@@ -71,7 +71,7 @@ check('MOBILE_ROW_IDS and PLAYWRIGHT_UTILS_ROW_IDS match an independent read of 
   // predicate strings production already uses, which would prove only that
   // calling one function twice is deterministic, not that the parser or the
   // predicate itself reads the right column.
-  const registryPath = path.join(__dirname, '..', 'skills', 'bmad-testarch-test-review', 'steps-c', 'criteria-registry.md');
+  const registryPath = path.join(__dirname, '..', 'skills', 'bmad-tea-test-review', 'steps-c', 'criteria-registry.md');
   const mobileIds = [];
   const playwrightUtilsIds = [];
   for (const line of fs.readFileSync(registryPath, 'utf8').split('\n')) {
@@ -183,7 +183,7 @@ check('misplacedOutputs flags a flat output path and leaves inputs and legacy pa
   // `legacy*` frontmatter key that are both flat on purpose.
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-claim-sources-'));
   try {
-    const skillDir = path.join(scratch, 'bmad-testarch-probe');
+    const skillDir = path.join(scratch, 'bmad-tea-probe');
     fs.mkdirSync(path.join(skillDir, 'steps-c'), { recursive: true });
     fs.writeFileSync(
       path.join(skillDir, 'workflow.yaml'),
@@ -225,7 +225,7 @@ check('misplacedOutputs flags a flat output path and leaves inputs and legacy pa
 check('combined setup retains phase output folders and checks nested CI write targets', () => {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-claim-setup-'));
   try {
-    const skillDir = path.join(scratch, 'bmad-testarch-framework');
+    const skillDir = path.join(scratch, 'bmad-tea-framework');
     const ciSteps = path.join(skillDir, 'ci', 'steps-c');
     fs.mkdirSync(path.join(skillDir, 'steps-c'), { recursive: true });
     fs.mkdirSync(ciSteps, { recursive: true });
@@ -254,7 +254,7 @@ check('combined setup retains phase output folders and checks nested CI write ta
 check('combined automation retains mode output folders and checks nested red write targets', () => {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-claim-automation-'));
   try {
-    const skillDir = path.join(scratch, 'bmad-testarch-automate');
+    const skillDir = path.join(scratch, 'bmad-tea-automate');
     const redSteps = path.join(skillDir, 'red', 'steps-c');
     fs.mkdirSync(path.join(skillDir, 'steps-c'), { recursive: true });
     fs.mkdirSync(redSteps, { recursive: true });
@@ -284,8 +284,8 @@ check('nested phase workflow declarations reveal misplaced outputs without any s
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-claim-nested-workflows-'));
   try {
     for (const [skill, phase, owner] of [
-      ['bmad-testarch-automate', 'red', 'atdd'],
-      ['bmad-testarch-framework', 'ci', 'ci'],
+      ['bmad-tea-automate', 'red', 'atdd'],
+      ['bmad-tea-framework', 'ci', 'ci'],
     ]) {
       const skillDir = path.join(scratch, skill);
       const phaseDir = path.join(skillDir, phase);
@@ -315,7 +315,7 @@ check('misplacedOutputs flags a flat write target in a step body and leaves lega
   // the one misplacement is the screenshot a step body writes flat at the root.
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-claim-sources-'));
   try {
-    const skillDir = path.join(scratch, 'bmad-testarch-probe');
+    const skillDir = path.join(scratch, 'bmad-tea-probe');
     fs.mkdirSync(path.join(skillDir, 'steps-c'), { recursive: true });
     fs.writeFileSync(
       path.join(skillDir, 'steps-c', 'step-02-capture.md'),
@@ -345,7 +345,7 @@ check('misplacedOutputs flags a flat write target in a step body and leaves lega
 check('declaredOutputPaths refuses step frontmatter that is not valid YAML, naming the file', () => {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-claim-sources-'));
   try {
-    const skillDir = path.join(scratch, 'bmad-testarch-probe');
+    const skillDir = path.join(scratch, 'bmad-tea-probe');
     fs.mkdirSync(path.join(skillDir, 'steps-c'), { recursive: true });
     fs.writeFileSync(
       path.join(skillDir, 'steps-c', 'step-01-broken.md'),

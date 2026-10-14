@@ -27,7 +27,7 @@ It runs in the browser and keeps todos in React state.
 
 :::tip[Quick Path]
 Set up TEA → scaffold with `framework` → plan with `test-design` → generate with `automate` → run `npx playwright test`.
-Use `/bmad-testarch-<skill>` in Claude Code, Cursor, or Windsurf, and `$bmad-testarch-<skill>` in Codex.
+Use `/bmad-tea-<skill>` in Claude Code, Cursor, or Windsurf, and `$bmad-tea-<skill>` in Codex.
 :::
 
 ## TEA Approaches Explained
@@ -78,8 +78,8 @@ You can also invoke each skill directly.
 
 ### Scaffold Test Framework
 
-- Claude Code / Cursor / Windsurf: `/bmad-testarch-framework`
-- Codex: `$bmad-testarch-framework`
+- Claude Code / Cursor / Windsurf: `/bmad-tea-framework`
+- Codex: `$bmad-tea-framework`
 - Inside a TEA chat: `TF`
 
 This tutorial sets up the test framework only. You can add CI later.
@@ -104,8 +104,8 @@ npx playwright install
 
 ### Run Test Design
 
-- Claude Code / Cursor / Windsurf: `/bmad-testarch-test-design`
-- Codex: `$bmad-testarch-test-design`
+- Claude Code / Cursor / Windsurf: `/bmad-tea-test-design`
+- Codex: `$bmad-tea-test-design`
 - Inside a TEA chat: `TD`
 
 Ask for an epic-level plan for epic 1:
@@ -123,8 +123,8 @@ Use those priorities to choose what to generate first.
 
 ### Run Automate
 
-- Claude Code / Cursor / Windsurf: `/bmad-testarch-automate`
-- Codex: `$bmad-testarch-automate`
+- Claude Code / Cursor / Windsurf: `/bmad-tea-automate`
+- Codex: `$bmad-tea-automate`
 - Inside a TEA chat: `TA`
 
 Give TEA the app URL and the plan's path:
@@ -219,12 +219,12 @@ You used `framework`, `test-design`, and `automate` to build and run tests for a
 
 ### Quick Reference
 
-| Action             | Claude Code / Cursor / Windsurf | Codex                        | TEA menu |
-| ------------------ | ------------------------------- | ---------------------------- | -------- |
-| Load agent         | `/bmad-tea`                     | `$bmad-tea`                  | n/a      |
-| Scaffold framework | `/bmad-testarch-framework`      | `$bmad-testarch-framework`   | `TF`     |
-| Test design        | `/bmad-testarch-test-design`    | `$bmad-testarch-test-design` | `TD`     |
-| Generate tests     | `/bmad-testarch-automate`       | `$bmad-testarch-automate`    | `TA`     |
+| Action             | Claude Code / Cursor / Windsurf | Codex                   | TEA menu |
+| ------------------ | ------------------------------- | ----------------------- | -------- |
+| Load agent         | `/bmad-tea`                     | `$bmad-tea`             | n/a      |
+| Scaffold framework | `/bmad-tea-framework`           | `$bmad-tea-framework`   | `TF`     |
+| Test design        | `/bmad-tea-test-design`         | `$bmad-tea-test-design` | `TD`     |
+| Generate tests     | `/bmad-tea-automate`            | `$bmad-tea-automate`    | `TA`     |
 
 ### TEA Principles
 

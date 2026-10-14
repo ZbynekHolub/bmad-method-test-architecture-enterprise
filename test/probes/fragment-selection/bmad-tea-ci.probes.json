@@ -1,0 +1,114 @@
+[
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-001",
+    "probeClass": "gameability",
+    "behaviorId": "B-002",
+    "systemId": "tea-fragment-selection-bmad-tea-ci",
+    "implementationDigest": "sha256:bd3be1e76ff0e70d68ce0313fafea9c51d896a3f6961354b75bd46208a7a1bca",
+    "artifactDigest": "sha256:07ffe76bef3e3feab6d1f60c5cc41c87344cf5f0997cfa6781cb7d069a9f5c33",
+    "commitDigest": "sha256:bd3be1e76ff0e70d68ce0313fafea9c51d896a3f6961354b75bd46208a7a1bca",
+    "rationale": "A run that names every fragment in the index satisfies O-001 for ci-gitlab-python, because every mandated fragment is in the list, and violates O-002, because so is every forbidden one. The containment oracle alone cannot tell that reply from a correct selection, and the exclusion oracle can.",
+    "qualification": {
+      "route": "gameability",
+      "degenerateResponse": "A selection naming every fragment the bmad-tea-ci index offers, mandated and forbidden alike.",
+      "naiveOracleSatisfiedEvidence": {
+        "storage": "public",
+        "path": "test/evals/bmad-tea-ci/evals.json",
+        "privateRef": null,
+        "digest": "sha256:07ffe76bef3e3feab6d1f60c5cc41c87344cf5f0997cfa6781cb7d069a9f5c33"
+      },
+      "disciplinedOracleRejectedEvidence": {
+        "storage": "public",
+        "path": "test/evals/bmad-tea-ci/evals.json",
+        "privateRef": null,
+        "digest": "sha256:07ffe76bef3e3feab6d1f60c5cc41c87344cf5f0997cfa6781cb7d069a9f5c33"
+      }
+    },
+    "expectedClean": false,
+    "defects": [],
+    "defectSignature": {
+      "interfaceKind": "cli",
+      "invocation": {
+        "executable": "tea-fragment-selection-runner",
+        "subcommandPath": []
+      },
+      "observableChannel": "stdout",
+      "condition": {
+        "selector": {
+          "inputBinding": {
+            "path": null,
+            "query": null,
+            "header": null,
+            "body": null,
+            "argument": null,
+            "option": {
+              "agent": {
+                "matcher": "any"
+              }
+            },
+            "environment": null,
+            "stdin": {
+              "prompt": {
+                "matcher": "any"
+              }
+            },
+            "arguments": null
+          }
+        },
+        "predicate": {
+          "op": "for-any",
+          "collection": {
+            "pointer": "/interactions/observed/stdout/fragments"
+          },
+          "predicate": {
+            "op": "set-membership",
+            "operands": [
+              {
+                "pointer": "@/"
+              },
+              {
+                "literal": [
+                  "burn-in.md",
+                  "playwright-utils-mandate.md",
+                  "pactjs-utils-mandate.md",
+                  "pact-consumer-framework-setup.md",
+                  "pact-broker-webhooks.md",
+                  "maestro-flows.md"
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-002",
+    "probeClass": "zero-action",
+    "behaviorId": "B-001",
+    "systemId": "tea-fragment-selection-bmad-tea-ci",
+    "implementationDigest": "sha256:bd3be1e76ff0e70d68ce0313fafea9c51d896a3f6961354b75bd46208a7a1bca",
+    "artifactDigest": "sha256:07ffe76bef3e3feab6d1f60c5cc41c87344cf5f0997cfa6781cb7d069a9f5c33",
+    "commitDigest": "sha256:bd3be1e76ff0e70d68ce0313fafea9c51d896a3f6961354b75bd46208a7a1bca",
+    "rationale": "ci-gitlab-python declares the exact set the step files mandate and the exact set they exclude, so a selection naming the first and none of the second is the run this contract exists to confirm.",
+    "qualification": {
+      "route": "clean-control",
+      "baselinePassEvidence": {
+        "storage": "public",
+        "path": "test/evals/bmad-tea-ci/evals.json",
+        "privateRef": null,
+        "digest": "sha256:07ffe76bef3e3feab6d1f60c5cc41c87344cf5f0997cfa6781cb7d069a9f5c33"
+      },
+      "revisionCommitDigest": "sha256:bd3be1e76ff0e70d68ce0313fafea9c51d896a3f6961354b75bd46208a7a1bca",
+      "noKnownDefectStatement": "ci-gitlab-python's expected selection is derived from the bmad-tea-ci step files themselves, and npm run test:criteria-fragments fails when a fragment it names has left the index."
+    },
+    "expectedClean": true,
+    "defects": []
+  }
+]

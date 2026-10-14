@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * tea-atdd-red-check — activates and executes the scaffolds
- * `bmad-testarch-atdd` wrote, and reports what actually happened.
+ * `bmad-tea-atdd` wrote, and reports what actually happened.
  *
  * This is the deterministic half of the ATDD suite, and it carries no vendor
  * knowledge at all: it never calls a model, never resolves a credential, and

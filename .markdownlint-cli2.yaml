@@ -65,7 +65,7 @@ config:
   # serving two rendering paths. Disabling front-matter-title detection keeps
   # the rule live for what it actually catches: two real body-level H1s in
   # one document, which is a genuine, if rare, structural mistake (see
-  # bmad-testarch-trace/checklist.md's fix history).
+  # bmad-tea-trace/checklist.md's fix history).
   MD025:
     front_matter_title: ""
 

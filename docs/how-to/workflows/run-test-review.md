@@ -30,8 +30,8 @@ Coverage scoring is intentionally excluded from `test-review`. Use `trace` for r
 
 ### 1. Run the Test Review Skill
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-test-review`
-- **Codex:** `$bmad-testarch-test-review`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-test-review`
+- **Codex:** `$bmad-tea-test-review`
 - **Inside a `/bmad-tea` chat:** `RV`
 
 Full invocation rules: [Invoking a TEA Skill](/docs/reference/commands.md#invoking-a-tea-skill).

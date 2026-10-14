@@ -1,7 +1,7 @@
 /**
  * teach-me-testing eval harness.
  *
- * `bmad-teach-me-testing` is the one TEA skill with no suite of any kind: it
+ * `bmad-tea-teach-me-testing` is the one TEA skill with no suite of any kind: it
  * stayed `deferred` because it is a live, multi-turn teaching session and
  * nothing before Story 6.10's `runTranscript` could drive or record one. This
  * suite discharges that entry for real, against a real vendor, reusing Story
@@ -78,7 +78,7 @@
  *
  * NO MISCONCEPTION-TRIGGERED TOPIC ROUTING
  *
- * `bmad-teach-me-testing` has no mechanism, in any session, where a wrong
+ * `bmad-tea-teach-me-testing` has no mechanism, in any session, where a wrong
  * answer on one topic pulls in a different topic the pre-correction plan did
  * not already have (see `_bmad-output/planning-artifacts/epics.md`'s Story
  * 6.11 finding, and `data/curriculum.yaml`, read in full). The real branch is
@@ -99,7 +99,7 @@
  *   default           Spends two real vendor calls per repetition (one per
  *                     turn). This suite is not free the way Story 6.10's
  *                     infrastructure proof was: it discharges
- *                     `bmad-teach-me-testing`'s coverage obligation for real.
+ *                     `bmad-tea-teach-me-testing`'s coverage obligation for real.
  *
  * Usage:
  *   node test/eval-teach-me-testing.js --validate-only
@@ -154,7 +154,7 @@ const { retainSkillArtifacts, finishSkillAttempt } = require('./lib/retain-skill
 const PROJECT_ROOT = path.join(__dirname, '..');
 const FIXTURE_ROOT = path.join(__dirname, 'fixtures', 'teach-me-testing-eval');
 const GROUND_TRUTH = path.join(FIXTURE_ROOT, 'ground-truth.json');
-const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-teach-me-testing');
+const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-teach-me-testing');
 const SUITE_ID = 'teach-me-testing';
 const CASE_ID = 'session-01-first-run-then-fresh-continuation';
 
@@ -542,7 +542,7 @@ function configToml(groundTruth) {
  * Stage the persistent workspace both turns of the session share, with the
  * workspace itself as the agent's working directory:
  *
- *   skill/                    the bmad-teach-me-testing workflow, copied verbatim
+ *   skill/                    the bmad-tea-teach-me-testing workflow, copied verbatim
  *   bmod-tea/                 the shared TEA knowledge base the skill reads as {tea-knowledge}
  *   _bmad/config.toml         the resolved config
  *   test-artifacts/           empty; the run writes its progress file and session notes here
@@ -594,7 +594,7 @@ function turn1Prompt(groundTruth) {
   const wrong = groundTruth.seededWrongQuestion;
   const transcriptFile = TRANSCRIPT_FILES[0];
   return [
-    "You are conducting one complete, non-interactive session of the TEA workflow `bmad-teach-me-testing`, playing BOTH roles yourself in a single reply: the TEA Academy facilitator (exactly as the workflow's own step files direct) and a scripted learner whose every answer is given to you below. There is no live human here. Supply the learner's answers yourself, exactly as scripted, the instant the facilitator's own step file would ask a real person for them, and never stop to wait for one.",
+    "You are conducting one complete, non-interactive session of the TEA workflow `bmad-tea-teach-me-testing`, playing BOTH roles yourself in a single reply: the TEA Academy facilitator (exactly as the workflow's own step files direct) and a scripted learner whose every answer is given to you below. There is no live human here. Supply the learner's answers yourself, exactly as scripted, the instant the facilitator's own step file would ask a real person for them, and never stop to wait for one.",
     '',
     'The workflow is in `skill/`. Read `skill/SKILL.md` first, then follow its "On Activation" sequence and every step file it and the step files it names direct you to, in order, in full, exactly as written. Do not skip, reorder, paraphrase away, or improvise the facilitator half of this -- if a step\'s own text says to display something, display it in full.',
     '',
@@ -675,7 +675,7 @@ function turn2Prompt(groundTruth) {
   const transcriptFile = TRANSCRIPT_FILES[1];
   return [
     'This is a brand-new process with no memory of any earlier turn. You are again running the TEA workflow',
-    '`bmad-teach-me-testing` in this same working directory. Read `skill/SKILL.md` first, then follow its',
+    '`bmad-tea-teach-me-testing` in this same working directory. Read `skill/SKILL.md` first, then follow its',
     '"On Activation" sequence, resolving placeholders exactly as before:',
     '',
     '- `{project-root}`: `.`',

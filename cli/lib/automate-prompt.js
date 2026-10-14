@@ -27,7 +27,7 @@ function resolveGenerationConfig(projectRoot, checkpointPath, operation, skillRo
   };
   if (!['none', 'auto', 'cli', 'mcp'].includes(tea.tea_browser_automation))
     throw new Error('tea_browser_automation must be none, auto, cli or mcp');
-  const namespace = mode === 'red' ? 'bmad-testarch-atdd' : 'bmad-testarch-automate';
+  const namespace = mode === 'red' ? 'bmad-tea-atdd' : 'bmad-tea-automate';
   const sibling = path.join(skillRoot, '..', namespace, 'customize.toml');
   const defaultsPath =
     mode === 'red' && !fs.existsSync(sibling)

@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- TEA 3.0 publishes all eight direct workflows as `bmad-tea-*` commands. The former `bmad-testarch-*` and `bmad-teach-me-testing` commands are removed. The `bmad-tea` agent, `bmod-tea` module, menu codes, workflow behavior, and existing CLI executable names remain.
+- Existing workflow customization files can be moved with `tea-migrate-customizations`. The migration preserves values, comments, and file permissions, updates old skill IDs in custom TEA agent menus, and requests a manual merge when old and new filenames coexist. Direct workflows flag legacy overrides before activation; headless CLIs continue to read them during the transition.
 - Teach Me Testing live evaluation prints minute-by-minute progress and can retain each staged two-turn session for replay and inspection.
 - NFR live evaluation prints each case start and a minute-by-minute heartbeat while an agent call runs.
 - Test Design live evaluation prints each case start and a minute-by-minute heartbeat while an agent call runs.
@@ -27,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Give documented test command invocations enough time under parallel CI load, including the full Test Review CLI suite.
 - Teach Me Testing evaluation heartbeats use interval counts while scored durations continue through the shared clock port.
 - `tea-teach` restores learner state after interrupted publication, rejects negated learner facts, and verifies that displayed quiz choices keep their canonical letters.
 - `tea-teach` preserves a completed quiz's caller evidence during practice retakes and lets below-pass learners replace an in-progress grade after answering a fresh round.

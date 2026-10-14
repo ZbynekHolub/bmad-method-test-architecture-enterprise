@@ -1258,7 +1258,7 @@ function checkStaticRules() {
   }
   assert.match(AD10, /\|\s*13\s*\|[^\n]*evaluation evidence drift/);
   assert.match(AD10, /Amended 2026-10-01 in Story 2\.2/);
-  const gaps = fs.readFileSync(path.join(ROOT, 'skills', 'bmad-testarch-evaluate', 'references', 'gaps.md'), 'utf8');
+  const gaps = fs.readFileSync(path.join(ROOT, 'skills', 'bmad-tea-evaluate', 'references', 'gaps.md'), 'utf8');
   assert.match(gaps, /^\|\s*`tea-evaluate 13`\s*\|[^\n]*drift[^\n]*`ci --tier pr` exits 13/m);
 }
 
@@ -3745,7 +3745,7 @@ const REPOSITORIES = {
   'nightly-deploy': { root: 'test/fixtures/evaluate-ci-repos/nightly-deploy', folder: 'evals/answer-grade' },
 };
 const AI_FEATURE = 'test/fixtures/evaluate-authoring/ai-feature/evaluation';
-const TEMPLATE = path.join(ROOT, 'skills', 'bmad-testarch-evaluate', 'assets', 'evaluation-ci-plan.template.json');
+const TEMPLATE = path.join(ROOT, 'skills', 'bmad-tea-evaluate', 'assets', 'evaluation-ci-plan.template.json');
 /** The files a reason can cite to show an inspection of the repository: its pipelines, its merge rules and its release or deploy note. */
 const EVIDENCE_FILE = /^(?:\.github\/workflows\/|docs\/|CONTRIBUTING\.md$)/;
 const FILE_TOKEN = /[.\w/-]+\.(?:txt|yml|yaml|md|json|mjs|cjs|sh|toml|cfg|conf|lock|xml|ini)\b/g;
@@ -3888,7 +3888,7 @@ function syntheticPlan(tiers, file, drop = []) {
   return { schemaVersion: 1, checks };
 }
 
-const SKILL_ROOT = path.join(ROOT, 'skills', 'bmad-testarch-evaluate');
+const SKILL_ROOT = path.join(ROOT, 'skills', 'bmad-tea-evaluate');
 const READ_KEYS = ['SKILL.md', 'assets/evaluation-ci-plan.template.json', 'references/ci.md'];
 const CAPTURE_ROOT = path.join(__dirname, 'fixtures', 'evaluate-ci-repos');
 const CAPTURE_SNAPSHOTS = { 'SKILL.md': 'captured-evaluate-skill.md', 'references/ci.md': 'captured-evaluate-ci.md' };
@@ -4885,7 +4885,7 @@ function checkTeaPrTier() {
     [
       'the upload path naming another directory',
       (workflow) => (uploadStep(workflow).with.path = uploadStep(workflow).with.path.replaceAll('/runs', '/out')),
-      /omits test\/evaluations\/bmad-testarch-evaluate\/runs/,
+      /omits test\/evaluations\/bmad-tea-evaluate\/runs/,
     ],
   ];
   for (const [label, edit, pattern] of uploadCases) {

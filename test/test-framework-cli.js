@@ -100,7 +100,7 @@ test('packaged preview resolves config and writes no files to the project', (t) 
   const before = fs.readdirSync(f.root);
   const result = f.run(['--agent', 'none', '--scope', 'both']);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /skills\/bmad-testarch-framework/);
+  assert.match(result.stdout, /skills\/bmad-tea-framework/);
   assert.match(result.stdout, /tea_use_playwright_utils": false/);
   assert.deepEqual(fs.readdirSync(f.root), before);
 });
@@ -253,7 +253,7 @@ test('external framework journal symlink fails before prompt or evidence writes'
 test('configured completion hook cannot be omitted from a completed journal', (t) => {
   const f = fixture(t);
   fs.mkdirSync(path.join(f.root, '_bmad/custom'));
-  fs.writeFileSync(path.join(f.root, '_bmad/custom/bmad-testarch-framework.toml'), '[workflow]\non_complete="Write hook marker."\n');
+  fs.writeFileSync(path.join(f.root, '_bmad/custom/bmad-tea-framework.toml'), '[workflow]\non_complete="Write hook marker."\n');
   const result = f.run(f.agent());
   assert.equal(result.status, 1, result.stdout);
   assert.match(JSON.parse(result.stdout).issues.join('\n'), /framework.on_complete/);
@@ -326,7 +326,7 @@ test('configured framework and CI hook identities require exact completed lifecy
   fs.mkdirSync(path.join(f.root, '_bmad/custom'));
   for (const skill of ['framework', 'ci'])
     fs.writeFileSync(
-      path.join(f.root, `_bmad/custom/bmad-testarch-${skill}.toml`),
+      path.join(f.root, `_bmad/custom/bmad-tea-${skill}.toml`),
       '[workflow]\nactivation_steps_prepend=["Record activation."]\non_complete="Record completion."\n',
     );
   const result = f.run([...f.agent('hooks'), '--scope', 'both']);

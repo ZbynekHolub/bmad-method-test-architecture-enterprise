@@ -41,7 +41,7 @@
     "epic-risk-before-tests": {
       "expectedAction": "route",
       "expectedMenuCode": "TD",
-      "expectedWorkflow": "bmad-testarch-test-design",
+      "expectedWorkflow": "bmad-tea-test-design",
       "decidingTokens": ["risk", "coverage"],
       "scopeTokens": ["epic 4"],
       "candidateCodes": [],
@@ -50,7 +50,7 @@
     "no-framework-yet": {
       "expectedAction": "route",
       "expectedMenuCode": "TF",
-      "expectedWorkflow": "bmad-testarch-framework",
+      "expectedWorkflow": "bmad-tea-framework",
       "decidingTokens": ["playwright", "cypress"],
       "scopeTokens": [],
       "candidateCodes": [],
@@ -59,7 +59,7 @@
     "pipeline-quality-gates": {
       "expectedAction": "route",
       "expectedMenuCode": "CI",
-      "expectedWorkflow": "bmad-testarch-framework",
+      "expectedWorkflow": "bmad-tea-framework",
       "decidingTokens": ["pipeline", "quality gate"],
       "scopeTokens": [],
       "candidateCodes": [],
@@ -68,7 +68,7 @@
     "acceptance-tests-before-code": {
       "expectedAction": "route",
       "expectedMenuCode": "AT",
-      "expectedWorkflow": "bmad-testarch-automate",
+      "expectedWorkflow": "bmad-tea-automate",
       "decidingTokens": ["acceptance criteria", "failing"],
       "scopeTokens": ["12.3"],
       "candidateCodes": [],
@@ -77,7 +77,7 @@
     "implemented-feature-no-tests": {
       "expectedAction": "route",
       "expectedMenuCode": "TA",
-      "expectedWorkflow": "bmad-testarch-automate",
+      "expectedWorkflow": "bmad-tea-automate",
       "decidingTokens": ["api test", "already built"],
       "scopeTokens": ["checkout"],
       "candidateCodes": [],
@@ -86,7 +86,7 @@
     "review-existing-tests": {
       "expectedAction": "route",
       "expectedMenuCode": "RV",
-      "expectedWorkflow": "bmad-testarch-test-review",
+      "expectedWorkflow": "bmad-tea-test-review",
       "decidingTokens": ["spec files", "badly written"],
       "scopeTokens": [],
       "candidateCodes": [],
@@ -95,7 +95,7 @@
     "nfr-evidence-on-hand": {
       "expectedAction": "route",
       "expectedMenuCode": "NR",
-      "expectedWorkflow": "bmad-testarch-nfr",
+      "expectedWorkflow": "bmad-tea-nfr",
       "decidingTokens": ["k6", "uptime", "non-functional"],
       "scopeTokens": [],
       "candidateCodes": [],
@@ -104,7 +104,7 @@
     "trace-criteria-to-tests": {
       "expectedAction": "route",
       "expectedMenuCode": "TR",
-      "expectedWorkflow": "bmad-testarch-trace",
+      "expectedWorkflow": "bmad-tea-trace",
       "decidingTokens": ["covered", "ship"],
       "scopeTokens": ["epic 5"],
       "candidateCodes": [],
@@ -113,7 +113,7 @@
     "learn-testing-properly": {
       "expectedAction": "route",
       "expectedMenuCode": "TMT",
-      "expectedWorkflow": "bmad-teach-me-testing",
+      "expectedWorkflow": "bmad-tea-teach-me-testing",
       "decidingTokens": ["learn", "fundamentals"],
       "scopeTokens": [],
       "candidateCodes": [],
@@ -211,7 +211,7 @@
     "prove-refund-agent-behavior": {
       "expectedAction": "route",
       "expectedMenuCode": "EV",
-      "expectedWorkflow": "bmad-testarch-evaluate",
+      "expectedWorkflow": "bmad-tea-evaluate",
       "decidingTokens": ["evaluation", "seeded defects"],
       "scopeTokens": ["refund eligibility"],
       "candidateCodes": [],

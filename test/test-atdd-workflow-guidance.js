@@ -22,7 +22,7 @@ const { createHash } = require('node:crypto');
 const MarkdownIt = require('markdown-it');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const WORKFLOW_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-automate', 'red');
+const WORKFLOW_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-automate', 'red');
 const FILES = {
   preflight: path.join(WORKFLOW_ROOT, 'steps-c', 'step-01-preflight-and-context.md'),
   strategy: path.join(WORKFLOW_ROOT, 'steps-c', 'step-03-test-strategy.md'),

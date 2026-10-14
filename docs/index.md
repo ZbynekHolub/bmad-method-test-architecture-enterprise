@@ -29,7 +29,7 @@ npx skills add bmad-code-org/BMAD-METHOD --skill bmad bmod-core-tools
 Then type `bmad setup tea` in your assistant chat to answer TEA's setup questions.
 See [Configuration](/reference/configuration) for the settings and output folders.
 
-Run `/bmad-testarch-test-design` in Claude Code, Cursor, or Windsurf, or `$bmad-testarch-test-design` in Codex.
+Run `/bmad-tea-test-design` in Claude Code, Cursor, or Windsurf, or `$bmad-tea-test-design` in Codex.
 For the agent menu, load `/bmad-tea` or `$bmad-tea` and type `TD`.
 Each skill also works directly in a fresh session.
 

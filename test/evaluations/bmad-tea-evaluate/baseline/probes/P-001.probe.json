@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 6,
+  "parentDigest": null,
+  "revisionCount": 0,
+  "probeId": "P-001",
+  "probeClass": "zero-action",
+  "behaviorId": "B-001",
+  "systemId": "bmad-tea-evaluate",
+  "implementationDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+  "artifactDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+  "commitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+  "rationale": "[representative] Clean control: the committed exit table classes exit 11 of tea-evaluate an evaluation weakness and exit 12 infrastructure.",
+  "qualification": {
+    "route": "clean-control",
+    "baselinePassEvidence": {
+      "storage": "public",
+      "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-001/baseline-pass.json",
+      "privateRef": null,
+      "digest": "sha256:f6b470192e0e1be475c1ab8dfc8b5f186b40adba616b5d0916668587d53a550f"
+    },
+    "revisionCommitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+    "noKnownDefectStatement": "The exit table in references/gaps.md matches AD-10 at this revision, which the guidance gate holds."
+  },
+  "expectedClean": true,
+  "defects": []
+}

@@ -17,7 +17,7 @@
  *
  * The agent judges the pairs; this file proves the fixtures hold the shapes the
  * pairs name and that the rule text discriminates between them. The live
- * evaluation (test/evaluations/bmad-testarch-test-review) carries a clean control
+ * evaluation (test/evaluations/bmad-tea-test-review) carries a clean control
  * for each unchecked fixture: P-012, P-013 and P-014.
  *
  * Usage: node test/test-test-review-rubric.js
@@ -35,7 +35,7 @@ const { buildPrompt } = require('../cli/lib/build-prompt');
 const { RUBRIC_VERSION, skillRubricVersion, buildReviewProvenance } = require('../cli/lib/review-provenance');
 
 const repoRoot = path.join(__dirname, '..');
-const skillRoot = path.join(repoRoot, 'skills', 'bmad-testarch-test-review');
+const skillRoot = path.join(repoRoot, 'skills', 'bmad-tea-test-review');
 const reposRoot = path.join(__dirname, 'fixtures', 'test-review-evaluation', 'repos');
 const registryRowSeverities = loadRegistryRowSeverities(skillRoot);
 
@@ -171,7 +171,7 @@ section('the rubric version', () => {
     provenance,
   );
   assert(RUBRIC_VERSION === skillRubricVersion(skillRoot), 'the version the CLI scores is the version the skill declares');
-  assert(skillRubricVersion(path.join(repoRoot, 'skills', 'bmad-testarch-trace')) === null, 'a skill with no rubric version reports null');
+  assert(skillRubricVersion(path.join(repoRoot, 'skills', 'bmad-tea-trace')) === null, 'a skill with no rubric version reports null');
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'tea-rubric-version-'));
   try {
     const versionOf = (workflow) => {

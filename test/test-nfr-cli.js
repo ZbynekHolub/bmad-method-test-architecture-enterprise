@@ -176,7 +176,7 @@ test('non-string configured artifact root fails clearly before invoking an agent
 test('prompt-only mode activates NFR namespace with exact input roles and scope', (t) => {
   const root = project(t);
   fs.mkdirSync(path.join(root, '_bmad', 'custom'), { recursive: true });
-  fs.writeFileSync(path.join(root, '_bmad', 'custom', 'bmad-testarch-nfr.toml'), '[workflow]\npersistent_facts=["NFR policy"]\n');
+  fs.writeFileSync(path.join(root, '_bmad', 'custom', 'bmad-tea-nfr.toml'), '[workflow]\npersistent_facts=["NFR policy"]\n');
   const run = execute(root, 'none', ['--scope', 'story', '--scope-id', '12-3']);
   assert.equal(run.status, 0, run.stderr);
   const result = JSON.parse(run.stdout),

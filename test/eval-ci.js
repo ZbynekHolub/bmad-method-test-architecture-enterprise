@@ -1,7 +1,7 @@
 /**
  * ci eval harness.
  *
- * `bmad-testarch-ci` reads a project, reads the pipeline its team asked for, and
+ * `bmad-tea-ci` reads a project, reads the pipeline its team asked for, and
  * writes a workflow file. This measures whether that file parses, whether it
  * lints, whether it carries each element the request named, and whether it
  * carries anything the request did not, against a corpus whose true answers
@@ -10,7 +10,7 @@
  *
  * WHY THIS SUITE EXISTS
  *
- * The manifest carried `bmad-testarch-ci` under `deferred` with one sentence of
+ * The manifest carried `bmad-tea-ci` under `deferred` with one sentence of
  * missing evidence: the generated pipeline configuration was never parsed or
  * linted, so a syntactically invalid workflow would pass unnoticed. That is the
  * sentence this corpus answers. The two headline metrics count parse failures
@@ -226,7 +226,7 @@ const { readBytes, readJson, readText, writeText } = require('./lib/file-system-
 const PROJECT_ROOT = path.join(__dirname, '..');
 const FIXTURE_ROOT = path.join(__dirname, 'fixtures', 'ci-eval');
 const GROUND_TRUTH = path.join(FIXTURE_ROOT, 'ground-truth.json');
-const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-framework');
+const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-framework');
 const SUITE_ID = 'ci';
 
 // A complete CI run reads four step files, the template, several knowledge
@@ -1343,7 +1343,7 @@ async function writeMinimalGitDirectory(projectDir, set) {
  *
  *   <projectRoot>/   the project, plus a resolved _bmad/config.toml, an empty
  *                    test-artifacts/, and the minimal .git/ above
- *   bmad-testarch-framework/  the canonical skill, copied verbatim
+ *   bmad-tea-framework/  the canonical skill, copied verbatim
  *   bmod-tea/        the shared TEA knowledge base the skill reads as {tea-knowledge}
  *
  * The project root is the set's own, so the prompt that names it says which
@@ -1380,7 +1380,7 @@ async function stageIntoWorkspace(dir, set) {
   await writeMinimalGitDirectory(projectDir, set);
 
   for (const relative of filesUnder(SKILL_ROOT)) {
-    const target = path.join(dir, 'bmad-testarch-framework', relative);
+    const target = path.join(dir, 'bmad-tea-framework', relative);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.copyFileSync(path.join(SKILL_ROOT, relative), target);
   }
@@ -1461,7 +1461,7 @@ function buildPrompt(set, { ciPlatform = PLATFORM } = {}) {
   return [
     `You are running the TEA Framework skill with CI scope against the project in \`${root}/\`.`,
     '',
-    'Read `bmad-testarch-framework/SKILL.md` completely and follow its activation, shared router, and CI Create',
+    'Read `bmad-tea-framework/SKILL.md` completely and follow its activation, shared router, and CI Create',
     'steps in order, in full. The original request is CI-only Create. Set `setup_scope = ci`.',
     '',
     '----- run configuration -----',
@@ -1470,7 +1470,7 @@ function buildPrompt(set, { ciPlatform = PLATFORM } = {}) {
     `- \`{project-root}\`: \`${root}\``,
     `- TEA config (\`[core]\` and \`[modules.tea]\`): \`${root}/_bmad/config.toml\``,
     `- \`{test_artifacts}\`: \`${root}/test-artifacts\``,
-    '- `{skill-root}`: `bmad-testarch-framework`',
+    '- `{skill-root}`: `bmad-tea-framework`',
     TEA_KNOWLEDGE_PROMPT_LINE,
     `- \`ci_platform\`: \`${ciPlatform}\``,
     `- \`test_dir\`: \`${root}/tests\``,
@@ -1507,7 +1507,7 @@ function buildEditPrompt(set, { ciPlatform = PLATFORM } = {}) {
   return [
     `You are running the TEA Framework skill with CI scope in edit mode against the project in \`${root}/\`.`,
     '',
-    'Read `bmad-testarch-framework/SKILL.md` completely and follow its activation, shared router, and CI Edit',
+    'Read `bmad-tea-framework/SKILL.md` completely and follow its activation, shared router, and CI Edit',
     'steps in order, in full. The original request is CI-only Edit. Set `setup_scope = ci`.',
     '',
     '----- run configuration -----',
@@ -1516,7 +1516,7 @@ function buildEditPrompt(set, { ciPlatform = PLATFORM } = {}) {
     `- \`{project-root}\`: \`${root}\``,
     `- TEA config (\`[core]\` and \`[modules.tea]\`): \`${root}/_bmad/config.toml\``,
     `- \`{test_artifacts}\`: \`${root}/test-artifacts\``,
-    '- `{skill-root}`: `bmad-testarch-framework`',
+    '- `{skill-root}`: `bmad-tea-framework`',
     TEA_KNOWLEDGE_PROMPT_LINE,
     `- \`ci_platform\`: \`${ciPlatform}\``,
     `- \`test_dir\`: \`${root}/tests\``,

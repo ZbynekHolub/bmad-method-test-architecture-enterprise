@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-**Evaluate** (`bmad-testarch-evaluate`) scores how an AI skill, agent or feature behaves against requirements you confirm.
+**Evaluate** (`bmad-tea-evaluate`) scores how an AI skill, agent or feature behaves against requirements you confirm.
 In normal use, you [start Evaluate in your coding agent](/docs/how-to/evaluate/evaluate-a-skill-or-agent.md).
 It inspects your target and asks you to confirm the requirements.
 Then it writes the evaluation files, runs the evaluation and scores the result.
@@ -401,7 +401,7 @@ Each line is one check:
 - `replay` replays the baseline through eval-quality's `preflight` and `score` and compares the result with the baseline byte for byte, so a baseline that fails to reproduce is rejected here.
 
 Exit 0 means no check blocks the pull request.
-In a pipeline, `bmad-testarch-framework`'s CI setup renders one `tea-evaluate ci` step per tier from this plan.
+In a pipeline, `bmad-tea-framework`'s CI setup renders one `tea-evaluate ci` step per tier from this plan.
 See [`ci`](/docs/reference/tea-evaluate-cli.md#ci).
 
 ## What You Learned
@@ -419,8 +419,8 @@ To run an intake conversation for your own skill, you need:
 
 Start the Evaluate skill in the agent:
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-evaluate`
-- **Codex:** `$bmad-testarch-evaluate`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-evaluate`
+- **Codex:** `$bmad-tea-evaluate`
 - **Inside a `/bmad-tea` chat:** `EV`
 
 The skill asks the six questions of Step 1 about your skill and writes your own evaluation folder.

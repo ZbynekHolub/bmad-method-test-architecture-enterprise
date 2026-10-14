@@ -10,7 +10,7 @@
   "suite": {
     "id": "frozen-v1.4-writer-fixture",
     "evalType": "behavioral",
-    "skills": ["bmad-testarch-atdd"],
+    "skills": ["bmad-tea-atdd"],
     "contracts": [],
     "ciTier": "deterministic",
     "runnerCapabilities": ["read-only"],

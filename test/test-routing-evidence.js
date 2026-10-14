@@ -39,10 +39,15 @@ function readCaseSnapshot(id) {
 
 function canonicalWorkflow(expected) {
   const replacements = {
-    'bmad-testarch-atdd': 'bmad-testarch-automate',
-    'bmad-testarch-ci': 'bmad-testarch-framework',
+    'bmad-testarch-atdd': 'bmad-tea-automate',
+    'bmad-testarch-ci': 'bmad-tea-framework',
+    'bmad-teach-me-testing': 'bmad-tea-teach-me-testing',
   };
-  return { ...expected, expectedWorkflow: replacements[expected.expectedWorkflow] ?? expected.expectedWorkflow };
+  const workflow = expected.expectedWorkflow;
+  return {
+    ...expected,
+    expectedWorkflow: workflow === null ? null : (replacements[workflow] ?? workflow.replace('bmad-testarch-', 'bmad-tea-')),
+  };
 }
 
 function readEnvelopeSnapshot() {

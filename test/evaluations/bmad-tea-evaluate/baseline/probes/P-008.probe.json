@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 6,
+  "parentDigest": null,
+  "revisionCount": 0,
+  "probeId": "P-008",
+  "probeClass": "zero-action",
+  "behaviorId": "B-004",
+  "systemId": "bmad-tea-evaluate",
+  "implementationDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+  "artifactDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+  "commitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+  "rationale": "[malformed] The declared stdin.exit key receives a type-violating value, so the request names no usable exit; the clean skill refuses and gives no class.",
+  "qualification": {
+    "route": "clean-control",
+    "baselinePassEvidence": {
+      "storage": "public",
+      "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-008/baseline-pass.json",
+      "privateRef": null,
+      "digest": "sha256:1f99044412f5a9bbc0c0273451734aa0873dd4bdd0acbdc6311a748faba37545"
+    },
+    "revisionCommitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
+    "noKnownDefectStatement": "The gaps guide says a request that names no command and exit has no class at this revision, which the guidance gate holds."
+  },
+  "expectedClean": true,
+  "defects": []
+}

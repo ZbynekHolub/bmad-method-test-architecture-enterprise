@@ -29,7 +29,7 @@ const GRADER_ENV = Object.freeze({ GRADER_SECRET: 'grader-secret-value-0123', GR
 const EVALUATIONS = Object.freeze([
   { key: 'mcp', story: '1.10', folder: 'test/fixtures/evaluate-mcp/evals/grader', env: GRADER_ENV },
   { key: 'api', story: '1.11', folder: 'test/fixtures/evaluate-api/evals/grader', env: GRADER_ENV },
-  { key: 'suite', story: '1.16', folder: 'test/evaluations/bmad-testarch-evaluate', env: {}, workspace: 'git' },
+  { key: 'suite', story: '1.16', folder: 'test/evaluations/bmad-tea-evaluate', env: {}, workspace: 'git' },
   { key: 'workflow', story: '1.18', folder: 'test/fixtures/evaluate-workflow/evals/records', env: {} },
   { key: 'tool-use', story: '1.19', folder: 'test/fixtures/evaluate-tool-use-agent/evals/tool-use', env: {} },
   { key: 'promptfoo', story: '1.20', folder: 'test/fixtures/evaluate-promptfoo/evals/summary', env: {} },

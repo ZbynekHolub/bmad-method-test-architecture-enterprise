@@ -1,6 +1,6 @@
 # trace-eval fixtures
 
-Fixture corpus for the `bmad-testarch-trace` behavioral eval. Two independent fixture sets, each a small slice of the same fictional product, Tidewater Support Desk.
+Fixture corpus for the `bmad-tea-trace` behavioral eval. Two independent fixture sets, each a small slice of the same fictional product, Tidewater Support Desk.
 
 ```text
 seeded/   an epic with ten acceptance criteria, its tests, a recorded live

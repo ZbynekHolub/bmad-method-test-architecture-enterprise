@@ -32,8 +32,8 @@ TEA will mark categories as CONCERNS where evidence is missing and document what
 
 ### 1. Run the NFR Evidence Audit Skill
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-nfr`
-- **Codex:** `$bmad-testarch-nfr`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-nfr`
+- **Codex:** `$bmad-tea-nfr`
 - **Inside a `/bmad-tea` chat:** `NR`
 
 Full invocation rules: [Invoking a TEA Skill](/docs/reference/commands.md#invoking-a-tea-skill).

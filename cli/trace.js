@@ -50,8 +50,8 @@ function execute(options, registerOutputGuard = () => {}) {
   const levels = options.coverageLevels.split(',').map((level) => level.trim().toLowerCase());
   if (levels.length === 0 || levels.some((level) => !['e2e', 'api', 'component', 'unit', 'live'].includes(level)))
     throw new Error('--coverage-levels must list e2e, api, component, unit, or live.');
-  const skillRoot = resolveWorkflowSkill({ projectRoot, skillName: 'bmad-testarch-trace', skillRoot: options.skillRoot });
-  const resolvedConfig = resolveTeaConfig({ projectRoot, skillRoot, skillName: 'bmad-testarch-trace' });
+  const skillRoot = resolveWorkflowSkill({ projectRoot, skillName: 'bmad-tea-trace', skillRoot: options.skillRoot });
+  const resolvedConfig = resolveTeaConfig({ projectRoot, skillRoot, skillName: 'bmad-tea-trace' });
   const rawArtifacts = resolvedConfig.configSnapshot.modules.tea.test_artifacts;
   if (typeof rawArtifacts !== 'string' || !rawArtifacts.trim())
     throw new Error('test_artifacts in the TEA config must be a nonempty string.');
