@@ -7,33 +7,31 @@ These are separate from the worker execution mode (`tea_execution_mode`) and the
 ## 1. Choose the Operation and Mode
 
 Keep the original request and supplied files.
-Preserve `test_entry` from a compatibility entry, otherwise use `bmad-testarch-automate`.
+Use `bmad-testarch-automate` as `test_entry`. Preserve a legacy `testEntry` value when resuming an existing checkpoint. An AT menu invocation presets red mode; a single explicit user mode overrides that preset.
 Resolve explicit Create, Resume, Validate or Edit wording first.
 A request to generate tests means Create.
 In a headless or autonomous invocation, an unspecified operation defaults to Create without a menu.
 
 Start with `test_mode_defaulted = false`.
 A single explicit `red mode` or `expand mode` is authoritative.
-Otherwise acceptance tests before implementation, `write acceptance tests`, `acceptance test scaffolds`, ATDD, or the TDD red phase selects red; coverage expansion, tests for existing code, or automation selects expand.
+Otherwise an AT menu invocation selects red. Acceptance tests before implementation, `write acceptance tests`, `acceptance test scaffolds`, ATDD, or the TDD red phase also selects red; coverage expansion, tests for existing code, or automation selects expand.
 Treat the invoked command name as an entry default, separate from the user's task wording: mentioning `/bmad-testarch-automate` in an acceptance-test request cannot count as an expand signal.
-When no task mode signal is present, every run mode defaults to red through `bmad-testarch-atdd` and expand through the canonical entry.
-Interactive AT, TA and slash-command invocations with no task wording use those entry defaults without a mode question.
+When no task mode signal is present, default to expand.
 Ask once which mode to use only when explicit task mode signals conflict in an interactive run, including a request that names both `red mode` and `expand mode`.
-A headless or autonomous run with conflicting signals uses the same historical entry default without a question.
-For either entry-default fallback, set `test_mode_defaulted = true` and state the selected default in the final summary.
-An explicit mode in the user's request overrides the entry default.
+A headless or autonomous run with conflicting signals defaults to expand without a question.
+For a defaulted mode, set `test_mode_defaulted = true` and state the selected default in the final summary.
+An explicit mode in the user's request overrides the default.
 
 The following routing examples apply before customization activation:
 
-| Invocation                      | Task signal                 | Run mode                | Selected mode          | Mode question |
-| ------------------------------- | --------------------------- | ----------------------- | ---------------------- | ------------- |
-| AT or `/bmad-testarch-atdd`     | none                        | interactive             | red (entry default)    | no            |
-| TA or `/bmad-testarch-automate` | none                        | interactive             | expand (entry default) | no            |
-| `/bmad-testarch-automate`       | lets write acceptance tests | interactive or headless | red                    | no            |
-| `/bmad-testarch-automate`       | acceptance test scaffolds   | interactive or headless | red                    | no            |
-| either entry                    | red and expand task signals | interactive             | unresolved             | ask once      |
-| AT or `/bmad-testarch-atdd`     | red and expand task signals | headless                | red (entry default)    | no            |
-| TA or `/bmad-testarch-automate` | red and expand task signals | headless                | expand (entry default) | no            |
+| Invocation               | Task signal                 | Run mode                | Selected mode    | Mode question |
+| ------------------------ | --------------------------- | ----------------------- | ---------------- | ------------- |
+| `bmad-testarch-automate` | none                        | interactive             | expand (default) | no            |
+| `bmad-testarch-automate` | lets write acceptance tests | interactive or headless | red              | no            |
+| `bmad-testarch-automate` | acceptance test scaffolds   | interactive or headless | red              | no            |
+| `bmad-testarch-automate` | red and expand task signals | interactive             | unresolved       | ask once      |
+| `bmad-testarch-automate` | red and expand task signals | headless                | expand (default) | no            |
+| `bmad-tea` AT menu       | none                        | interactive or headless | red              | no            |
 
 For Resume with an exact checkpoint path, resolve it against the project root, verify that it exists and is readable, and retain it as `resume_checkpoint_path`. A missing supplied file stops before activation; do not search for a replacement. The checkpoint path itself is not a new target scope.
 Infer the original mode from that supplied checkpoint's `testMode` or its owning artifact folder: `atdd/` is red and `automate/` is expand; legacy `atdd-checklist-*.md` is red and `automation-summary.md` is expand.
@@ -45,12 +43,10 @@ Do not restart Create or execute a completed generation step on an explicit Resu
 
 ## 2. Choose Exactly One Customization Surface
 
-For red set `workflow-skill-root = {skill-root}/../bmad-testarch-atdd` and `workflow-skill-name = bmad-testarch-atdd`.
+For red set `workflow-skill-root = {skill-root}/red` and `workflow-skill-name = bmad-testarch-atdd` to preserve existing customization filenames.
 For expand set `workflow-skill-root = {skill-root}` and `workflow-skill-name = bmad-testarch-automate`.
-When the sibling red compatibility entry is absent, keep `workflow-skill-name = bmad-testarch-atdd` and use `{skill-root}/red/customize.toml` as the red defaults.
-Resolve the red defaults plus `_bmad/custom/bmad-testarch-atdd.toml` and `.user.toml` manually with the activation merge rules; the resolver's directory-name inference cannot resolve this alias from `red/`.
-Canonical-only installs can therefore run red with existing ATDD overrides.
-Record `workflow_customization_manual = true` for this fallback and retain the resolved workflow block for its terminal hook.
+Resolve `{skill-root}/red/customize.toml` plus `_bmad/custom/bmad-testarch-atdd.toml` and `.user.toml` manually with the activation merge rules; the resolver's directory-name inference cannot resolve this customization namespace from `red/`.
+Record `workflow_customization_manual = true` and retain the resolved workflow block for its terminal hook.
 Keep the resolver's workflow namespace and structural merge rules intact.
 Resolve only the selected surface's defaults, team file and user file.
 Red uses `_bmad/custom/bmad-testarch-atdd.toml` and `.user.toml`; expand uses `_bmad/custom/bmad-testarch-automate.toml` and `.user.toml`.

@@ -5,103 +5,117 @@ description: Let Evaluate write the CI plan, run its pull request tier, read the
 
 # How to Put an Evaluation in CI with TEA
 
-After you accept a baseline, ask Evaluate to plan which checks run on pull requests, merges, a schedule, and releases.
-Review the placements; your coding agent tests the pull request tier and uses the Framework skill to put the plan into your pipeline.
-Pull requests replay the accepted baseline, and live tiers run the real target at the times the plan assigns.
-You get a CI result with each check's outcome and evidence saved for review.
-The commands below show what your agent normally runs and let you repeat it.
+**Bottom line:** Put fast, model-free evidence checks on pull requests and live target checks on the trusted events that can afford them. Ask the Evaluate skill to design and test the plan, then use the Framework skill's CI phase to apply it. You approve the schedule, cost, credentials, shipping gates and baseline changes. A green pull request confirms that the accepted evidence still reproduces; it does not show that the changed target has passed a new live evaluation.
 
-## When to Use This
+## Start with the Evaluate Skill
 
-- The evaluation has a scored run and an accepted baseline
-- You want a pull request to fail when the evaluation stops reproducing
-- You want the live checks (a twin run, the held-out partition, judge calibration, a strength comparison) on a schedule or at release
+Use this guide when your evaluation has a scored run and a reviewed, accepted baseline. If it does not, start with [Compare Runs and Accept a Baseline](/docs/how-to/evaluate/compare-runs-and-accept-a-baseline.md).
 
-## Prerequisites
+Start or resume Evaluate:
 
-- An evaluation with an accepted baseline, as [How to Compare Runs and Accept a Baseline](/docs/how-to/evaluate/compare-runs-and-accept-a-baseline.md) describes
-- The evaluations folder installed in the pipeline, as [Prerequisites](/docs/reference/tea-evaluate-cli.md#prerequisites) describes
-- For the pipeline file: `bmad-testarch-framework` with CI scope, which renders the plan
+- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-evaluate`
+- **Codex:** `$bmad-testarch-evaluate`
+- **Inside a `/bmad-tea` chat:** `EV`
 
-## Steps
+```text
+Plan CI for evals/refund-check using this repository's existing workflows.
+Keep pull request checks model-free. Show me the live-run cost,
+credential requirements, schedule and publish or deploy jobs to gate.
+Test the plan before handing it to Framework with CI scope.
+```
 
-### 1. Ask Evaluate for the CI Plan
+The skill inspects your workflows and release process, writes `ci/evaluation-ci-plan.json` and aligns `tiers` in `evaluation.json`. The CLI runs the plan. The Framework skill edits the pipeline. A plan file alone creates no scheduled job or shipping gate.
 
-The last stage of the Evaluate skill writes `ci/evaluation-ci-plan.json`.
-It inspects your repository (the pipeline files, the release flow, the jobs that publish or deploy) and places each check on a tier.
-Every placement carries a `reason` that names the file or answer behind it, so a reviewer can read why a check sits where it does.
-The skill also sets `tiers` in `evaluation.json` to the tiers the plan uses.
+Your CI runner needs Node.js 22.20 or later and the evaluation tooling declared in `evals/package.json`. Evaluate’s setup installs the TeA CLI and its `eval-quality` scoring engine there, separately from your application’s dependencies. You invoke `tea-evaluate`; it calls `eval-quality` internally. Commit `evals/package.json` and `evals/package-lock.json`, then install the locked dependencies in CI with `npm ci --prefix evals`, including development dependencies. `evals` is the default folder name; substitute the configured evaluations folder if different. See [Prerequisites](/docs/reference/tea-evaluate-cli.md#prerequisites).
 
-### 2. Read the Plan
+## 1. Choose When Each Check Should Run
 
-Review when each check runs, whether it blocks or warns, and the reason Evaluate gives for placing it there.
-Confirm any release or deployment job the plan would wait on.
+Review the skill's placements against the repository's actual events, required checks and release flow. It should explain each choice using a workflow file or an answer you supplied.
 
-The tiers hold these checks by default:
+| Tier        | What it establishes                                                                                  | Typical checks                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `pr`        | Current authoring is valid and accepted evidence still reproduces, without new target or model calls | `check`, `compile`, `seal`, `replay`, `oracle-agreement`; `gameability` when applicable; `api-conformance` for HTTP targets |
+| `merge`     | The real target still satisfies preflight, when it needs no secret                                   | `preflight-live`                                                                                                            |
+| `scheduled` | Fresh trial evidence, held-out performance and comparison with the baseline                          | `twin-run`, `held-out`, `strength-comparison`; `judge-calibration` for rubrics; secret-dependent `preflight-live`           |
+| `release`   | Fresh evidence before shipping, with blocking strength floors and baseline freshness                 | The applicable live checks                                                                                                  |
 
-| Tier        | Checks                                                                   | Needs                       |
-| ----------- | ------------------------------------------------------------------------ | --------------------------- |
-| `pr`        | `check`, `compile`, `seal`, `replay`, `gameability`, `oracle-agreement`  | the committed baseline only |
-| `merge`     | `preflight-live`, when the target needs no secret                        | the real target             |
-| `scheduled` | `twin-run`, `held-out`, `judge-calibration`, `strength-comparison`       | the real target and a model |
-| `release`   | the same live checks; a strength floor breach and a stale baseline block | the real target and a model |
+These are starting placements. Keep the deterministic set on `pr`; the runtime rejects live checks there. A target with secrets, or any skill or agent runner, places live preflight on `scheduled` and `release`. With no justified schedule, put the live set on the release event and record why.
 
-On `release`, a probe class below its strength floor exits 2 and a stale baseline exits 11, and both block.
-A strength regression found by `strength-comparison` warns on `scheduled` and on `release`.
+A model-free grader does not make an LLM target model-free. Likewise, `evaluator.kind: deterministic` can use a separate model judge for a rubric. Decide placement from the complete execution path.
 
-A tier holds only the checks placed on it, so a pipeline triggered by a merge runs the `pr` tier as well as the `merge` tier.
-`api-conformance` joins the `pr` tier for an HTTP API.
+A tier runs only its own checks. Invoking `ci --tier release` does not also run `pr`. The rendered merge job runs the `pr` step before its `merge` step; review the full pipeline rather than assuming tiers inherit one another.
 
-The skill runs `check` after each edit to catch invalid placements.
-[The plan reference](/docs/reference/tea-evaluate-cli.md#the-plan) lists its fields and validation rules.
+## 2. Approve the Live Run's Cost and Access
 
-### 3. Confirm the Pull Request Tier
+Before enabling a schedule or release job, confirm:
+
+- **Cost and duration:** Account for preflight, clean and mutated arms, repeated trials, held-out probes, calibration and any evaluator qualification. Measure a representative run; trial count times probe count alone can understate the work. Choose a cadence and job timeout you can support.
+- **Models and versions:** Keep target, evaluator and judge model selections and recorded snapshots consistent. Pin dependency versions. An alias can change behind the same name.
+- **Credentials:** Give each live job only the keys its target and evaluator need. Keep values in CI secrets, not the plan or committed files. Framework reports required credentials; it does not provision them.
+- **Runner capabilities:** Verify confinement on the intended runner. Linux live execution needs working Bubblewrap and `strace`, including the required namespaces and ptrace support. Networked targets also need the registry's egress authorization. A package being installed does not prove the runner permits it; see [File-system confinement](/docs/reference/tea-evaluate-cli.md#file-system-confinement).
+
+Keep privileged credentials away from untrusted pull request code. Review fork behavior, workflow permissions and protected environments before enabling live jobs. Do not disable confinement merely to make CI green. The plan places work; it is not a dollar-spend limiter or a substitute for your platform's access controls.
+
+## 3. Validate and Try the Plan
+
+Ask the skill to run these commands, or repeat them yourself from the repository root:
 
 ```bash
+npm exec --prefix evals -- tea-evaluate check --evaluation evals/refund-check
 npm exec --prefix evals -- tea-evaluate ci --evaluation evals/refund-check --tier pr
 ```
 
-The skill runs this command locally before it edits the pipeline.
-An exit of 0 means the planned pull request checks passed; the output names each check and its result.
-If one blocks, inspect its evidence before you accept the plan.
+Replace the folder with your own. Stop and repair authoring findings before the tier run. `check` catches invalid placements, missing reasons, incompatible triggers and a `tiers` list that disagrees with the plan.
 
-### 4. Read the Evidence
+An exit of 0 from `ci` means there was no blocking result. Warnings can still exist. Read the check-by-check summary and evidence before accepting the plan.
 
-`ci` writes `runs/<invocationId>/` in the evaluation folder:
+Run each live tier on a machine with its target, dependencies and authorized credentials. For example:
 
-- `ci.json` holds the tier, each check's exit, class and enforcement, its warnings and the final exit
-- `checks/<id>/exit-code`, `stdout` and `stderr` hold what each check printed
-- `replay/` holds the engine's preflight verdict and the scores of the replay
+```bash
+npm exec --prefix evals -- tea-evaluate ci --evaluation evals/refund-check --tier scheduled
+```
 
-Open `ci.json` first.
-A failing check names its exit, and the [exit table](/docs/reference/tea-evaluate-cli.md#exit-codes) says what each exit means.
+Only run a tier the plan defines. Record any tier you could not test and why; a successful local `pr` run does not verify the live runner or its credentials.
 
-### 5. Know What a Stale Baseline Does
+## 4. Read the Evidence and Decide What to Fix
 
-The baseline records the digests of the compiled contract, the corpus, the scoring policy and the strength floors.
-When one of them differs from the baseline's, the `pr` tier warns and the `release` tier exits 11 until you accept a re-recorded baseline through a pull request.
-The replay still runs against the baseline's own snapshot, so a stale baseline warns without hiding a real drift.
+Open `runs/<invocationId>/ci.json` first. It records the tier, every check's exit and action, warnings and the final exit. Then follow:
 
-An evaluation that no longer reproduces its baseline exits 13.
-Run the evaluation again, read what changed with `compare`, and accept the new baseline in a reviewed commit.
+- `checks/<id>/exit-code`, `stdout` and `stderr` for individual checks
+- `replay/` for replayed preflight and score evidence
+- The live run directories named by the checks for fresh trial and score evidence
 
-### 6. Render the Plan Into Your Pipeline
+`ci` continues through the tier's checks after a failure so you can inspect the full result. It enforces stage exits and eval-quality evidence rather than inventing a new verdict.
 
-Ask your coding agent to run `bmad-testarch-framework` with CI scope to apply the plan.
-It finds the plan and writes one job per tier, each running `tea-evaluate ci --tier <tier>` and uploading the evaluation folder's `runs/` directory whatever the result.
-It also waits a publish or deploy job on the tier's evaluation job when the plan lists that job in `gates`.
-[Evaluation Plans in the CI guide](/docs/how-to/workflows/setup-test-framework.md#evaluation-plans) describes the rendered jobs.
+Distinguish these cases:
 
-## How You Know It Worked
+- **Replay drift, exit 13:** Replaying the baseline no longer reproduces its saved evidence. Investigate the difference.
+- **Stale baseline:** Current contract, corpus, scoring policy or strength floors differ from the accepted snapshot. This warns on `pr` and blocks `release` with exit 11. Replay still uses the baseline's own snapshot.
+- **Weak live strength:** A class below its floor warns on `scheduled` and blocks `release` with exit 2. A strength regression reported by `strength-comparison` warns on both tiers.
+- **CONCERNS:** The scored verdict is a warning, including on release. A zero CI exit therefore does not necessarily mean every contract verdict is PASS.
+- **Invalid score evidence, exit 3:** Repair integrity or isolation before interpreting it. Invalid evidence cannot establish target behavior.
+- **Setup or execution failure:** Missing baselines, authoring defects and infrastructure failures need their own repair. They do not establish a target defect. Use the [exit table](/docs/reference/tea-evaluate-cli.md#exit-codes).
 
-- `tea-evaluate ci --tier pr` exits 0 on your branch and prints one line per check
-- A pull request that changes the contract, the corpus or the scoring policy shows a stale baseline warning
-- A pull request that breaks the replay fails the evaluation job with exit 13
-- The pipeline keeps `runs/<invocationId>/` as an artifact after every run
+After an intentional change, run and score fresh evidence, inspect `compare`, and approve any replacement baseline in a reviewed change. Do not make `compare --accept` an automatic step that clears a red pipeline.
+
+## 5. Apply and Verify the Pipeline
+
+Ask your coding agent to run `bmad-testarch-framework` with **CI scope**, in Edit mode for an existing pipeline or Create mode for a new one. Name the plan and the workflow containing the publish or deploy job you want gated.
+
+Review the generated diff. It should:
+
+1. Install the evaluation dependencies and invoke `tea-evaluate ci --evaluation <folder> --tier <tier>` for each planned tier.
+2. Match jobs to the intended pull request, merge, schedule, release and manual events.
+3. Upload the evaluation folder's `runs/` after success or failure, using `if: always()` on GitHub Actions. Keep access appropriate for captured target output and held-out evidence.
+4. Make each approved `gates` job wait for the relevant evaluation job. A parallel evaluation job does not stop publishing unless that dependency exists.
+
+The renderer reports missing job names or gates it cannot safely apply. Resolve those reports instead of treating the plan's `gates` field as proof of enforcement. Confirm required checks in the CI platform's settings too; workflow files alone do not establish branch protection.
+
+Verify the first real pipeline run, including a controlled blocking case: the evidence must remain downloadable, the required check must block as intended, and a gated publish or deploy job must not proceed. See [Evaluation Plans](/docs/how-to/workflows/setup-test-framework.md#evaluation-plans) for rendering rules and [Framework CI Setup](/docs/how-to/workflows/setup-test-framework.md#ci-setup) for the workflow.
 
 ## Related
 
 - [Compare Runs and Accept a Baseline](/docs/how-to/evaluate/compare-runs-and-accept-a-baseline.md)
 - [The `ci` command reference](/docs/reference/tea-evaluate-cli.md#ci)
-- [Framework CI Setup](/docs/how-to/workflows/setup-test-framework.md#ci-setup)
+- [The plan reference](/docs/reference/tea-evaluate-cli.md#the-plan)
 - [How Evaluate Works](/docs/explanation/how-evaluate-works.md)

@@ -71,7 +71,7 @@ Save the updated progress file.
 
 **TDD Red Phase:** Write failing tests FIRST
 
-**Automation red mode:** `/bmad-testarch-atdd` and `AT` select red by default. `/bmad-testarch-automate` also supports an explicit red request.
+**Automation red mode:** Ask `/bmad-testarch-automate` for acceptance tests before implementation, or use the agent's `AT` code to select red.
 
 **Create sequence:**
 
@@ -97,7 +97,7 @@ Save the updated progress file.
 
 **Purpose:** Generate tests for existing features
 
-**Automation expand mode:** `/bmad-testarch-automate` and `TA` select expand by default. An explicit mode in the prompt selects red or expand. Unattended runs keep the invoked command's default when mode is unclear.
+**Automation expand mode:** `/bmad-testarch-automate` and `TA` select expand by default. An explicit mode in the prompt selects red or expand. Unattended runs use expand when mode is unclear.
 
 **Create sequence:**
 

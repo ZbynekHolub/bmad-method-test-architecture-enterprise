@@ -266,9 +266,9 @@ Per `playwright-utils-mandate.md`. Skip for Maestro, Cypress, and non-Playwright
 
 ### Workflow Dependencies
 
-- [ ] Can proceed to `ci` workflow after completion
+- [ ] Can proceed to Framework CI scope after completion
 - [ ] Can proceed to `test-design` workflow after completion
-- [ ] Can proceed to `atdd` workflow after completion
+- [ ] Can proceed to Automate red mode after completion
 - [ ] Framework setup compatible with downstream workflows
 
 ---
@@ -301,9 +301,9 @@ Per `playwright-utils-mandate.md`. Skip for Maestro, Cypress, and non-Playwright
 
 **Recommended next workflows:**
 
-1. [ ] Run `ci` workflow to set up CI/CD pipeline
+1. [ ] Run Framework with CI scope to set up the CI/CD pipeline
 2. [ ] Run `test-design` workflow to plan test coverage
-3. [ ] Run `atdd` workflow when ready to develop stories
+3. [ ] Run Automate in red mode when ready to develop stories
 
 ---
 

@@ -1,0 +1,12 @@
+{
+  "probeId": "P-012",
+  "probeClass": "zero-action",
+  "behaviorId": "B-010",
+  "expectedClean": true,
+  "rationale": "[boundary] Clean control: the covariance test added in a repository with no type checker is a High H10 finding.",
+  "defects": [],
+  "qualification": {
+    "route": "clean-control",
+    "noKnownDefectStatement": "No known defect at this revision."
+  }
+}

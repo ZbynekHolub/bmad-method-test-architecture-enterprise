@@ -131,12 +131,8 @@ Next, preflight the service and score its trials.
 
 ```bash
 npm exec --prefix evals -- tea-evaluate preflight --evaluation evals/grader-http-service
-RUN=$(npm exec --prefix evals -- tea-evaluate run --evaluation evals/grader-http-service 2>&1 | tee /dev/stderr | sed -n 's/.*score --run \([^ ]*\) .*/\1/p')
-SCORE=$(npm exec --prefix evals -- tea-evaluate score --evaluation evals/grader-http-service --run "$RUN" 2>&1 | tee /dev/stderr | sed -n 's#.*runs/.*/scores/\([^ ]*\) (exit .*#\1#p')
+npm exec --prefix evals -- tea-evaluate run --evaluation evals/grader-http-service
 ```
-
-`RUN` and `SCORE` capture the IDs printed by these commands; later examples use them to read your result.
-If either is empty, read the command's output and resolve the failure before continuing.
 
 ```text
 tea-evaluate preflight: eval-quality preflight exited 0; its verdict and diagnostics are in runs/20261007T092330798Z-925507cf (exit 0, /work/app/evals/grader-http-service/runs/20261007T092330798Z-925507cf)
@@ -146,16 +142,26 @@ tea-evaluate preflight: eval-quality preflight exited 0; its verdict and diagnos
 tea-evaluate run: 2 trial set(s) of 3 trial(s) sealed over clean, mutated:M-001; score them with tea-evaluate score --run 20261007T092333549Z-2b79ad72 (exit 0, /work/app/evals/grader-http-service/runs/20261007T092333549Z-2b79ad72)
 ```
 
+After a successful run, copy the printed run ID to score the run:
+
+```bash
+npm exec --prefix evals -- tea-evaluate score --evaluation evals/grader-http-service --run <runId>
+```
+
 ```text
+tea-evaluate score: scoring run 20261007T092333549Z-2b79ad72
 tea-evaluate score: P-001: eval-quality score exited 0
 tea-evaluate score: P-002: eval-quality score exited 0
 tea-evaluate score: strength aggregate: eval-quality aggregate-strength exited 0
+tea-evaluate score: eval-quality score ran for 2 probe(s) of run 20261007T092333549Z-2b79ad72; each call's diagnostics and evidence are in runs/20261007T092333549Z-2b79ad72/scores/20261007T092341203Z-6f81a2bc (exit 0, /work/app/evals/grader-http-service/runs/20261007T092333549Z-2b79ad72)
 ```
 
 ### 6. Read the Result
 
+Replace `<runId>` and `<scoreId>` with the IDs printed by `run` and `score`:
+
 ```bash
-(cd evals/grader-http-service/runs/$RUN/scores/$SCORE &&
+(cd evals/grader-http-service/runs/<runId>/scores/<scoreId> &&
   grep -o '"contractVerdict":"[A-Z]*"' P-*/evidence-artifact.json &&
   grep -o '"state":"[a-z-]*"' P-001/evidence-artifact.json | sort -u &&
   grep -o '"state":"[a-z-]*"' P-002/evidence-artifact.json | sort -u)

@@ -699,17 +699,36 @@ async function deploymentAccess({
   return { origins, authorizations };
 }
 
-/** A port the system gives out now, free on every address, released for the server to take. */
-function freePort() {
+/** Tries a port on one address, then releases it for the target; a busy candidate returns null. */
+function availablePort(port, address, createServer) {
   return new Promise((resolve, reject) => {
-    const server = net.createServer();
+    const server = createServer();
     server.unref();
-    server.once('error', reject);
-    server.listen(0, () => {
-      const { port } = server.address();
-      server.close(() => resolve(port));
+    server.once('error', (error) => (error.code === 'EADDRINUSE' ? resolve(null) : reject(error)));
+    server.listen(port, address, () => {
+      const selected = server.address().port;
+      server.close(() => resolve(selected));
     });
   });
+}
+
+/** A port available on every address the policy may select, released for the server to take. */
+async function freePort(addresses, createServer = () => net.createServer()) {
+  const distinct = [...new Set(addresses.map((address) => canonicalAddress(address) ?? address))];
+  if (distinct.length === 0) throw new Error('a started server has no authorized address');
+  for (let attempt = 0; attempt < 32; attempt += 1) {
+    const candidate = await availablePort(0, distinct[0], createServer);
+    if (candidate === null) continue;
+    let available = true;
+    for (const address of distinct.slice(1)) {
+      if ((await availablePort(candidate, address, createServer)) === null) {
+        available = false;
+        break;
+      }
+    }
+    if (available) return candidate;
+  }
+  throw new Error(`could not find a free port on ${distinct.join(', ')}`);
 }
 
 /**
@@ -1207,7 +1226,7 @@ function createApiPort({ entries, httpPort, cwd, targetOf, readEnvironment, mech
         // A server behind a bridge gets a private directory for the Unix socket its shim serves, which only that call's
         // server may write; it joins the scratch list like the port directory.
         if (launched !== null && mechanism.bridges === true) bridgeDirectory = makeBridgeDirectory(scratch);
-        const launchedPort = launched === null || reports ? null : await freePort();
+        const launchedPort = launched === null || reports ? null : await freePort(launched.addresses);
         const configurationAt = (port) =>
           portConfiguration({
             entries,
@@ -1397,6 +1416,7 @@ module.exports = {
   defaultPortOf,
   deploymentAccess,
   deploymentAuthorizations,
+  freePort,
   httpPortFile,
   isApiEntry,
   makeBridgeDirectory,

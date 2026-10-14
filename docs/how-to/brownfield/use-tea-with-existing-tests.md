@@ -218,7 +218,7 @@ Apply TEA skills to new work while improving legacy tests.
 **Use the full TEA sequence:**
 
 1. `/bmad-testarch-test-design` (epic-level) to plan tests for the new feature
-2. `/bmad-testarch-atdd` to generate failing tests first
+2. `/bmad-testarch-automate` in red mode to generate failing tests first
 3. Implement the feature
 4. `/bmad-testarch-automate` to expand coverage
 5. `/bmad-testarch-test-review` to check quality
@@ -440,7 +440,7 @@ On Codex, use `$` for the skill prefix.
 | 3. Planning (Phase 2-3)      | `prd`, `architecture` (BMM)                | Document requirements and architecture if missing |
 | 3. Planning (Phase 2-3)      | `/bmad-testarch-test-design`, system-level | Testability review                                |
 | 4. Infrastructure (Phase 3)  | `/bmad-testarch-framework`                 | Modernize the framework; include CI if needed     |
-| 4. Infrastructure (Phase 3)  | `/bmad-testarch-ci`                        | Set up or improve CI/CD                           |
+| 4. Infrastructure (Phase 3)  | `/bmad-testarch-framework` with CI scope   | Set up or improve CI/CD                           |
 | 5. Per epic (Phase 4)        | `/bmad-testarch-test-design`, epic-level   | Focus on regression hotspots                      |
 | 5. Per epic (Phase 4)        | `/bmad-testarch-automate`                  | Add the missing tests                             |
 | 5. Per epic (Phase 4)        | `/bmad-testarch-test-review`               | Check quality                                     |

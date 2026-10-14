@@ -43,29 +43,16 @@ if (!validated.success) {
 }
 const manifest = validated.data;
 
-// Public skill counts follow the module's installed entries. The routing
-// agent is separate from the capabilities, and the two compatibility commands name their owner
-// through required_skills so their modes do not inflate the count.
+// Public workflow counts follow the module's installed entries. The routing
+// agent is separate from the eight workflows.
 const TOML = require('smol-toml');
 const skillsRoot = path.join(__dirname, '..', '..', 'skills');
 const registeredSkills = TOML.parse(fs.readFileSync(path.join(skillsRoot, 'bmod-tea', 'bmod.toml'), 'utf8')).bmod.skills;
 if (!Array.isArray(registeredSkills) || registeredSkills.length === 0) refuse('the TEA module registers no skills');
 if (new Set(registeredSkills).size !== registeredSkills.length) refuse('the TEA module registers duplicate skills');
-const compatibilityCommands = new Set(['bmad-testarch-ci', 'bmad-testarch-atdd']);
-const workflowOwners = new Set();
-for (const name of registeredSkills.filter((skill) => skill !== 'bmad-tea')) {
-  if (!compatibilityCommands.has(name)) {
-    workflowOwners.add(name);
-    continue;
-  }
-  const requiredSkills = TOML.parse(fs.readFileSync(path.join(skillsRoot, name, 'bmod.toml'), 'utf8')).skill.required_skills;
-  if (!Array.isArray(requiredSkills) || requiredSkills.length !== 1 || !registeredSkills.includes(requiredSkills[0])) {
-    refuse(`${name} must require one registered canonical skill`);
-  }
-  workflowOwners.add(requiredSkills[0]);
-}
-exports.CANONICAL_WORKFLOW_COUNT = workflowOwners.size;
-exports.WORKFLOW_COMMAND_COUNT = registeredSkills.filter((skill) => skill !== 'bmad-tea').length;
+const workflows = registeredSkills.filter((skill) => skill !== 'bmad-tea');
+exports.CANONICAL_WORKFLOW_COUNT = workflows.length;
+exports.WORKFLOW_COMMAND_COUNT = workflows.length;
 
 function caseCountOf(suiteId) {
   return suiteById(manifest, suiteId).caseCount;

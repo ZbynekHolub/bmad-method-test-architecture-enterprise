@@ -2,12 +2,19 @@
 # https://github.com/DavidAnson/markdownlint-cli2
 
 ignores:
+  - "test/results/codex-nfr/parser-replay/**"
+  - "test/results/codex-nfr/public-cli-original/**"
+  - "test/results/codex-nfr/raw/**"
   - node_modules/**
   - website/node_modules/**
   - test/fixtures/**
+  # Original generated documents are evaluation evidence; lint the authored report.
+  - test/results/codex-test-design/raw/**
   # Live Evaluate working drafts are generated under this gitignored path.
   # The committed evaluation under test/evaluations/ remains linted.
   - test/eval-artifacts/**
+  # Captured live generation output preserves exact model-authored bytes.
+  - test/results/automate-codex-2026-10-09/{before,after,red,final,reviewed}/**
   # Live Trace output preserves the model's original report formatting.
   - test/replay/trace/seeded-codex-source-priority-drift/test-artifacts/**
   - CODE_OF_CONDUCT.md

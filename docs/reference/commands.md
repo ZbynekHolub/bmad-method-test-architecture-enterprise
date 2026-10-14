@@ -1,6 +1,6 @@
 ---
 title: 'TEA Skills and Commands'
-description: Inputs, outputs, and invocation rules for eight canonical TEA skills and ten commands
+description: Inputs, outputs, and invocation rules for eight TEA workflows
 ---
 
 # TEA Skills and Commands
@@ -11,7 +11,7 @@ description: Inputs, outputs, and invocation rules for eight canonical TEA skill
 
 ## Invoking a TEA Skill
 
-Eight canonical skills have ten direct capability commands, plus the TEA agent. Everything below assumes TEA is installed with `npx skills add bmad-code-org/bmad-method-test-architecture-enterprise` and set up with `bmad setup tea`.
+Eight workflows have eight direct capability commands, plus the TEA agent and its module record. Everything below assumes TEA is installed with `npx skills add bmad-code-org/bmad-method-test-architecture-enterprise` and set up with `bmad setup tea`.
 
 The same skill can be invoked in three ways:
 
@@ -22,12 +22,11 @@ The same skill can be invoked in three ways:
 | Inside a `bmad-tea` chat        | the skill's menu code    | `TA`                      |
 
 Load the TEA agent with `/bmad-tea` or `$bmad-tea` to use its menu codes and `GATE` router.
-Each canonical skill and compatibility command also runs directly.
+Each workflow also runs directly.
 
-Framework and CI setup share one implementation in `bmad-testarch-framework`.
-Both `bmad-testarch-framework` and `bmad-testarch-ci` commands remain available, along with the `TF` and `CI` menu codes. The CI command starts CI setup with your existing customizations.
+Framework and CI setup share `bmad-testarch-framework`. Request CI setup explicitly through that command or the agent's `CI` menu code. Existing CI customizations remain usable.
 
-Automation also shares one skill, `bmad-testarch-automate`, with `red` and `expand` modes. Acceptance scaffolds before implementation select red; coverage for existing code selects expand. A single explicit mode overrides the command default. With no task mode signal, `/bmad-testarch-atdd`, `$bmad-testarch-atdd`, and `AT` default to red; `/bmad-testarch-automate`, `$bmad-testarch-automate`, and `TA` default to expand. Conflicting task mode signals prompt one mode question in an interactive run; an unattended run uses its entry default. Every entry-default fallback states the selected mode in the final summary.
+Automation uses `bmad-testarch-automate` with `red` and `expand` modes. Acceptance scaffolds before implementation select red; coverage for existing code selects expand. The agent's `AT` menu code selects red. With no task mode signal, the Automate command and `TA` menu code default to expand. Conflicting task mode signals prompt one mode question in an interactive run; an unattended run uses expand. Every default fallback states the selected mode in the final summary.
 
 The table uses the skill names shown in navigation.
 Teach Me Testing carries no `testarch` segment in its command; NFR uses `-nfr`, and its stored identifier is `nfr-assess`.
@@ -43,12 +42,7 @@ Teach Me Testing carries no `testarch` segment in its command; NFR uses `-nfr`, 
 | Teach Me Testing | `/bmad-teach-me-testing` · `$bmad-teach-me-testing`         | `TMT`     |
 | Evaluate         | `/bmad-testarch-evaluate` · `$bmad-testarch-evaluate`       | `EV`      |
 
-Compatibility commands select a mode or scope in their canonical skill:
-
-| Entry         | Skill     | Command                                       | Menu code |
-| ------------- | --------- | --------------------------------------------- | --------- |
-| ATDD red mode | Automate  | `/bmad-testarch-atdd` · `$bmad-testarch-atdd` | `AT`      |
-| CI setup      | Framework | `/bmad-testarch-ci` · `$bmad-testarch-ci`     | `CI`      |
+The agent also accepts `AT` for Automate red mode and `CI` for Framework CI scope. These codes invoke the canonical skills and have no separate direct commands.
 
 Skill outputs use fixed folders under `{test_artifacts}`. Framework and CI setup save progress so you can resume an interrupted run. A file produced once per story, epic, or release carries that scope's `run_key` in its name, such as `epic-16`, `story-1-2-user-authentication`, `release-v1-2-0`, or `system`.
 The folders, the run key rules, and what happens to files from earlier TEA versions are in [Output Layout](/docs/reference/configuration.md#output-layout).
@@ -67,17 +61,17 @@ See [Extend TEA with Custom Skills](../how-to/customization/extend-tea-with-cust
 - [Teach Me Testing](#teach-me-testing): Learn testing through seven sessions
 - [Evaluate](#evaluate): Scored behavioral evaluation
 
-Compatibility entries and agent routing:
+Modes, scopes, and agent routing:
 
-- [ATDD](#atdd): Automate red entry
-- [CI](#ci): Framework CI entry
+- [ATDD](#atdd): Automate red mode
+- [CI](#ci): Framework CI scope
 - [GATE](#gate-agent-menu-shortcut): Release gate routing helper (agent menu only)
 
 ---
 
 ## Automate
 
-Generate tests through the automation skill. `expand` mode adds coverage after implementation; `red` mode writes acceptance scaffolds before implementation. `/bmad-testarch-automate` and `TA` default to expand.
+Generate tests through the automation skill. `expand` mode adds coverage after implementation; `red` mode writes acceptance scaffolds before implementation. `/bmad-testarch-automate` and `TA` default to expand. Request red mode explicitly for acceptance tests before implementation.
 
 Create executes the generated tests and repairs selector, timing, data, network, hard-wait, or setup issues for up to three rounds. Expand aims for passing tests. Real product defects remain findings with their assertions intact. Red verifies that each test fails for its intended missing behavior. The summary lists repairs and remaining failures. Validate reports findings and Edit checks the requested changes; these operations never repair tests.
 
@@ -105,9 +99,9 @@ Create executes the generated tests and repairs selector, timing, data, network,
 
 <a id="atdd"></a>
 
-### ATDD Compatibility Entry
+### ATDD Through Automate
 
-Compatibility entry for [Automate red mode](#automate). `/bmad-testarch-atdd`, `$bmad-testarch-atdd`, and `AT` default to red. Your prompt can select red or expand. Existing ATDD customizations and interrupted progress keep working.
+Request [Automate red mode](#automate) with `/bmad-testarch-automate` or `$bmad-testarch-automate` and specify acceptance tests before implementation. The agent's `AT` code selects red directly. Existing ATDD customizations and interrupted progress remain usable.
 
 **How-To Guide:** [Automate Red Mode](/docs/how-to/workflows/run-automate.md#red-mode)
 
@@ -200,6 +194,8 @@ Risk-based test planning with coverage strategy and NFR planning
 
 Why the system-level split exists: [TEA Overview](/docs/explanation/tea-overview.md) and [Run Test Design](/docs/how-to/workflows/run-test-design.md).
 
+**CLI:** [`tea-test-design`](/docs/reference/tea-test-design-cli.md) accepts project inputs and publishes a verified epic or system plan.
+
 **Browser Automation (CLI/MCP):** Exploratory mode (live browser UI discovery)
 
 **How-To Guide:** [Run Test Design](/docs/how-to/workflows/run-test-design.md)
@@ -214,7 +210,7 @@ TEA infers scope when it can and asks "Do you want CI too?" once when CI scope i
 For both, TEA agrees the stack, framework, and test commands first, then can generate the scaffold and pipeline in parallel and validate them together. A CI request without a framework offers framework setup first.
 
 Setup scope and operation are independent. Create starts setup, Resume picks up an interrupted run where it stopped, Validate reports checks without repairing outputs, and Edit revises the selected outputs and checks those changes.
-`TF` starts framework setup; `CI` and `bmad-testarch-ci` start the same skill's CI setup.
+`TF` invokes Framework. Request CI setup explicitly to select its CI scope; the agent's `CI` code selects it directly.
 
 See [Execution Targets](/docs/reference/execution-targets.md) for supported frameworks.
 
@@ -242,9 +238,9 @@ See [Execution Targets](/docs/reference/execution-targets.md) for supported fram
 
 <a id="ci"></a>
 
-### CI Compatibility Entry
+### CI Through Framework
 
-Compatibility entry for [Framework CI setup](#framework). `/bmad-testarch-ci`, `$bmad-testarch-ci`, and `CI` select CI scope in `bmad-testarch-framework`, preserving CI customizations and saved progress. Create, Resume, Validate, and Edit remain available.
+Request [Framework CI setup](#framework) with `/bmad-testarch-framework` or `$bmad-testarch-framework` and specify CI scope. The agent's `CI` code selects that scope directly. Existing CI customizations and saved progress remain usable. Create, Resume, Validate, and Edit remain available.
 
 **How-To Guide:** [Framework CI Setup](/docs/how-to/workflows/setup-test-framework.md#ci-setup)
 
@@ -447,5 +443,6 @@ Use `GATE` as a starting point when preparing a release.
 **Reference:**
 
 - [tea-evaluate CLI](/docs/reference/tea-evaluate-cli.md): Evaluate runtime
+- [tea-nfr CLI](/docs/reference/tea-nfr-cli.md): Audit existing implementation evidence with a verified report and canonical context
 - [TEA Configuration](/docs/reference/configuration.md): Config options
 - [Knowledge Base Index](/docs/reference/knowledge-base.md): Pattern fragments

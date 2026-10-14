@@ -1,11 +1,11 @@
 ---
-title: CI Compatibility Entry
-description: Use the CI command to start Framework CI setup
+title: CI Through Framework
+description: Use Framework to set up CI
 ---
 
-# CI Compatibility Entry
+# CI Through Framework
 
-CI starts the [Framework skill's CI setup](/docs/how-to/workflows/setup-test-framework.md#ci-setup). Use `/bmad-testarch-ci` in Claude Code, Cursor, or Windsurf, `$bmad-testarch-ci` in Codex, or `CI` in a TEA agent chat. You can also request CI only or both phases through `/bmad-testarch-framework` or `$bmad-testarch-framework`. Existing CI customizations and saved checkpoints keep working.
+Run [Framework with CI scope](/docs/how-to/workflows/setup-test-framework.md#ci-setup). Use `/bmad-testarch-framework` in Claude Code, Cursor, or Windsurf, `$bmad-testarch-framework` in Codex, or `TF` in a TEA agent chat. Request CI only or both phases explicitly. Existing CI customizations and saved checkpoints remain usable.
 
 See [Framework CI setup](/docs/how-to/workflows/setup-test-framework.md#ci-setup) for platforms, preflight execution, pipeline generation, and quality gates, and [evaluation plans](/docs/how-to/workflows/setup-test-framework.md#evaluation-plans) for evaluation jobs.
 
