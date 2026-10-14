@@ -170,7 +170,7 @@ if (args[0] === 'dist-tag' && args[1] === 'add' && args[2] === 'example-tea@9.9.
 } else if (args[0] === 'view' && args[1] === 'example-tea@latest' && args[2] === 'version') {
   process.stdout.write(tags.latest);
 } else if (args[0] === 'view' && args[1] === 'example-tea' && args[2] === 'dist-tags') {
-  process.stdout.write(JSON.stringify(tags));
+  process.stdout.write(JSON.stringify(process.env.NPM_TAG_VIEW_ARRAY === '1' ? [tags] : tags));
 } else {
   process.stderr.write('unexpected fake npm command: ' + args.join(' ') + '\\n');
   process.exit(2);
@@ -195,6 +195,7 @@ if (args[0] === 'dist-tag' && args[1] === 'add' && args[2] === 'example-tea@9.9.
           NPM_TAG_ADD_NOOP: options.noOp ? '1' : '0',
           NPM_TAG_ADD_FAIL: options.fail ? '1' : '0',
           NPM_TAG_ADD_FAIL_ONCE: options.failOnce ? '1' : '0',
+          NPM_TAG_VIEW_ARRAY: options.viewArray ? '1' : '0',
           GITHUB_RUN_ID: '12345',
           GITHUB_RUN_ATTEMPT: '1',
         },
@@ -206,6 +207,8 @@ if (args[0] === 'dist-tag' && args[1] === 'add' && args[2] === 'example-tea@9.9.
     }
     const stale = runTagStep(publishSteps[syncTagsIndex], { noOp: true });
     if (stale.status === 0) errors.push('publish.yaml accepted a next tag that still points at an older version.');
+    const staleNpm12 = runTagStep(publishSteps[syncTagsIndex], { noOp: true, viewArray: true });
+    if (staleNpm12.status === 0) errors.push('publish.yaml accepted an older next tag in npm 12 array output.');
     const preflight = runTagStep(publishSteps[preflightIndex], { aligned: true });
     const preflightTags = JSON.parse(fs.readFileSync(tagsFile, 'utf8'));
     if (preflight.status !== 0 || Number(fs.readFileSync(attemptsFile, 'utf8')) < 1 || Object.keys(preflightTags).length !== 2) {
@@ -216,6 +219,10 @@ if (args[0] === 'dist-tag' && args[1] === 'add' && args[2] === 'example-tea@9.9.
     const repaired = runTagStep(repairStep);
     if (repaired.status !== 0 || JSON.parse(fs.readFileSync(tagsFile, 'utf8')).next !== '9.9.9') {
       errors.push(`publish.yaml failed to repair the current npm tags: ${repaired.stderr || repaired.stdout}`);
+    }
+    const npm12 = runTagStep(repairStep, { viewArray: true });
+    if (npm12.status !== 0 || JSON.parse(fs.readFileSync(tagsFile, 'utf8')).next !== '9.9.9') {
+      errors.push(`publish.yaml failed when npm 12 wrapped dist-tags in an array: ${npm12.stderr || npm12.stdout}`);
     }
   } finally {
     fs.rmSync(fixtureRoot, { recursive: true, force: true });
