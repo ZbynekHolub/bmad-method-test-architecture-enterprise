@@ -20,7 +20,8 @@ for ((attempt = 1; attempt <= attempts; attempt++)); do
   if npm dist-tag add "${package_name}@${target_version}" next; then
     if tags=$(npm view "$package_name" dist-tags --json --prefer-online); then
       if node -e '
-        const tags = JSON.parse(process.argv[1]);
+        const result = JSON.parse(process.argv[1]);
+        const tags = Array.isArray(result) && result.length === 1 ? result[0] : result;
         const version = process.argv[2];
         process.exit(tags.latest === version && tags.next === version ? 0 : 1);
       ' "$tags" "$target_version"; then
