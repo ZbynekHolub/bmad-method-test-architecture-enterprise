@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "c47e3db1160b037ec7de17e9ac26b960ef3b7588",
+  "agent": "codex",
+  "model": "gpt-6.1-sol",
+  "agentVersion": "codex-cli 0.162.1",
+  "originalResult": {
+    "exitCode": 1,
+    "durationMs": 1893056,
+    "fabricatedEvidence": 5,
+    "unstableCases": 2
+  },
+  "replay": {
+    "fabricatedEvidence": 0,
+    "unstableCases": 0,
+    "cases": [
+      {
+        "id": "gapped-harbor-billing-ledger",
+        "stable": true,
+        "runs": [
+          {
+            "report": "attempts/codex-gapped-harbor-billing-ledger-run-1-attempt-1-DlTThg/workspace/harbor-billing-ledger/test-artifacts/nfr/nfr-assessment-system.md",
+            "reportSha256": "57a77a889642c4ba7cdb3366491c339f7e982467b6531214b83038239104722e",
+            "signatureSha256": "1ca9689785aca481a57e77810912aed55eedfdcbb819af789de765fe664a0db8",
+            "domains": {
+              "performance": "CONCERNS",
+              "security": "PASS",
+              "reliability": "FAIL",
+              "maintainability": "CONCERNS"
+            },
+            "fabricated": [],
+            "groundedCriteria": {
+              "hits": 3,
+              "total": 3
+            },
+            "overall": "FAIL"
+          },
+          {
+            "report": "attempts/codex-gapped-harbor-billing-ledger-run-2-attempt-1-vSZqBU/workspace/harbor-billing-ledger/test-artifacts/nfr/nfr-assessment-system.md",
+            "reportSha256": "d291b5671214c76e45dabb2f411672a41bb57036b964e66cd661e0ed99875b70",
+            "signatureSha256": "1ca9689785aca481a57e77810912aed55eedfdcbb819af789de765fe664a0db8",
+            "domains": {
+              "performance": "CONCERNS",
+              "security": "PASS",
+              "reliability": "FAIL",
+              "maintainability": "CONCERNS"
+            },
+            "fabricated": [],
+            "groundedCriteria": {
+              "hits": 3,
+              "total": 3
+            },
+            "overall": "FAIL"
+          }
+        ]
+      },
+      {
+        "id": "clean-atlas-notification-relay",
+        "stable": true,
+        "runs": [
+          {
+            "report": "attempts/codex-clean-atlas-notification-relay-run-1-attempt-1-SC1GKo/workspace/atlas-notification-relay/test-artifacts/nfr/nfr-assessment-system.md",
+            "reportSha256": "3196b8e135c5d8257e60fda327707dcfde2a83f0a09e9b415808bb8cf0c59015",
+            "signatureSha256": "356affde42520249f588b6808b3f5b326e61d3ecffe4328677b58c2f598023a1",
+            "domains": {
+              "performance": "PASS",
+              "security": "PASS",
+              "reliability": "PASS",
+              "maintainability": "PASS"
+            },
+            "fabricated": [],
+            "groundedCriteria": {
+              "hits": 4,
+              "total": 4
+            },
+            "overall": "PASS"
+          },
+          {
+            "report": "attempts/codex-clean-atlas-notification-relay-run-2-attempt-1-fgckH2/workspace/atlas-notification-relay/test-artifacts/nfr/nfr-assessment-system.md",
+            "reportSha256": "1012fe4d4d203f7b37756958006fced3cb8bc546246bbd0b90fbc37bfdfa0407",
+            "signatureSha256": "356affde42520249f588b6808b3f5b326e61d3ecffe4328677b58c2f598023a1",
+            "domains": {
+              "performance": "PASS",
+              "security": "PASS",
+              "reliability": "PASS",
+              "maintainability": "PASS"
+            },
+            "fabricated": [],
+            "groundedCriteria": {
+              "hits": 4,
+              "total": 4
+            },
+            "overall": "PASS"
+          }
+        ]
+      }
+    ]
+  },
+  "publicCli": {
+    "completeStatus": "PASS",
+    "completeGatePassed": true,
+    "elapsedMs": 667259,
+    "incompleteEvidenceStatus": "CONCERNS",
+    "incompleteEvidenceElapsedMs": 506130
+  },
+  "archive": {
+    "file": "evidence.tar.gz",
+    "sha256": "0b4116333a2b4ffaf295d546105be637fe7e2598001ba30508b8549fdd0d8e1e",
+    "bytes": 1849736
+  }
+}

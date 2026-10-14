@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- NFR evaluation resolves report-relative Markdown evidence links and sentence-style criterion headings, so equivalent live reports receive the same grounding and stability score.
 - NFR publication detects supplied file and directory permission/type changes and parses actual Markdown headings and YAML fences. Valid native enum decorations and source-backed code quotations preserve canonical status and evidence checks. Retained original Codex parser failures and separate controlled replay regressions.
 - Corrected the clean NFR evaluation fixture outbound transport evidence to TLS 1.3, matching its requirement. Preserved the original conflicting baseline as historical evidence. NFR evaluator single runs report stability as unmeasured, and `--artifacts-dir` retains every attempt before retry or cleanup.
 - NFR CLI rejects an invalid configured artifact root before invoking an agent, publishes validated artifact text, and preserves workflow error failure classes during publication rollback.

@@ -22,7 +22,8 @@ The project must contain implementation files and existing evidence.
 Supply source directories such as `src` and `evidence`, or individual files.
 Output and run directories must remain separate from every supplied source directory.
 Requirements provide thresholds; implementation evidence provides observations.
-Supplying the same file in both roles fails before invocation.
+Supplying a requirements file as evidence fails before invocation.
+If a file under `--implementation` also proves an observation, include its directory under `--evidence` as well. For example, a structured logging configuration can serve as maintainability evidence.
 
 The command audits security, performance, reliability, and maintainability.
 The workflow's eight ADR categories guide elicitation.

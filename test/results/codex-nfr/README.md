@@ -2,6 +2,7 @@
 
 These files preserve actual Codex calls.
 Custom-agent CLI checks elsewhere are controlled fixtures.
+The [October 14 repeated evaluation and public CLI capture](live-2026-10-14/README.md) uses `gpt-6.1-sol` and retains both the original red scorer result and the corrected replay.
 
 | Observation       | Source commit                              | Corpus                                                                               | Measured result                                                                                                                           |
 | ----------------- | ------------------------------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |

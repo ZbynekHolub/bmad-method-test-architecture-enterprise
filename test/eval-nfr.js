@@ -1355,7 +1355,9 @@ const CRITERION_BULLET = /^\s*[-*+]\s+\*\*([^*]+)\*\*\s*$/;
  * one this function can safely claim to understand.
  */
 function stripCriterionAnnotation(text) {
-  let result = String(text).trim();
+  // A sentence-style heading such as `### Response time.` names the same
+  // criterion as the template's `### Response time`.
+  let result = String(text).trim().replace(/\.+$/, '').trimEnd();
   for (;;) {
     if (!result.endsWith(')')) return result;
     let depth = 0;
@@ -1501,8 +1503,9 @@ function citationsIn(line) {
  * One stable spelling for a citation scored from a fixture report.
  *
  * Live runs can cite the same supplied file as `docs/spec.md`,
- * `./docs/spec.md`, or `<projectRoot>/docs/spec.md`. The staged project root is
- * presentation context, so it is removed before grounding and signatures.
+ * `./docs/spec.md`, `<projectRoot>/docs/spec.md`, or a Markdown link target
+ * relative to the generated report. Presentation context is removed before
+ * grounding and signatures.
  */
 function canonicalCitation(citation, projectRoot) {
   const original = String(citation);
@@ -1510,6 +1513,10 @@ function canonicalCitation(citation, projectRoot) {
   let normalized = original;
   if (normalized.startsWith('./')) normalized = normalized.slice(2);
   else if (normalized.startsWith(`${projectRoot}/`)) normalized = normalized.slice(projectRoot.length + 1);
+  else {
+    const fromReport = '../'.repeat(path.dirname(NFR_REPORT).split(path.sep).length);
+    if (normalized.startsWith(fromReport)) normalized = normalized.slice(fromReport.length);
+  }
   if (
     !normalized ||
     normalized.startsWith('./') ||
