@@ -71,6 +71,19 @@ test('a new turn restores learner state left between publication renames', (t) =
   assert.equal(conversation.turns[0].learnerMessage, 'I want to learn testing');
   assert.equal(conversation.turns[1].learnerMessage, 'QA');
 });
+test('a retained publication backup is not deleted when learner state already exists', (t) => {
+  const f = fixture(t);
+  const first = f.run();
+  assert.equal(first.status, 0, first.stderr);
+  const state = path.dirname(JSON.parse(first.stdout).progress);
+  const { hash } = require('../cli/lib/teach-turn');
+  const stage = fs.mkdtempSync(path.join(path.dirname(state), `.tea-teach-publish-${hash(state).slice(0, 16)}-`));
+  fs.cpSync(state, path.join(stage, 'previous'), { recursive: true });
+  const backup = fs.readFileSync(path.join(stage, 'previous/conversation.json'));
+  const resumed = f.run('QA');
+  assert.equal(resumed.status, 0, resumed.stderr);
+  assert.deepEqual(fs.readFileSync(path.join(stage, 'previous/conversation.json')), backup);
+});
 test('a negated assessment answer cannot freeze an invented learner fact', (t) => {
   const f = fixture(t);
   const refused = f.run('I am not a beginner', 'negated-fact');

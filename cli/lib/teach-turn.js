@@ -191,6 +191,7 @@ function publishState(root, files, io = fs) {
 }
 /** Restore a prior learner directory if publication stopped between its two renames. */
 function recoverPublishedState(root) {
+  if (fs.existsSync(root)) return;
   const parent = path.dirname(root);
   const prefix = `.tea-teach-publish-${hash(root).slice(0, 16)}-`;
   const stages = fs
@@ -201,10 +202,6 @@ function recoverPublishedState(root) {
     const stat = fs.lstatSync(stage);
     if (!stat.isDirectory() || stat.isSymbolicLink())
       throw new WorkflowError('usage', `interrupted learner publication has an invalid stage: ${stage}`);
-  }
-  if (fs.existsSync(root)) {
-    for (const stage of stages) fs.rmSync(stage, { recursive: true, force: true });
-    return;
   }
   if (stages.length === 0) return;
   if (stages.length !== 1)
