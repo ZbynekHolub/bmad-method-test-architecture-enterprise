@@ -28,7 +28,12 @@ const descriptions = [
     'data-sync-conflict-overwrite',
     'Two offline editors apply arrival order without version checks. Later arrivals silently erase earlier lines and their history.',
   ],
+  [
+    'data-sync-conflict-overwrite',
+    'Two offline technicians accept edits by arrival order without version checks and silently discard earlier lines.',
+  ],
   ['ops-no-release-kill-switch', 'No flag or staged release; disabling needs a new build and 1–3 days of store review.'],
+  ['ops-no-release-kill-switch', 'Disabling requires a new store build and a one-to-three-day delay for every technician.'],
 ];
 for (const [id, description] of descriptions) {
   const risk = risks.find((entry) => entry.id === id);

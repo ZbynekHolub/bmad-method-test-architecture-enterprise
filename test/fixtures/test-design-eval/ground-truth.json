@@ -132,6 +132,7 @@
               "overwrit",
               "clobber",
               "erase",
+              "discard",
               "last write",
               "last-write",
               "lost update"
@@ -257,6 +258,8 @@
               "deploy",
               "staged",
               "store review",
+              "store build",
+              "new build",
               "revert"
             ]
           ],
