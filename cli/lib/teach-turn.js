@@ -192,6 +192,7 @@ function publishState(root, files, io = fs) {
 function checkConversation(value, learner, bank) {
   if (!table(value) || value.schema_version !== '0.1.0' || value.learner !== learner || !Array.isArray(value.turns) || !table(value.quiz))
     fail('conversation has invalid learner identity or schema');
+  if (value.activeQuiz !== undefined && !table(value.activeQuiz)) fail('conversation contains an invalid active quiz ledger');
   const ids = new Set();
   for (const turn of value.turns) {
     if (
@@ -207,45 +208,53 @@ function checkConversation(value, learner, bank) {
       fail('conversation contains an invalid or repeated turn');
     ids.add(turn.id);
   }
-  for (const [sessionId, round] of Object.entries(value.quiz)) {
-    if (!SESSION_IDS.includes(sessionId) || !table(round) || typeof round.id !== 'string' || !Array.isArray(round.answers))
-      fail('conversation contains an invalid quiz ledger');
-    for (const [index, answer] of round.answers.entries()) {
-      const turnIndex = value.turns.findIndex((item) => item.id === answer.messageId);
-      const turn = value.turns[turnIndex];
-      const pending = value.turns[turnIndex - 1]?.waiting;
-      const question = bank[sessionId]?.questions[index];
-      if (
-        !turn ||
-        turn.learnerMessage.trim().toUpperCase() !== answer.answer ||
-        !/^[ABCD]$/.test(answer.answer) ||
-        !question ||
-        answer.questionId !== question.id ||
-        answer.correct !== (answer.answer === question.correct) ||
-        pending?.kind !== 'quiz' ||
-        pending.sessionId !== sessionId ||
-        pending.questionId !== question.id ||
-        pending.roundId !== round.id
-      )
-        fail('quiz answer lacks its actual learner message');
-    }
+  for (const [sessionId, round] of Object.entries(value.quiz)) checkQuizRound(value, bank, sessionId, round);
+  for (const [sessionId, round] of Object.entries(value.activeQuiz ?? {})) {
+    if (value.quiz[sessionId] && value.activeQuiz?.[sessionId] && value.quiz[sessionId].id === value.activeQuiz[sessionId].id)
+      fail('recorded and active quiz rounds must differ');
+    checkQuizRound(value, bank, sessionId, round);
+  }
+}
+/** Bind one recorded quiz round to its exact preceding caller questions and answers. */
+function checkQuizRound(value, bank, sessionId, round) {
+  if (!SESSION_IDS.includes(sessionId) || !table(round) || typeof round.id !== 'string' || !Array.isArray(round.answers))
+    fail('conversation contains an invalid quiz ledger');
+  for (const [index, answer] of round.answers.entries()) {
+    const turnIndex = value.turns.findIndex((item) => item.id === answer.messageId);
+    const turn = value.turns[turnIndex];
+    const pending = value.turns[turnIndex - 1]?.waiting;
+    const question = bank[sessionId]?.questions[index];
+    if (
+      !turn ||
+      turn.learnerMessage.trim().toUpperCase() !== answer.answer ||
+      !/^[ABCD]$/.test(answer.answer) ||
+      !question ||
+      answer.questionId !== question.id ||
+      answer.correct !== (answer.answer === question.correct) ||
+      pending?.kind !== 'quiz' ||
+      pending.sessionId !== sessionId ||
+      pending.questionId !== question.id ||
+      pending.roundId !== round.id
+    )
+      fail('quiz answer lacks its actual learner message');
   }
 }
 function quizForTurn(conversation, incoming, bank) {
   const quiz = structuredClone(conversation.quiz);
+  const activeQuiz = structuredClone(conversation.activeQuiz ?? {});
   const pending = conversation.turns.at(-1)?.waiting;
   if (pending?.kind === 'quiz') {
     const item = bank[pending.sessionId]?.questions.find((question) => question.id === pending.questionId);
     if (!item) fail('saved pending quiz question is unknown');
     const answer = incoming.learnerMessage.trim().toUpperCase();
     if (/^[ABCD]$/.test(answer)) {
-      const round = quiz[pending.sessionId];
+      const round = activeQuiz[pending.sessionId]?.id === pending.roundId ? activeQuiz[pending.sessionId] : quiz[pending.sessionId];
       if (!round || round.id !== pending.roundId || round.answers.some((entry) => entry.questionId === item.id))
         fail('saved quiz round is inconsistent');
       round.answers.push({ questionId: item.id, messageId: incoming.id, answer, correct: answer === item.correct });
     }
   }
-  return quiz;
+  return { quiz, activeQuiz };
 }
 function scoredRound(round, questions) {
   if (
@@ -345,7 +354,7 @@ function validateTurn({
   if (Object.keys(response).some((key) => !['requestId', 'learner', 'reply', 'waiting', 'factEvidence'].includes(key)))
     fail('response includes unsupported fields; learner messages are host-owned');
   const incoming = { id: request.requestId, learnerMessage: request.message, tutorReply: response.reply, waiting: response.waiting };
-  const quiz = quizForTurn(conversation, incoming, bank);
+  const { quiz, activeQuiz } = quizForTurn(conversation, incoming, bank);
   const messages = [...conversation.turns, incoming];
   for (const field of FACTS) {
     if (before?.[field] !== null && before?.[field] !== undefined && !isDeepStrictEqual(before[field], progress[field]))
@@ -396,7 +405,7 @@ function validateTurn({
             fail('exploratory completion requires the learner’s explicit completion choice');
           result = { score: 100, passed: null };
         } else {
-          result = scoredRound(quiz[session.id], questions);
+          result = scoredRound(activeQuiz[session.id] ?? quiz[session.id], questions);
           if (!result) fail('session completion lacks all three caller-owned quiz answers');
           const pending = conversation.turns.at(-1)?.waiting;
           if (
@@ -409,12 +418,21 @@ function validateTurn({
         for (const field of ['quiz_passed', 'passed', 'mastered'])
           if (session[field] !== undefined && session[field] !== result.passed) fail('session claims unearned mastery');
         session.quiz_passed = result.passed;
+        if (activeQuiz[session.id]) {
+          quiz[session.id] = activeQuiz[session.id];
+          delete activeQuiz[session.id];
+        }
       }
     } else if (session.score !== null) {
-      const result = scoredRound(quiz[session.id], bank[session.id]?.questions ?? []);
+      const activeResult = scoredRound(activeQuiz[session.id], bank[session.id]?.questions ?? []);
+      const result = activeResult ?? scoredRound(quiz[session.id], bank[session.id]?.questions ?? []);
       if (!result || Math.abs(session.score - result.score) > 0.011) fail('session score lacks complete quiz evidence');
       for (const field of ['quiz_passed', 'passed', 'mastered'])
         if (session[field] !== undefined && session[field] !== result.passed) fail('session claims unearned mastery');
+      if (activeResult) {
+        quiz[session.id] = activeQuiz[session.id];
+        delete activeQuiz[session.id];
+      }
     }
   }
   const waiting = response.waiting;
@@ -437,16 +455,22 @@ function validateTurn({
       Object.values(question.options).some((option) => !response.reply.includes(option))
     )
       fail('pending quiz reply omits its canonical question or options');
-    let round = quiz[waiting.sessionId];
+    let round = activeQuiz[waiting.sessionId] ?? quiz[waiting.sessionId];
     if (
       waiting.questionId === questions[0].id &&
       (conversation.turns.at(-1)?.waiting.kind !== 'quiz' || round?.answers.length === questions.length)
     )
-      round = quiz[waiting.sessionId] = { id: crypto.randomUUID(), answers: [] };
+      round = (scoredRound(quiz[waiting.sessionId], questions) ? activeQuiz : quiz)[waiting.sessionId] = {
+        id: crypto.randomUUID(),
+        answers: [],
+      };
     if (!round || questions[round.answers.length]?.id !== waiting.questionId) fail('pending quiz skips unanswered questions');
     waiting.roundId = round.id;
   }
-  if (waiting.kind === 'review' && !scoredRound(quiz[waiting.sessionId], bank[waiting.sessionId].questions))
+  if (
+    waiting.kind === 'review' &&
+    !scoredRound(activeQuiz[waiting.sessionId] ?? quiz[waiting.sessionId], bank[waiting.sessionId].questions)
+  )
     fail('review stop point lacks a completed quiz');
   if (progress.summary_generated) {
     if (progress.sessions_completed !== 7 || typeof progress.summary_path !== 'string')
@@ -459,7 +483,7 @@ function validateTurn({
     fail('the tutor changed the established completion date');
   if (before && before.stepsCompleted.some((step) => !progress.stepsCompleted.includes(step)))
     fail('the tutor discarded saved workflow steps');
-  const nextConversation = { ...conversation, turns: messages, quiz };
+  const nextConversation = { ...conversation, turns: messages, quiz, activeQuiz };
   checkConversation(nextConversation, request.learner, bank);
   checkHistory(progress, nextConversation, bank);
   return { progress, conversation: nextConversation, artifacts };

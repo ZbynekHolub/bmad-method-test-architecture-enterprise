@@ -29,7 +29,7 @@ Experience levels include Beginner, Intermediate and Experienced.
 | `--skill-root <dir>`    | Trusted installed teaching skill override.                          |
 | `--evidence-dir <dir>`  | Retained attempts; defaults to `.tea-runs`.                         |
 | `--json <path>`         | Additional result JSON outside state, evidence and supplied inputs. |
-| `--model <name>`        | Override the selected vendor's pinned model.                        |
+| `--model <name>`        | Override the selected vendor's default model.                       |
 | `--agent-cmd <path>`    | Agent executable override; required for custom.                     |
 | `--agent-arg <arg>`     | Repeatable extra agent argument.                                    |
 | `--env-pass <NAME>`     | Repeatable additional environment name passed to the agent.         |
@@ -51,6 +51,8 @@ Answer the current multiple-choice question with one letter, A through D.
 The controller grades those exact caller messages and requires all quiz answers before accepting session completion.
 Two correct answers out of three score 66.67%, below the 70% passing threshold.
 The skill permits an explicit C at its below-pass review menu to finish the session with that score; saved `quiz_passed: false` distinguishes completion from mastery.
+Retaking a scored quiz records the new caller answers as a separate round while questions remain open.
+A finished retake replaces an in-progress grade; a completed session keeps its original grade and notes while the retake serves as practice.
 The exploratory seventh session records completion without a quiz mastery claim.
 
 Generated artifacts must be separate regular files inside the current attempt.

@@ -52,6 +52,32 @@ if (mode === 'quiz') {
     response.waiting={kind:'quiz',sessionId,questionId:question.id};
   }
 }
+if (mode === 'retake') {
+  const sessionId='session-01-quickstart';
+  const questions=bank[sessionId].questions;
+  const previous=conversation.turns.at(-1)?.waiting;
+  const answers=[...(conversation.activeQuiz?.[sessionId]?.answers ?? [])];
+  if (previous?.kind==='quiz' && /^[ABCD]$/.test(request.message.trim())) {
+    const question=questions.find(item=>item.id===previous.questionId);
+    answers.push({answer:request.message.trim().toUpperCase(),correct:request.message.trim().toUpperCase()===question.correct});
+  }
+  if (answers.length===questions.length) {
+    if (progress.sessions[0].status!=='completed') {
+      const session=progress.sessions[0];
+      session.score=Math.round(answers.filter(answer=>answer.correct).length/questions.length*10000)/100;
+      session.status='completed';session.completed_date='2026-10-09';
+      session.notes_artifact=path.join(request.artifacts.root,'teaching-sessions/session-01-retake.md');
+      fs.mkdirSync(path.dirname(session.notes_artifact),{recursive:true});
+      fs.writeFileSync(session.notes_artifact,`---\nsession_id: ${sessionId}\nuser: ${request.learner}\nscore: ${session.score}\n---\n# Retake notes\nThe learner answered the quiz again.\n`);
+      progress.sessions_completed=1;progress.completion_percentage=100/7;progress.next_recommended=progress.sessions[1].id;
+    }
+    response.reply='Retake complete. Choose a session.';response.waiting={kind:'menu'};
+  } else {
+    const question=questions[answers.length];
+    response.reply=question.question+'\n'+Object.entries(question.options).map(([letter,text])=>letter+') '+text).join('\n');
+    response.waiting={kind:'quiz',sessionId,questionId:question.id};
+  }
+}
 if (mode === 'forget') progress.role = null;
 if (mode === 'late-json-alias') fs.linkSync(path.join(process.cwd(),'package.json'),path.join(process.cwd(),'result.json'));
 if (mode === 'mutate-live-failure') {fs.writeFileSync(path.join(process.cwd(),'learner/conversation.json'),'corrupted');process.exit(1);}

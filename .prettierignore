@@ -67,3 +67,4 @@ test/results/codex-nfr/parser-replay/
 
 # Immutable Codex teaching observations and result records.
 test/results/teach-codex-2026-10-09/**/*.json
+test/results/teach-codex-2026-10-14/result.json

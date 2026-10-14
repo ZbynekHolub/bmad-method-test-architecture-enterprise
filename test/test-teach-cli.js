@@ -124,6 +124,70 @@ test('all three correct answers establish passing mastery and notes are preserve
   assert.equal(altered.status, 3, altered.stderr);
   assert.deepEqual(fs.readFileSync(progress.sessions[0].notes_artifact), note);
 });
+test('a completed learner can retake the canonical quiz without losing the recorded completion', (t) => {
+  const f = fixture(t);
+  assert.equal(f.run('QA Beginner Learn testing fundamentals', 'placement').status, 0);
+  for (const message of ['C', 'B', 'A', 'B']) {
+    const result = f.run(message, 'quiz');
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const progressFile = path.join(f.root, 'learner/Murat-tea-progress.yaml');
+  const before = require('js-yaml').load(fs.readFileSync(progressFile, 'utf8'));
+  const notes = fs.readFileSync(before.sessions[0].notes_artifact);
+  for (const message of ['Retake Session 1', 'B', 'A', 'B']) {
+    const result = f.run(message, 'retake');
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const after = require('js-yaml').load(fs.readFileSync(progressFile, 'utf8'));
+  assert.deepEqual(after.sessions[0], before.sessions[0]);
+  assert.deepEqual(fs.readFileSync(before.sessions[0].notes_artifact), notes);
+  const conversation = JSON.parse(fs.readFileSync(path.join(f.root, 'learner/conversation.json')));
+  assert.deepEqual(
+    conversation.quiz['session-01-quickstart'].answers.map((answer) => answer.answer),
+    ['B', 'A', 'B'],
+  );
+  assert.deepEqual(
+    conversation.activeQuiz['session-01-quickstart'].answers.map((answer) => answer.answer),
+    ['B', 'A', 'B'],
+  );
+});
+test('a below-pass learner can retake and replace their saved grade with caller answers', (t) => {
+  const f = fixture(t);
+  assert.equal(f.run('QA Beginner Learn testing fundamentals', 'placement').status, 0);
+  for (const message of ['C', 'B', 'A', 'A']) {
+    const result = f.run(message, 'quiz');
+    assert.equal(result.status, 0, result.stderr);
+  }
+  for (const message of ['R', 'B', 'A', 'B']) {
+    const result = f.run(message, 'retake');
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const progress = require('js-yaml').load(fs.readFileSync(path.join(f.root, 'learner/Murat-tea-progress.yaml'), 'utf8'));
+  assert.equal(progress.sessions[0].score, 100);
+  assert.equal(progress.sessions[0].status, 'completed');
+  assert.equal(progress.sessions[0].quiz_passed, true);
+  const conversation = JSON.parse(fs.readFileSync(path.join(f.root, 'learner/conversation.json')));
+  assert.deepEqual(
+    conversation.quiz['session-01-quickstart'].answers.map((answer) => answer.answer),
+    ['B', 'A', 'B'],
+  );
+  assert.equal(conversation.activeQuiz?.['session-01-quickstart'], undefined);
+});
+test('tampered practice retake answers fail before another learner turn', (t) => {
+  const f = fixture(t);
+  assert.equal(f.run('QA Beginner Learn testing fundamentals', 'placement').status, 0);
+  for (const message of ['C', 'B', 'A', 'B']) assert.equal(f.run(message, 'quiz').status, 0);
+  assert.equal(f.run('Retake Session 1', 'retake').status, 0);
+  assert.equal(f.run('B', 'retake').status, 0);
+  const file = path.join(f.root, 'learner/conversation.json');
+  const conversation = JSON.parse(fs.readFileSync(file, 'utf8'));
+  conversation.activeQuiz['session-01-quickstart'].answers[0].correct = false;
+  fs.writeFileSync(file, JSON.stringify(conversation));
+  const corrupt = fs.readFileSync(file);
+  const refused = f.run('A', 'retake');
+  assert.equal(refused.status, 2, refused.stderr);
+  assert.deepEqual(fs.readFileSync(file), corrupt);
+});
 test('JSON output collisions are refused before generation and after a late hardlink', (t) => {
   const f = fixture(t);
   fs.writeFileSync(path.join(f.root, 'package.json'), '{"name":"preserve"}');

@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `tea-teach` preserves a completed quiz's caller evidence during practice retakes and lets below-pass learners replace an in-progress grade after answering a fresh round.
 - `tea-teach` rejects unpaired saved state and completed sessions whose caller quiz evidence is missing.
   Configuration and customization inputs are checked for byte, permission, inode and topology changes before publication; completed summaries keep their flags, path, date and exact content.
   Invalid artifact configuration receives a clear path-type error.
