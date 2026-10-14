@@ -1581,7 +1581,7 @@ function preflight({ agents, agentCmd }) {
       report('environment-configuration', `unknown agent "${agent}"; expected one of ${Object.keys(AGENT_ADAPTERS).join(', ')}`);
       continue;
     }
-    const executable = agent === 'custom' ? agentCmd : agent;
+    const executable = agentCmd ?? agent;
     const probe = boundedProbe(executable, ['--version']);
     if (probe.ok) {
       versions[agent] =
@@ -1656,7 +1656,7 @@ function runnerRecord(
   versions,
   { expected, completed, measurements, durationMs, failures, diagnostics = [], diagnosticClassifier },
 ) {
-  const executable = agent === 'custom' ? options.agentCmd : agent;
+  const executable = options.agentCmd ?? agent;
   const classifiedDiagnostics = classifyDiagnosticQuality(diagnostics, failures, diagnosticClassifier, {
     measurements,
     expected,

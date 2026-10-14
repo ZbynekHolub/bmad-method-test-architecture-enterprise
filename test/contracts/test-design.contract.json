@@ -414,7 +414,7 @@
                 "pointer": "/interactions/design-seeded-offline-order-capture/stdout/design"
               }
             ],
-            "pattern": "^[\\s\\S]*(?:[Cc][Oo][Nn][Ff][Ll][Ii][Cc][Tt]|[Oo][Vv][Ee][Rr][Ww][Rr][Ii][Tt][Ee]|[Oo][Vv][Ee][Rr][Ww][Rr][Ii][Tt]|[Cc][Ll][Oo][Bb][Bb][Ee][Rr]|[Ll][Aa][Ss][Tt]\\s+[Ww][Rr][Ii][Tt][Ee]|[Ll][Aa][Ss][Tt]-[Ww][Rr][Ii][Tt][Ee]|[Ll][Oo][Ss][Tt]\\s+[Uu][Pp][Dd][Aa][Tt][Ee])[\\s\\S]*$"
+            "pattern": "^[\\s\\S]*(?:[Cc][Oo][Nn][Ff][Ll][Ii][Cc][Tt]|[Oo][Vv][Ee][Rr][Ww][Rr][Ii][Tt][Ee]|[Oo][Vv][Ee][Rr][Ww][Rr][Ii][Tt]|[Cc][Ll][Oo][Bb][Bb][Ee][Rr]|[Ee][Rr][Aa][Ss][Ee]|[Ll][Aa][Ss][Tt]\\s+[Ww][Rr][Ii][Tt][Ee]|[Ll][Aa][Ss][Tt]-[Ww][Rr][Ii][Tt][Ee]|[Ll][Oo][Ss][Tt]\\s+[Uu][Pp][Dd][Aa][Tt][Ee])[\\s\\S]*$"
           },
           {
             "op": "regex",
@@ -519,7 +519,7 @@
                 "pointer": "/interactions/design-seeded-offline-order-capture/stdout/design"
               }
             ],
-            "pattern": "^[\\s\\S]*(?:[Ff][Ee][Aa][Tt][Uu][Rr][Ee]\\s+[Ff][Ll][Aa][Gg]|[Kk][Ii][Ll][Ll]\\s+[Ss][Ww][Ii][Tt][Cc][Hh]|[Kk][Ii][Ll][Ll]-[Ss][Ww][Ii][Tt][Cc][Hh]|[Tt][Oo][Gg][Gg][Ll][Ee]|[Dd][Ii][Ss][Aa][Bb][Ll][Ee]|[Dd][Ii][Ss][Aa][Bb][Ll][Ee][Dd])[\\s\\S]*$"
+            "pattern": "^[\\s\\S]*(?:[Ff][Ee][Aa][Tt][Uu][Rr][Ee]\\s+[Ff][Ll][Aa][Gg]|[Nn][Oo]\\s+[Ff][Ll][Aa][Gg]|[Kk][Ii][Ll][Ll]\\s+[Ss][Ww][Ii][Tt][Cc][Hh]|[Kk][Ii][Ll][Ll]-[Ss][Ww][Ii][Tt][Cc][Hh]|[Tt][Oo][Gg][Gg][Ll][Ee]|[Dd][Ii][Ss][Aa][Bb][Ll][Ee]|[Dd][Ii][Ss][Aa][Bb][Ll][Ee][Dd]|[Dd][Ii][Ss][Aa][Bb][Ll][Ii][Nn][Gg])[\\s\\S]*$"
           },
           {
             "op": "regex",

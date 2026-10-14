@@ -329,6 +329,13 @@ npm run eval:atdd -- --agent codex
 npm run eval:teach-me-testing -- --agent codex
 ```
 
+`npm run` prepends `node_modules/.bin` to `PATH`. A transitive package can supply an older vendor CLI there. Resolve the installed CLI before starting the npm script, then pass its absolute path when the run needs that version:
+
+```bash
+codex_path=$(command -v codex)
+npm run eval:test-design -- --agent codex --agent-cmd "$codex_path"
+```
+
 Fragment selection accepts a workflow ID. These examples run one repetition; use `--runs 2` for stability measurement:
 
 | Skill       | Command                                                                                          |

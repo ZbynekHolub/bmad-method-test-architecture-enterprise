@@ -131,6 +131,7 @@
               "overwrite",
               "overwrit",
               "clobber",
+              "erase",
               "last write",
               "last-write",
               "lost update"
@@ -240,11 +241,13 @@
           "anyOf": [
             [
               "feature flag",
+              "no flag",
               "kill switch",
               "kill-switch",
               "toggle",
               "disable",
-              "disabled"
+              "disabled",
+              "disabling"
             ],
             [
               "rollout",

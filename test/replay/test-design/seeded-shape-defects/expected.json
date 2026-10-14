@@ -22,7 +22,7 @@
   "inputs": {
     "groundTruth": "test/fixtures/test-design-eval/ground-truth.json",
     "fixtureSet": "seeded-offline-order-capture",
-    "scoringInputsDigest": "sha256:963962660c273f960aff6e4c02361691190a06c7f824dd78deca3382e85ac0c9"
+    "scoringInputsDigest": "sha256:f61e2b739101880d8bfac219f287a6d025b6ebd080494b703e648b73e7c1d01c"
   },
   "derivation": [
     "Five rows. R-002's category reads RISK, which is not one of the six, so validCategories is 4.",
