@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "parentDigest": null,
   "revisionCount": 0,
-  "policyId": "bmad-testarch-evaluate",
+  "policyId": "bmad-tea-evaluate",
   "severityFloor": "material",
   "confidenceThreshold": 0.5,
   "catchThreshold": 0.6,

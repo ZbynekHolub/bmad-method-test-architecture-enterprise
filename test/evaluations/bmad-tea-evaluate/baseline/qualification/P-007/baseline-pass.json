@@ -3,7 +3,7 @@
   "mutationId": "M-004",
   "phase": "baseline-pass",
   "workspace": "qualify-P-007",
-  "targetArtifact": "skills/bmad-testarch-evaluate/references/gaps.md",
+  "targetArtifact": "skills/bmad-tea-evaluate/references/gaps.md",
   "targetArtifactDigest": "sha256:ab01ca6c0edfd2c6842fb066a92ba0a993634f5b3ce533b34b31345f58d19053",
   "verdict": "held",
   "oracles": [
@@ -35,7 +35,7 @@
             "agent-arg": "--json-schema={\"type\":\"object\",\"properties\":{\"basis\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"answered\",\"refused\"]},\"exit11\":{\"type\":\"string\"},\"exit12\":{\"type\":\"string\"}},\"required\":[\"basis\",\"status\",\"exit11\",\"exit12\"],\"additionalProperties\":false}",
             "capability": "read-only",
             "model": "claude-sonnet-5",
-            "skill-root": "skills/bmad-testarch-evaluate",
+            "skill-root": "skills/bmad-tea-evaluate",
             "timeout-ms": "300000"
           },
           "environment": [
@@ -58,7 +58,7 @@
         "stdout": {
           "kind": "json",
           "value": {
-            "basis": "Per the Stage 11 gaps guide's \"Map AD-10 exits and classes to repairs\" table, both commands invoke the tea-evaluate CLI, so exit 11 maps to the `tea-evaluate 11` row (evaluation weakness) and exit 12 maps to the `tea-evaluate 12` row (infrastructure).",
+            "basis": "The table in references/gaps.md's \"Map AD-10 exits and classes to repairs\" row `tea-evaluate 11` names \"evaluation weakness\" and row `tea-evaluate 12` names \"infrastructure\", since both failing commands are the `tea-evaluate` CLI (`node cli/evaluate.js`).",
             "status": "answered",
             "exit11": "evaluation weakness",
             "exit12": "infrastructure"
@@ -66,7 +66,7 @@
         },
         "stderr": {
           "kind": "text",
-          "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50440,\"outputTokens\":609,\"costUsd\":\"0.07796159999999999\"}\n"
+          "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":51401,\"outputTokens\":655,\"costUsd\":\"0.0798032\"}\n"
         },
         "artifacts": {}
       }
@@ -87,7 +87,7 @@
             "agent-arg": "--json-schema={\"type\":\"object\",\"properties\":{\"basis\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"answered\",\"refused\"]},\"targetKind\":{\"type\":\"string\"},\"interface\":{\"type\":\"string\"}},\"required\":[\"basis\",\"status\",\"targetKind\",\"interface\"],\"additionalProperties\":false}",
             "capability": "read-only",
             "model": "claude-sonnet-5",
-            "skill-root": "skills/bmad-testarch-evaluate",
+            "skill-root": "skills/bmad-tea-evaluate",
             "timeout-ms": "300000"
           },
           "environment": [
@@ -110,7 +110,7 @@
         "stdout": {
           "kind": "json",
           "value": {
-            "basis": "inspection.md states a web application is classified as the ai-feature target kind even with no AI behavior, taking the interface kind of the ai-feature row (api, via adopter-owned EnvironmentProbePort).",
+            "basis": "The dental-booking site is a web application serving HTML and a JSON HTTP API with no AI behavior; inspection.md states a web application is always an ai-feature target even with no AI behavior and takes the ai-feature row's interface, which the AD-4 mapping table lists as targetKind=ai-feature, interface=api.",
             "status": "answered",
             "targetKind": "ai-feature",
             "interface": "api"
@@ -118,7 +118,7 @@
         },
         "stderr": {
           "kind": "text",
-          "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":44118,\"outputTokens\":440,\"costUsd\":\"0.0515042\"}\n"
+          "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":45033,\"outputTokens\":501,\"costUsd\":\"0.053437200000000004\"}\n"
         },
         "artifacts": {}
       }
@@ -139,7 +139,7 @@
             "agent-arg": "--json-schema={\"type\":\"object\",\"properties\":{\"basis\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"answered\",\"refused\"]},\"exits\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"class\":{\"type\":\"string\"}},\"required\":[\"id\",\"class\"],\"additionalProperties\":false}}},\"required\":[\"basis\",\"status\",\"exits\"],\"additionalProperties\":false}",
             "capability": "read-only",
             "model": "claude-sonnet-5",
-            "skill-root": "skills/bmad-testarch-evaluate",
+            "skill-root": "skills/bmad-tea-evaluate",
             "timeout-ms": "300000"
           },
           "environment": [
@@ -162,7 +162,7 @@
         "stdout": {
           "kind": "json",
           "value": {
-            "basis": "Listed each row of the gaps guide's \"Map AD-10 exits and classes to repairs\" table in top-to-bottom order with its source-and-exit id and AD-10 class.",
+            "basis": "Transcribed every row of the \"Map AD-10 exits and classes to repairs\" table in references/gaps.md in top-to-bottom order, with id from column 1 (unbacktick) and class from column 2.",
             "status": "answered",
             "exits": [
               {
@@ -222,7 +222,7 @@
         },
         "stderr": {
           "kind": "text",
-          "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":78158,\"outputTokens\":1077,\"costUsd\":\"0.07071240000000001\"}\n"
+          "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50069,\"outputTokens\":1024,\"costUsd\":\"0.045549599999999996\"}\n"
         },
         "artifacts": {}
       }
@@ -243,7 +243,7 @@
             "agent-arg": "--json-schema={\"type\":\"object\",\"properties\":{\"basis\":{\"type\":\"string\",\"description\":\"One sentence saying what the request asked and why you answered or refused.\"},\"status\":{\"type\":\"string\",\"enum\":[\"answered\",\"refused\"],\"description\":\"answered when you give an AD-10 class, refused when you give none.\"},\"class\":{\"type\":\"string\",\"description\":\"The AD-10 class you give. Omit this property when status is refused.\"}},\"required\":[\"basis\",\"status\"],\"additionalProperties\":false}",
             "capability": "read-only",
             "model": "claude-sonnet-5",
-            "skill-root": "skills/bmad-testarch-evaluate",
+            "skill-root": "skills/bmad-tea-evaluate",
             "timeout-ms": "300000"
           },
           "environment": [
@@ -269,13 +269,13 @@
         "stdout": {
           "kind": "json",
           "value": {
-            "basis": "The request's exit field is \"malformed\", not a numeric exit code the gaps guide's AD-10 table lists for the `node cli/evaluate.js run` command, and the guide says a request naming no exit, or an exit the table does not list for that source, has no class and must not be guessed.",
+            "basis": "The request asked for the AD-10 class for tea-evaluate's `run` command with exit \\\"malformed\\\", but the gaps guide's AD-10 table lists only numeric exits (10, 11, 12, 13, 64) for tea-evaluate, and it instructs never to guess a class for an exit the table does not list.",
             "status": "refused"
           }
         },
         "stderr": {
           "kind": "text",
-          "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50549,\"outputTokens\":674,\"costUsd\":\"0.07845859999999999\"}\n"
+          "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":51508,\"outputTokens\":638,\"costUsd\":\"0.0795672\"}\n"
         },
         "artifacts": {}
       }

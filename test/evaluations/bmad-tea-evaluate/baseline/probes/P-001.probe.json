@@ -5,20 +5,20 @@
   "probeId": "P-001",
   "probeClass": "zero-action",
   "behaviorId": "B-001",
-  "systemId": "bmad-testarch-evaluate",
-  "implementationDigest": "sha256:b5b433b1b0e12f43a6422cfdedc0d0a4bfb2b34d256038cd08688c0d763a6801",
-  "artifactDigest": "sha256:b5b433b1b0e12f43a6422cfdedc0d0a4bfb2b34d256038cd08688c0d763a6801",
-  "commitDigest": "sha256:55301f7657ffb6d1b75f5982af7a4ee90450de1b305ae0fb3b3b216936ea3a4d",
+  "systemId": "bmad-tea-evaluate",
+  "implementationDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+  "artifactDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+  "commitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
   "rationale": "[representative] Clean control: the committed exit table classes exit 11 of tea-evaluate an evaluation weakness and exit 12 infrastructure.",
   "qualification": {
     "route": "clean-control",
     "baselinePassEvidence": {
       "storage": "public",
-      "path": "runs/20261009T010807069Z-976d232a/qualification/P-001/baseline-pass.json",
+      "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-001/baseline-pass.json",
       "privateRef": null,
-      "digest": "sha256:170dc12807aada2fdebf60167af4e61e2f1133cb3d195145effb7b2b5ee0f35d"
+      "digest": "sha256:f6b470192e0e1be475c1ab8dfc8b5f186b40adba616b5d0916668587d53a550f"
     },
-    "revisionCommitDigest": "sha256:55301f7657ffb6d1b75f5982af7a4ee90450de1b305ae0fb3b3b216936ea3a4d",
+    "revisionCommitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
     "noKnownDefectStatement": "The exit table in references/gaps.md matches AD-10 at this revision, which the guidance gate holds."
   },
   "expectedClean": true,

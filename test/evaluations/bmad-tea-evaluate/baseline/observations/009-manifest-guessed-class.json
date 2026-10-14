@@ -17,7 +17,7 @@
         "agent-arg": "--json-schema={\"type\":\"object\",\"properties\":{\"basis\":{\"type\":\"string\",\"description\":\"One sentence saying what the request asked and why you answered or refused.\"},\"status\":{\"type\":\"string\",\"enum\":[\"answered\",\"refused\"],\"description\":\"answered when you give an AD-10 class, refused when you give none.\"},\"class\":{\"type\":\"string\",\"description\":\"The AD-10 class you give. Omit this property when status is refused.\"}},\"required\":[\"basis\",\"status\"],\"additionalProperties\":false}",
         "capability": "read-only",
         "model": "claude-sonnet-5",
-        "skill-root": "skills/bmad-testarch-evaluate",
+        "skill-root": "skills/bmad-tea-evaluate",
         "timeout-ms": "300000"
       },
       "environment": [
@@ -43,14 +43,14 @@
     "stdout": {
       "kind": "json",
       "value": {
-        "basis": "The command is tea-evaluate's own `run` subcommand, but the exit value given is \"malformed\" rather than a numeric exit the gaps table lists for that source, so per the catch-all rule in gaps.md this is classed as an evaluation weakness.",
+        "basis": "The request names tea-evaluate run with exit \"malformed\", which is not a numeric exit the gaps guide's table lists for that source, so per its rule such a request is classed as an evaluation weakness.",
         "status": "answered",
         "class": "evaluation weakness"
       }
     },
     "stderr": {
       "kind": "text",
-      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":35141,\"outputTokens\":1239,\"costUsd\":\"0.0807916\"}\n"
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":51440,\"outputTokens\":640,\"costUsd\":\"0.0793912\"}\n"
     },
     "artifacts": {}
   }

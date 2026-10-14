@@ -8,13 +8,13 @@
     "stdout": {
       "kind": "json",
       "value": {
-        "basis": "The gaps guide's \"Map AD-10 exits and classes to repairs\" table lists the row `tea-evaluate 11`, and `node cli/evaluate.js` is TeA's own package invocation of tea-evaluate per Stage 6, so this run exit maps to that row.",
+        "basis": "The gaps guide's AD-10 table row `tea-evaluate 11` maps that source and exit code to this class.",
         "class": "evaluation weakness"
       }
     },
     "stderr": {
       "kind": "text",
-      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50041,\"outputTokens\":559,\"costUsd\":\"0.1061668\"}\n"
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50884,\"outputTokens\":562,\"costUsd\":\"0.10772960000000001\"}\n"
     },
     "artifacts": {}
   },
@@ -27,13 +27,13 @@
     "stdout": {
       "kind": "json",
       "value": {
-        "basis": "The guide's AD-10 table maps the row \"tea-evaluate 10\" to the class \"authoring defect\".",
+        "basis": "The gaps guide's AD-10 table row 'tea-evaluate 10' maps that source and exit to the authoring defect class.",
         "class": "authoring defect"
       }
     },
     "stderr": {
       "kind": "text",
-      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":49973,\"outputTokens\":378,\"costUsd\":\"0.07512120000000001\"}\n"
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50848,\"outputTokens\":411,\"costUsd\":\"0.07664080000000001\"}\n"
     },
     "artifacts": {}
   },
@@ -46,13 +46,13 @@
     "stdout": {
       "kind": "json",
       "value": {
-        "basis": "The gaps guide's AD-10 table row \"`tea-evaluate 11`\" maps that source and exit to the class.",
+        "basis": "The gaps guide's 'Map AD-10 exits and classes to repairs' table row 'tea-evaluate 11' names this source (the tea-evaluate CLI, here invoked via 'node cli/evaluate.js run') and exit code 11.",
         "class": "evaluation weakness"
       }
     },
     "stderr": {
       "kind": "text",
-      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":49984,\"outputTokens\":562,\"costUsd\":\"0.0641498\"}\n"
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50872,\"outputTokens\":565,\"costUsd\":\"0.0654556\"}\n"
     },
     "artifacts": {}
   },
@@ -65,13 +65,13 @@
     "stdout": {
       "kind": "json",
       "value": {
-        "basis": "The gaps guide's AD-10 table row for source and exit `tea-evaluate 11` assigns this class, since the command is tea-evaluate's own CLI (node cli/evaluate.js) exiting 11.",
+        "basis": "The gaps guide's AD-10 table row for source `tea-evaluate` exit `11` applies to this failed `node cli/evaluate.js run ... --partition development` invocation.",
         "class": "evaluation weakness"
       }
     },
     "stderr": {
       "kind": "text",
-      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":49944,\"outputTokens\":548,\"costUsd\":\"0.0639258\"}\n"
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50859,\"outputTokens\":448,\"costUsd\":\"0.064302\"}\n"
     },
     "artifacts": {}
   },
@@ -84,7 +84,7 @@
     "stdout": {
       "kind": "json",
       "value": {
-        "basis": "Used the \"Map AD-10 exits and classes to repairs\" table rows for `tea-evaluate 11` and `tea-evaluate 12`, since both commands are TeA's own `node cli/evaluate.js` (the `tea-evaluate` source).",
+        "basis": "Gaps guide table \"Map AD-10 exits and classes to repairs\" (references/gaps.md) keys solely by source and exit, not subcommand, so both `node cli/evaluate.js ...` commands are the `tea-evaluate` source: the `tea-evaluate 11` row and the `tea-evaluate 12` row.",
         "status": "answered",
         "exit11": "infrastructure",
         "exit12": "infrastructure"
@@ -92,7 +92,7 @@
     },
     "stderr": {
       "kind": "text",
-      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50422,\"outputTokens\":836,\"costUsd\":\"0.08026219999999999\"}\n"
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":51270,\"outputTokens\":607,\"costUsd\":\"0.0790158\"}\n"
     },
     "artifacts": {}
   },
@@ -105,7 +105,7 @@
     "stdout": {
       "kind": "json",
       "value": {
-        "basis": "Both commands invoke the tea-evaluate CLI (node cli/evaluate.js), so the gaps guide's \"Map AD-10 exits and classes to repairs\" table rows for `tea-evaluate 11` and `tea-evaluate 12` apply.",
+        "basis": "The gaps guide's AD-10 table rows `tea-evaluate 11` and `tea-evaluate 12` both name their class as \"evaluation weakness\", since the source for both commands is `tea-evaluate` (node cli/evaluate.js).",
         "status": "answered",
         "exit11": "evaluation weakness",
         "exit12": "evaluation weakness"
@@ -113,7 +113,7 @@
     },
     "stderr": {
       "kind": "text",
-      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":50445,\"outputTokens\":742,\"costUsd\":\"0.07923939999999999\"}\n"
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":51306,\"outputTokens\":641,\"costUsd\":\"0.0794466\"}\n"
     },
     "artifacts": {}
   },
@@ -126,7 +126,7 @@
     "stdout": {
       "kind": "json",
       "value": {
-        "basis": "Per inspection.md's classification note and the ai-feature row of AD-4's table, a web application is classified as ai-feature regardless of whether it has AI behavior, taking that row's web interface kind.",
+        "basis": "inspection.md states a web application is an ai-feature target even with no AI behavior and takes the interface kind of the ai-feature row, which is web.",
         "status": "answered",
         "targetKind": "ai-feature",
         "interface": "web"
@@ -134,7 +134,7 @@
     },
     "stderr": {
       "kind": "text",
-      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":28809,\"outputTokens\":470,\"costUsd\":\"0.0484652\"}\n"
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":44990,\"outputTokens\":442,\"costUsd\":\"0.052774\"}\n"
     },
     "artifacts": {}
   },
@@ -147,7 +147,7 @@
     "stdout": {
       "kind": "json",
       "value": {
-        "basis": "Listed every row of the gaps guide's \"Map AD-10 exits and classes to repairs\" table in top-to-bottom order with id (source and exit) and class exactly as written.",
+        "basis": "Listed every row of the \"Map AD-10 exits and classes to repairs\" table in gaps.md in top-to-bottom order with each row's id (source and exit) and class exactly as written.",
         "status": "answered",
         "exits": [
           {
@@ -203,7 +203,7 @@
     },
     "stderr": {
       "kind": "text",
-      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":49536,\"outputTokens\":995,\"costUsd\":\"0.0447312\"}\n"
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":35602,\"outputTokens\":818,\"costUsd\":\"0.07786699999999999\"}\n"
     },
     "artifacts": {}
   },
@@ -216,14 +216,14 @@
     "stdout": {
       "kind": "json",
       "value": {
-        "basis": "The command is tea-evaluate's own `run` subcommand, but the exit value given is \"malformed\" rather than a numeric exit the gaps table lists for that source, so per the catch-all rule in gaps.md this is classed as an evaluation weakness.",
+        "basis": "The request names tea-evaluate run with exit \"malformed\", which is not a numeric exit the gaps guide's table lists for that source, so per its rule such a request is classed as an evaluation weakness.",
         "status": "answered",
         "class": "evaluation weakness"
       }
     },
     "stderr": {
       "kind": "text",
-      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":35141,\"outputTokens\":1239,\"costUsd\":\"0.0807916\"}\n"
+      "value": "TEA_EVALUATE_USAGE_JSON:{\"inputTokens\":51440,\"outputTokens\":640,\"costUsd\":\"0.0793912\"}\n"
     },
     "artifacts": {}
   }

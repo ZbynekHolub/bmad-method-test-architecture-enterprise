@@ -5,20 +5,20 @@
   "probeId": "P-004",
   "probeClass": "zero-action",
   "behaviorId": "B-002",
-  "systemId": "bmad-testarch-evaluate",
-  "implementationDigest": "sha256:b5b433b1b0e12f43a6422cfdedc0d0a4bfb2b34d256038cd08688c0d763a6801",
-  "artifactDigest": "sha256:b5b433b1b0e12f43a6422cfdedc0d0a4bfb2b34d256038cd08688c0d763a6801",
-  "commitDigest": "sha256:55301f7657ffb6d1b75f5982af7a4ee90450de1b305ae0fb3b3b216936ea3a4d",
+  "systemId": "bmad-tea-evaluate",
+  "implementationDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+  "artifactDigest": "sha256:cdbee030e0b5965273551e26b83b2d2a390b3809d23cb10f7ea94bae3b973e83",
+  "commitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
   "rationale": "[representative] Clean control: a web application with no AI features is an ai-feature target reached as api under the committed inspection mapping.",
   "qualification": {
     "route": "clean-control",
     "baselinePassEvidence": {
       "storage": "public",
-      "path": "runs/20261009T010807069Z-976d232a/qualification/P-004/baseline-pass.json",
+      "path": "runs/20261014T121538011Z-f4b4471a/qualification/P-004/baseline-pass.json",
       "privateRef": null,
-      "digest": "sha256:d3d2f169b39466601f206c6aba7b74dfac93ad6385d8b3913bc1afa8e8b82ebd"
+      "digest": "sha256:e972511ba757715ffd71daa08eed43217472ce459b34c56d15f1ebcb733b1d58"
     },
-    "revisionCommitDigest": "sha256:55301f7657ffb6d1b75f5982af7a4ee90450de1b305ae0fb3b3b216936ea3a4d",
+    "revisionCommitDigest": "sha256:ecde0415aa613cab6b3329ce32eaf2b3bf36b6320f05de8e482bc9b540d21506",
     "noKnownDefectStatement": "The inspection mapping sends any web application to api at this revision, which the guidance gate holds."
   },
   "expectedClean": true,
