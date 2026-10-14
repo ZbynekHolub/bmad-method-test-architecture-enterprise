@@ -215,6 +215,7 @@ async function runTests() {
       const guard = skillText.split('## On Activation\n')[1]?.split('### Step 1:')[0] ?? '';
       assert(
         guard.includes('tea-migrate-customizations') &&
+          guard.includes('{project-root}/_bmad/custom/') &&
           legacyNames.every((legacyName) => guard.includes(`${legacyName}.toml`) && guard.includes(`${legacyName}.user.toml`)),
         `${name} blocks activation while legacy customization files remain`,
       );
@@ -224,6 +225,7 @@ async function runTests() {
     assert(
       agentGuard.includes('bmad-testarch-') &&
         agentGuard.includes('bmad-teach-me-testing') &&
+        agentGuard.includes('{project-root}/_bmad/custom/bmad-tea.toml') &&
         agentGuard.includes('tea-migrate-customizations'),
       'bmad-tea blocks removed menu skill IDs before dispatch',
     );

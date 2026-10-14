@@ -26,7 +26,7 @@ Before activation hooks or project writes, load `{skill-root}/resources/setup-ro
 
 ## On Activation
 
-Before resolving customizations or running hooks, inspect `_bmad/custom/` for `bmad-testarch-framework.toml`, `bmad-testarch-framework.user.toml`, `bmad-testarch-ci.toml`, and `bmad-testarch-ci.user.toml`. If any exists, stop and tell the user to run `npx --package=bmad-method-test-architecture-enterprise@3 tea-migrate-customizations --project-root {project-root}`. Resolve any reported manual merge, then start a fresh chat. Do not continue with default settings while legacy overrides remain.
+Before resolving customizations or running hooks, inspect `{project-root}/_bmad/custom/` for `bmad-testarch-framework.toml`, `bmad-testarch-framework.user.toml`, `bmad-testarch-ci.toml`, and `bmad-testarch-ci.user.toml`. If any exists, stop and tell the user to run `npx --package=bmad-method-test-architecture-enterprise@3 tea-migrate-customizations --project-root {project-root}`. Resolve any reported manual merge, then start a fresh chat. Do not continue with default settings while legacy overrides remain.
 
 ### Step 1: Resolve the Workflow Block
 

@@ -168,8 +168,7 @@ function applyActions(actions, customRoot, beforeAction) {
         fs.linkSync(action.oldFile, backup);
         action.backup = backup;
         completed.push(action);
-        fs.unlinkSync(action.oldFile);
-        fs.linkSync(action.temp, action.oldFile);
+        fs.renameSync(action.temp, action.oldFile);
       }
     }
   } catch (error) {
