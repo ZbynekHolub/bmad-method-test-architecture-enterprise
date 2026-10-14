@@ -153,7 +153,7 @@ function sameSnapshot(left, right) {
 function publishState(root, files, io = fs) {
   const parent = path.dirname(root);
   io.mkdirSync(parent, { recursive: true });
-  const stage = io.mkdtempSync(path.join(parent, '.tea-teach-publish-'));
+  const stage = io.mkdtempSync(path.join(parent, `.tea-teach-publish-${hash(root).slice(0, 16)}-`));
   const next = path.join(stage, 'next'),
     previous = path.join(stage, 'previous');
   io.mkdirSync(next);
@@ -188,6 +188,32 @@ function publishState(root, files, io = fs) {
   } finally {
     if (!keep) io.rmSync(stage, { recursive: true, force: true });
   }
+}
+/** Restore a prior learner directory if publication stopped between its two renames. */
+function recoverPublishedState(root) {
+  const parent = path.dirname(root);
+  const prefix = `.tea-teach-publish-${hash(root).slice(0, 16)}-`;
+  const stages = fs
+    .readdirSync(parent)
+    .filter((name) => name.startsWith(prefix))
+    .map((name) => path.join(parent, name));
+  for (const stage of stages) {
+    const stat = fs.lstatSync(stage);
+    if (!stat.isDirectory() || stat.isSymbolicLink())
+      throw new WorkflowError('usage', `interrupted learner publication has an invalid stage: ${stage}`);
+  }
+  if (fs.existsSync(root)) {
+    for (const stage of stages) fs.rmSync(stage, { recursive: true, force: true });
+    return;
+  }
+  if (stages.length === 0) return;
+  if (stages.length !== 1)
+    throw new WorkflowError('usage', `multiple interrupted learner publications need manual recovery: ${stages.join(', ')}`);
+  const previous = path.join(stages[0], 'previous');
+  if (!fs.existsSync(previous) || !fs.lstatSync(previous).isDirectory() || fs.lstatSync(previous).isSymbolicLink())
+    throw new WorkflowError('usage', `interrupted learner publication has no retained state: ${stages[0]}`);
+  fs.renameSync(previous, root);
+  fs.rmSync(stages[0], { recursive: true, force: true });
 }
 function checkConversation(value, learner, bank) {
   if (!table(value) || value.schema_version !== '0.1.0' || value.learner !== learner || !Array.isArray(value.turns) || !table(value.quiz))
@@ -255,6 +281,36 @@ function quizForTurn(conversation, incoming, bank) {
     }
   }
   return { quiz, activeQuiz };
+}
+/** Accept only a caller assertion that answers the field's assessment question. */
+function supportsLearnerFact(turns, cited, field, value) {
+  const index = turns.findIndex((turn) => turn.id === cited);
+  if (index === -1) return false;
+  const pending = turns[index - 1]?.waiting;
+  if (pending?.kind === 'assessment' && pending.field !== field) return false;
+  const message = turns[index].learnerMessage.toLowerCase();
+  const target = value.toLowerCase();
+  const at = message.indexOf(target);
+  if (at === -1) return false;
+  if (['role', 'experience_level'].includes(field) && /[a-z0-9_]/.test(message[at - 1] ?? '')) return false;
+  if (['role', 'experience_level'].includes(field) && /[a-z0-9_]/.test(message[at + target.length] ?? '')) return false;
+  const prefix = message
+    .slice(0, at)
+    .split(/[.!?;,]/)
+    .at(-1);
+  if (/\b(?:not|never|no|without|don't|dont|cannot|can't)\b(?:\W+\w+){0,4}\W*$/.test(prefix)) return false;
+  return true;
+}
+/** Match displayed choice letters and text to the canonical quiz bank. */
+function hasCanonicalOptions(reply, question) {
+  const shown = new Map();
+  for (const line of reply.replaceAll(/\*\*|`/g, '').split(/\r?\n/)) {
+    const match = line.match(/^\s*(?:[-*]\s*)?([ABCD])\s*[).:-]\s*(.*?)\s*$/);
+    if (!match) continue;
+    if (shown.has(match[1]) || match[2] !== question.options[match[1]]) return false;
+    shown.set(match[1], match[2]);
+  }
+  return Object.keys(question.options).every((letter) => shown.has(letter));
 }
 function scoredRound(round, questions) {
   if (
@@ -359,11 +415,12 @@ function validateTurn({
   for (const field of FACTS) {
     if (before?.[field] !== null && before?.[field] !== undefined && !isDeepStrictEqual(before[field], progress[field]))
       fail(`the tutor changed established learner ${field}`);
-    if (progress[field] !== null && (before?.[field] === null || before?.[field] === undefined)) {
-      const cited = messages.find((turn) => turn.id === response.factEvidence[field]);
-      if (!cited || !cited.learnerMessage.toLowerCase().includes(progress[field].toLowerCase()))
-        fail(`learner ${field} lacks caller-message evidence`);
-    }
+    if (
+      progress[field] !== null &&
+      (before?.[field] === null || before?.[field] === undefined) &&
+      !supportsLearnerFact(messages, response.factEvidence[field], field, progress[field])
+    )
+      fail(`learner ${field} lacks caller-message evidence`);
   }
   const artifacts = new Map();
   const collect = (file) => {
@@ -449,11 +506,7 @@ function validateTurn({
   if (waiting.kind === 'quiz') {
     const questions = bank[waiting.sessionId].questions;
     const question = questions.find((item) => item.id === waiting.questionId);
-    if (
-      !question ||
-      !response.reply.includes(question.question) ||
-      Object.values(question.options).some((option) => !response.reply.includes(option))
-    )
+    if (!question || !response.reply.includes(question.question) || !hasCanonicalOptions(response.reply, question))
       fail('pending quiz reply omits its canonical question or options');
     let round = activeQuiz[waiting.sessionId] ?? quiz[waiting.sessionId];
     if (
@@ -498,6 +551,7 @@ module.exports = {
   snapshot,
   sameSnapshot,
   publishState,
+  recoverPublishedState,
   checkConversation,
   trustedSessionFingerprint,
   checkHistory,

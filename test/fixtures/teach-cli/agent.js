@@ -5,7 +5,7 @@ const yaml = require('js-yaml');
 const prompt = fs.readFileSync(0, 'utf8');
 const request = JSON.parse(prompt.match(/^Teach turn request: (.*)$/m)[1]);
 const mode = process.argv[2] || 'normal';
-if (mode === 'failure') { process.stdout.write('partial response'); process.exit(1); }
+if (mode === 'failure') { process.stdout.write('partial response'); process.stderr.write('controlled fixture failure\n'); process.exit(1); }
 let progress = fs.existsSync(request.artifacts.progress) ? yaml.load(fs.readFileSync(request.artifacts.progress, 'utf8')) : yaml.load(fs.readFileSync(path.join(request.skillRoot, 'templates/progress-template.yaml'), 'utf8'));
 if (!request.previous) {
   Object.assign(progress, {user:request.learner,role:null,experience_level:null,learning_goals:null,pain_points:null,started_date:'2026-10-09',last_session_date:'2026-10-09',lastContinued:'2026-10-09',stepsCompleted:['step-01-init'],lastStep:'step-02-assess'});
@@ -27,7 +27,7 @@ if (mode === 'placement') {
   response.factEvidence={role:request.requestId,experience_level:request.requestId,learning_goals:request.requestId};
   response.waiting={kind:'menu'};response.reply='Choose a session.';
 }
-if (mode === 'quiz') {
+if (mode === 'quiz' || mode === 'swapped-options') {
   const sessionId='session-01-quickstart';
   progress.sessions[0].status='in-progress';progress.sessions[0].started_date='2026-10-09';
   const previous=conversation.turns.at(-1)?.waiting;
@@ -51,6 +51,19 @@ if (mode === 'quiz') {
     response.reply=question.question+'\n'+Object.entries(question.options).map(([letter,text])=>letter+') '+text).join('\n');
     response.waiting={kind:'quiz',sessionId,questionId:question.id};
   }
+}
+if (mode === 'swapped-options') {
+  const question = bank['session-01-quickstart'].questions[0];
+  response.reply =
+    question.question +
+    '\nA) ' + question.options.B +
+    '\nB) ' + question.options.A +
+    '\nC) ' + question.options.C +
+    '\nD) ' + question.options.D;
+}
+if (mode === 'negated-fact') {
+  progress.experience_level = 'Beginner';
+  response.factEvidence = { experience_level: request.requestId };
 }
 if (mode === 'retake') {
   const sessionId='session-01-quickstart';

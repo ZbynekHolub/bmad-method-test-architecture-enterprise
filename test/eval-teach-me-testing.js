@@ -1024,10 +1024,11 @@ async function runCase(groundTruth, options, agent, runIndex) {
   const workspace = await stageWorkspace(groundTruth);
   let turns;
   let runError;
-  const startedAt = Date.now();
+  let heartbeatMinutes = 0;
   console.log(`  run ${runIndex + 1}: started`);
   const heartbeat = setInterval(() => {
-    console.log(`  run ${runIndex + 1}: still running (${Math.floor((Date.now() - startedAt) / 60_000)}m elapsed)`);
+    heartbeatMinutes += 1;
+    console.log(`  run ${runIndex + 1}: still running (heartbeat ${heartbeatMinutes})`);
   }, 60_000);
   heartbeat.unref();
   try {

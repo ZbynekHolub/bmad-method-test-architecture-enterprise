@@ -26,6 +26,7 @@ const {
   snapshot,
   sameSnapshot,
   publishState,
+  recoverPublishedState,
   checkConversation,
   checkHistory,
   trustedSessionFingerprint,
@@ -184,6 +185,7 @@ function run(argv = process.argv) {
   let originalExisted;
   let execution;
   try {
+    recoverPublishedState(stateDir);
     originalExisted = fs.existsSync(stateDir);
     original = snapshot(stateDir);
     if (imported && original.size > 0) throw new WorkflowError('usage', '--progress import requires an empty CLI learner state');

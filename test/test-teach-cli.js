@@ -55,6 +55,35 @@ test('public command publishes one caller-owned learner turn and resumes without
   assert.equal(conversation.turns.length, 2);
   assert.equal(conversation.turns[1].learnerMessage, 'QA');
 });
+test('a new turn restores learner state left between publication renames', (t) => {
+  const f = fixture(t);
+  const first = f.run();
+  assert.equal(first.status, 0, first.stderr);
+  const state = path.dirname(JSON.parse(first.stdout).progress);
+  const { hash } = require('../cli/lib/teach-turn');
+  const stage = fs.mkdtempSync(path.join(path.dirname(state), `.tea-teach-publish-${hash(state).slice(0, 16)}-`));
+  fs.mkdirSync(path.join(stage, 'next'));
+  fs.renameSync(state, path.join(stage, 'previous'));
+  const resumed = f.run('QA');
+  assert.equal(resumed.status, 0, resumed.stderr);
+  const conversation = JSON.parse(fs.readFileSync(path.join(state, 'conversation.json')));
+  assert.equal(conversation.turns.length, 2);
+  assert.equal(conversation.turns[0].learnerMessage, 'I want to learn testing');
+  assert.equal(conversation.turns[1].learnerMessage, 'QA');
+});
+test('a negated assessment answer cannot freeze an invented learner fact', (t) => {
+  const f = fixture(t);
+  const refused = f.run('I am not a beginner', 'negated-fact');
+  assert.equal(refused.status, 3, refused.stderr);
+  assert.equal(fs.existsSync(path.join(f.root, 'learner/conversation.json')), false);
+});
+test('a displayed quiz must preserve the canonical letter-to-answer pairing', (t) => {
+  const f = fixture(t);
+  assert.equal(f.run('QA Beginner Learn testing fundamentals', 'placement').status, 0);
+  const refused = f.run('C', 'swapped-options');
+  assert.equal(refused.status, 3, refused.stderr);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(f.root, 'learner/conversation.json'))).turns.length, 1);
+});
 test('preview retains a prompt while leaving published learner state unchanged', (t) => {
   const f = fixture(t);
   const first = f.run();

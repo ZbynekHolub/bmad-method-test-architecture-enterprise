@@ -8,6 +8,7 @@ It saves the tutor's next question or menu, the conversation, and the skill's pr
 Run the command again with your answer to continue.
 
 ```bash
+npm install --save-dev bmad-method-test-architecture-enterprise
 npx tea-teach --learner Murat --message "I want to learn testing" --agent codex
 npx tea-teach --learner Murat --message "QA" --agent codex
 ```
@@ -59,6 +60,7 @@ Generated artifacts must be separate regular files inside the current attempt.
 New learner facts must cite caller messages.
 Completed sessions and their notes remain intact.
 Conversation, progress and notes publish as one directory replacement with rollback.
+If an interruption lands between the directory renames, the next turn restores the retained prior state after the learner lock is acquired.
 Failed or invalid turns preserve previous state and leave an existing `--json` result unchanged.
 Concurrent invocations for one learner state fail while its lock is held; a diagnostic names a stale lock for manual recovery after confirming its invocation has ended.
 
