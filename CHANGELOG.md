@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Evaluate reserves locally started server ports on the target's authorized address, avoiding false availability when another process already listens on the same port through a different IP family.
 - Framework CLI Resume restores the original requested work and input digests from a run-owned snapshot, even when the instructions file changes after an interrupted run.
 - Framework CLI setup prompts show the controller's Python version and command environment so the generated frozen local command can match native verification.
 - Framework CLI adds an explicit `--allow-network` Codex option for dependency installation and local service tests while keeping its default sandbox network policy.

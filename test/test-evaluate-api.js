@@ -116,6 +116,7 @@ const {
   callServer,
   createApiPort,
   degenerateApiPort,
+  freePort,
   portConfiguration,
   probeHttpPort,
 } = require('../cli/lib/evaluate/http-target');
@@ -639,6 +640,29 @@ async function unitService() {
 }
 
 async function checkPortUnits() {
+  let reservedAddress = null;
+  const selected = await freePort('127.0.0.1', () => ({
+    unref() {},
+    once() {},
+    listen(_port, address, ready) {
+      reservedAddress = address;
+      ready();
+    },
+    address: () => ({ port: 43_101 }),
+    close: (done) => done(),
+  }));
+  check(
+    reservedAddress === '127.0.0.1' && selected === 43_101,
+    `the allocator reserved ${reservedAddress}:${selected} instead of the target's IPv4 address`,
+  );
+  const occupied = net.createServer();
+  await new Promise((resolve) => occupied.listen(0, '127.0.0.1', resolve));
+  try {
+    const available = await freePort('127.0.0.1');
+    check(available !== occupied.address().port, 'the allocator selected a port held by another IPv4 listener');
+  } finally {
+    await new Promise((resolve) => occupied.close(resolve));
+  }
   const { default: createHttpProbePort, nodeTransport } = await import('../skills/bmad-testarch-evaluate/assets/http-probe-port.mjs');
   const engine = await loadEngine();
   const service = await unitService();

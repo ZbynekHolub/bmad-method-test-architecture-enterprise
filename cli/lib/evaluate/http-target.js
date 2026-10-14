@@ -699,13 +699,13 @@ async function deploymentAccess({
   return { origins, authorizations };
 }
 
-/** A port the system gives out now, free on every address, released for the server to take. */
-function freePort() {
+/** A port the system gives out on the address the target will use, released for the server to take. */
+function freePort(address, createServer = () => net.createServer()) {
   return new Promise((resolve, reject) => {
-    const server = net.createServer();
+    const server = createServer();
     server.unref();
     server.once('error', reject);
-    server.listen(0, () => {
+    server.listen(0, address, () => {
       const { port } = server.address();
       server.close(() => resolve(port));
     });
@@ -1207,7 +1207,7 @@ function createApiPort({ entries, httpPort, cwd, targetOf, readEnvironment, mech
         // A server behind a bridge gets a private directory for the Unix socket its shim serves, which only that call's
         // server may write; it joins the scratch list like the port directory.
         if (launched !== null && mechanism.bridges === true) bridgeDirectory = makeBridgeDirectory(scratch);
-        const launchedPort = launched === null || reports ? null : await freePort();
+        const launchedPort = launched === null || reports ? null : await freePort(launched.addresses[0]);
         const configurationAt = (port) =>
           portConfiguration({
             entries,
@@ -1397,6 +1397,7 @@ module.exports = {
   defaultPortOf,
   deploymentAccess,
   deploymentAuthorizations,
+  freePort,
   httpPortFile,
   isApiEntry,
   makeBridgeDirectory,
