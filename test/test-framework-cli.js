@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -142,6 +143,28 @@ test('transport retry retains both attempts and resumes durable setup state', (t
   assert.equal(record.attempts.length, 2);
   assert.match(fs.readFileSync(path.join(value.runDirectory, 'attempt-1/stderr.txt'), 'utf8'), /transient failure/);
   assert.match(fs.readFileSync(path.join(value.runDirectory, 'attempt-2/prompt.txt'), 'utf8'), /headless resume request/);
+});
+
+test('external Resume restores the original instructions after an interrupted Create', (t) => {
+  const f = fixture(t);
+  const instructions = 'Use stdlib unittest and cover the SAVE20 boundary.\n';
+  fs.writeFileSync(path.join(f.root, 'setup-request.md'), instructions);
+  const interrupted = f.run([...f.agent('retry'), '--scope', 'both', '--instructions', 'setup-request.md']);
+  assert.equal(interrupted.status, 3, interrupted.stderr);
+  const runId = fs.readFileSync(path.join(f.root, 'artifacts/framework/setup-run-progress.md'), 'utf8').match(/run_id: ([^\n]+)/)[1];
+  const digest = crypto.createHash('sha256').update(runId).digest('hex');
+  const snapshot = `artifacts/framework/cli-request-${digest}.json`;
+  const saved = fs.readFileSync(path.join(f.root, snapshot), 'utf8');
+  const collision = f.run([...f.agent(), '--operation', 'resume', '--json', snapshot]);
+  assert.equal(collision.status, 2, collision.stderr);
+  assert.equal(fs.readFileSync(path.join(f.root, snapshot), 'utf8'), saved);
+  fs.writeFileSync(path.join(f.root, 'setup-request.md'), 'Changed after the original run.\n');
+  const resumed = f.run([...f.agent(), '--operation', 'resume']);
+  assert.equal(resumed.status, 0, resumed.stderr);
+  const result = JSON.parse(resumed.stdout);
+  const prompt = fs.readFileSync(path.join(result.runDirectory, 'attempt-1/prompt.txt'), 'utf8');
+  assert.match(prompt, /Use stdlib unittest and cover the SAVE20 boundary/);
+  assert.doesNotMatch(prompt, /Changed after the original run/);
 });
 
 test('invalid CLI and malformed config fail with exit 2 before execution', (t) => {

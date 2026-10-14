@@ -114,6 +114,7 @@ test('Resume restores saved both scope and original Edit operation', (t) => {
   assert.equal(request.savedOperation, 'edit');
   assert.equal(inspectCompletion(request).completed, true);
   assert.match(setupPrompt(request), /Preserve the original operation and ledger/);
+  assert.match(setupPrompt(request), /CLI's native verifier executes frozen local test commands/);
 });
 
 test('retry asks Resume with existing journal and retains original request', (t) => {

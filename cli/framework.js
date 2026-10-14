@@ -19,6 +19,7 @@ const {
   setupPrompt,
   inspectCompletion,
   protectResultPath,
+  saveRequestSnapshot,
 } = require('./lib/framework-setup');
 
 function collect(value, previous) {
@@ -107,6 +108,7 @@ function main(argv = process.argv) {
       capabilities: ['command-execution'],
       prepare: ({ attempt }) => ({ prompt: setupPrompt(request, { retry: attempt > 1 }), request }),
       validate: ({ attemptDir }) => {
+        saveRequestSnapshot(request);
         try {
           protectResultPath(request, jsonPath, readJournal(projectPath(projectRoot, request.journalPath))?.data);
         } catch (error) {
@@ -141,6 +143,13 @@ function main(argv = process.argv) {
     process.stdout.write(serialized);
     return result.completed ? 0 : 1;
   } catch (error) {
+    if (request) {
+      try {
+        saveRequestSnapshot(request);
+      } catch (snapshotError) {
+        process.stderr.write(`tea-framework: could not retain setup request: ${snapshotError.message}\n`);
+      }
+    }
     if (error.runDir) {
       const failureResult = {
         schema_version: '0.1.0',

@@ -47,7 +47,8 @@ When a CI-only request finds no framework, the skill records the unresolved setu
 Use `--scope both` to authorize both phases.
 
 Resume restores the saved scope and original Create, Edit, or Validate operation.
-It preserves the run identity, frozen contract, and completed hook instructions.
+It preserves the run identity, frozen contract, completed hook instructions, and the original CLI request text and input digests.
+The CLI saves that request beside the setup journal using the journal run ID, so changes to the original instructions file do not change a resumed run.
 An uncertain started hook requires explicit operator recovery in the journal before headless execution.
 Omit new input and instruction flags when resuming.
 Validate completes its report even when that report contains failing checks.
@@ -95,6 +96,8 @@ Each live command creates a unique run directory containing:
 - `result.json` and `report.md`: completion status, scope, operation, referenced artifacts, and unresolved work.
 - `run.json`: agent, model, execution limit, and attempt outcomes.
 - `attempt-N/prompt.txt`, `stdout.txt`, `stderr.txt`, and `attempt.json`: the complete request and captured agent evidence.
+
+Once the skill creates a journal run ID, the CLI also saves `cli-request-<hash>.json` in the framework artifacts folder for external Resume.
 
 The skill keeps its shared journal at `{test_artifacts}/framework/setup-run-progress.md` and its existing per-phase progress files.
 Create completion requires a completed matching journal, completed requested phases, a finished hook ledger, and existing referenced artifacts.

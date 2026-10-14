@@ -77,6 +77,7 @@ function protectResultPath(request, resultPath, state = request.before?.data) {
     state?.contract?.lockfile,
     state?.pipeline_target,
   );
+  if (typeof state?.run_id === 'string' && state.run_id) protectedPaths.push(requestSnapshotPath(request, state.run_id));
   const target = projectPath(request.projectRoot, resultPath);
   const targetStat = fs.existsSync(target) ? fs.statSync(target) : null;
   for (const raw of protectedPaths.filter(Boolean)) {
@@ -304,6 +305,61 @@ function readJournal(file) {
   const data = yaml.load(match[1]);
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw problem(`Invalid setup journal: ${file}`);
   return { data, digest: createHash('sha256').update(text).digest('hex'), text };
+}
+
+/** Keep the original headless request with its journal run, so a later Resume can restore it. */
+function requestSnapshotPath(request, runId) {
+  const digest = createHash('sha256').update(runId).digest('hex');
+  return projectPath(request.projectRoot, path.join(request.artifactsRoot, 'framework', `cli-request-${digest}.json`));
+}
+
+function saveRequestSnapshot(request) {
+  if (request.operation === 'resume') return;
+  const journal = readJournal(request.journalPath);
+  const state = journal?.data;
+  if (
+    typeof state?.run_id !== 'string' ||
+    !state.run_id ||
+    state.run_id === request.before?.data.run_id ||
+    state.setup_scope !== request.scope ||
+    state.setup_operation !== request.savedOperation
+  )
+    return;
+  const snapshot = {
+    schema_version: 1,
+    run_id: state.run_id,
+    scope: request.scope,
+    operation: request.savedOperation,
+    instructions_path: request.instructionsPath,
+    instructions: request.instructions,
+    input_digests: Object.fromEntries(request.inputDigests),
+  };
+  const target = requestSnapshotPath(request, state.run_id);
+  const bytes = `${JSON.stringify(snapshot, null, 2)}\n`;
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  if (fs.existsSync(target)) {
+    if (fs.readFileSync(target, 'utf8') !== bytes) throw problem(`Saved CLI request conflicts with ${target}`);
+    return;
+  }
+  fs.writeFileSync(target, bytes, { flag: 'wx' });
+}
+
+function readRequestSnapshot(request, state) {
+  const target = requestSnapshotPath(request, state.run_id);
+  if (!fs.existsSync(target)) return null; // Journals created before this CLI feature retain their own context.
+  const snapshot = JSON.parse(fs.readFileSync(target, 'utf8'));
+  if (
+    snapshot.schema_version !== 1 ||
+    snapshot.run_id !== state.run_id ||
+    snapshot.scope !== state.setup_scope ||
+    snapshot.operation !== state.setup_operation ||
+    typeof snapshot.instructions !== 'string' ||
+    !snapshot.input_digests ||
+    typeof snapshot.input_digests !== 'object' ||
+    Array.isArray(snapshot.input_digests)
+  )
+    throw problem(`Saved CLI request does not match setup journal: ${target}`);
+  return snapshot;
 }
 
 /** Snapshot exact selected artifacts, including directory inputs, without following escaping links. */
@@ -540,7 +596,10 @@ function prepareSetup({ projectRoot, skillRoot, config, options }) {
   if (options.operation === 'resume' && !before) throw problem(`Resume requires the setup journal at ${journalPath}`);
   if (
     options.operation === 'resume' &&
-    (!SCOPES.includes(before.data.setup_scope) || !['create', 'edit', 'validate'].includes(before.data.setup_operation))
+    (typeof before.data.run_id !== 'string' ||
+      !before.data.run_id ||
+      !SCOPES.includes(before.data.setup_scope) ||
+      !['create', 'edit', 'validate'].includes(before.data.setup_operation))
   ) {
     throw problem('Setup journal has no recognized saved scope and operation');
   }
@@ -592,6 +651,15 @@ function prepareSetup({ projectRoot, skillRoot, config, options }) {
     inputDigests: new Map(inputs.map((file) => [file, artifactDigest(projectRoot, file)])),
   };
   if (before) validateJournalPaths(request, before.data);
+  if (options.operation === 'resume') {
+    const snapshot = readRequestSnapshot(request, before.data);
+    if (snapshot) {
+      request.instructions = snapshot.instructions;
+      request.instructionsPath = snapshot.instructions_path;
+      request.inputDigests = new Map(Object.entries(snapshot.input_digests));
+      request.inputs = [...request.inputDigests.keys()];
+    }
+  }
   return request;
 }
 
@@ -615,12 +683,15 @@ function setupPrompt(request, { retry = false } = {}) {
     if (request.resumeState.run_id !== progress.data.run_id) throw problem('Retry replaced the saved run_id');
     operation = 'resume';
   }
+  const pythonProbe = spawnSync('python3', ['--version'], { cwd: request.projectRoot, encoding: 'utf8', timeout: 3000 });
+  const pythonVersion = pythonProbe.status === 0 ? (pythonProbe.stdout || pythonProbe.stderr).trim() : 'unavailable';
   return [
     `Run the framework and CI setup skill at ${JSON.stringify(request.skillRoot)}. Read its SKILL.md, setup-routing.md, setup-state.md and applicable step files completely.`,
     `Project root: ${JSON.stringify(request.projectRoot)}. Knowledge root: ${JSON.stringify(path.join(request.skillRoot, '..', 'bmod-tea', 'knowledge'))}.`,
     `This is a headless ${operation} request. Explicit setup_scope: ${request.scope}. Preserve the original operation and ledger when resuming.`,
     'Configuration has been resolved by the CLI. This snapshot fulfills activation configuration loading, including package defaults when no project config exists. Treat it as authoritative for core and modules.tea values. Apply applicable framework and CI workflow customizations using the skill rules; no configuration file needs to be created.',
     JSON.stringify(request.config.configSnapshot, null, 2),
+    `The CLI's native verifier executes frozen local test commands using ${process.platform === 'win32' ? 'cmd.exe' : '/bin/sh -c'} with PATH ${JSON.stringify(process.env.PATH ?? '')}. In this verifier environment, python3 --version is ${JSON.stringify(pythonVersion)}. Your own tool shell may resolve another interpreter. Freeze a local command that succeeds in the verifier environment, using an explicit interpreter path or versioned command when needed. CI may use its own frozen command.`,
     `Canonical workflow customization: ${JSON.stringify(request.config.workflowCustomization ?? {})}. CI workflow customization: ${JSON.stringify(request.ciWorkflowCustomization)}. Required hook instructions and stable ledger keys: ${JSON.stringify(request.requiredHooks)}.`,
     request.operation === 'resume'
       ? 'Restore the exact phase targets, selected reports and requested edits from the saved journal. New artifact selection is not part of Resume.'
@@ -821,4 +892,5 @@ module.exports = {
   setupPrompt,
   inspectCompletion,
   protectResultPath,
+  saveRequestSnapshot,
 };
