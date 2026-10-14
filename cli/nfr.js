@@ -18,6 +18,7 @@ const {
   runWithEvidence,
   mainError,
 } = require('./lib/workflow-cli');
+/** Accumulate repeatable Commander path options without replacing earlier values. */
 const collect = (value, previous) => [...previous, value];
 /** Resolve a nonempty explicitly supplied source role. */
 function sourceFiles(projectRoot, values, label) {

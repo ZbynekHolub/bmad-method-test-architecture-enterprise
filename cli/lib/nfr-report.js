@@ -14,15 +14,19 @@ const STEPS = [
   'step-04e-aggregate-nfr',
   'step-05-generate-report',
 ];
+/** Reject a report field with the parser failure class used by the CLI. */
 const bad = (message) => {
   throw new WorkflowError('environment-parser', message);
 };
+/** Collapse whitespace so quoted observations survive line wrapping. */
 const normalized = (value) => String(value).replaceAll(/\s+/g, ' ').trim();
+/** Compare ADR category labels across spaces, hyphens and capitalization. */
 const categoryLabel = (value) =>
   value
     .toLowerCase()
     .replaceAll(/[-\s]+/g, ' ')
     .trim();
+/** Compare canonical context values after JSON serialization. */
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 const markdown = new MarkdownIt({ html: true });
 const DECORATIONS = { PASS: ['✅', '✔', '✔️'], CONCERNS: ['⚠', '⚠️'], FAIL: ['❌', '✖', '✖️'], 'N/A': ['➖'] };
