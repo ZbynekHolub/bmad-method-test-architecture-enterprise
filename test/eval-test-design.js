@@ -1858,11 +1858,11 @@ async function main() {
     const lostRunClasses = [];
     const diagnostics = [];
 
-    for (const set of sets) {
+    for (const [setIndex, set] of sets.entries()) {
       const signatures = new Set();
       const caseScores = [];
       for (let runIndex = 0; runIndex < runs; runIndex += 1) {
-        const label = `${set.id} run ${runIndex + 1}/${runs}`;
+        const label = `case ${setIndex * runs + runIndex + 1}/${sets.length * runs}: ${set.id} run ${runIndex + 1}/${runs}`;
         console.log(`  ${colors.dim}${label}: started${colors.reset}`);
         let elapsedMinutes = 0;
         const heartbeat = setInterval(() => {
