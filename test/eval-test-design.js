@@ -1862,6 +1862,14 @@ async function main() {
       const signatures = new Set();
       const caseScores = [];
       for (let runIndex = 0; runIndex < runs; runIndex += 1) {
+        const label = `${set.id} run ${runIndex + 1}/${runs}`;
+        console.log(`  ${colors.dim}${label}: started${colors.reset}`);
+        let elapsedMinutes = 0;
+        const heartbeat = setInterval(() => {
+          elapsedMinutes += 1;
+          console.log(`  ${colors.dim}${label}: still running (${elapsedMinutes}m elapsed)${colors.reset}`);
+        }, 60_000);
+        heartbeat.unref();
         // A throw out of staging, the port or the scorer is one lost run rather than
         // a lost invocation. It used to reach main().catch, which exits 2 with a
         // stack trace, writes no result record even when --json asked for one, and
@@ -1871,6 +1879,8 @@ async function main() {
           outcome = await runCase(set, options, agent, runIndex, categories);
         } catch (error) {
           outcome = { ok: false, failureClass: 'environment-configuration', reason: `the run threw: ${error?.message ?? error}` };
+        } finally {
+          clearInterval(heartbeat);
         }
         if (!outcome.ok) {
           console.error(`  ${colors.red}${set.id} run ${runIndex + 1}: ${outcome.reason}${colors.reset}`);
