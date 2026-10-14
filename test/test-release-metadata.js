@@ -9,6 +9,7 @@
  *   GitHub's 125,000 character limit at a bullet with a link to the full CHANGELOG section
  * - the release job that mints the GitHub App token and runs `git push` runs no tests, mints the token before checkout,
  *   and waits on the reused quality workflow (an installation token expires after an hour; the chain runs longer)
+ * - the stable release points both npm dist-tags at its version, and no independent prerelease trigger can move `next`
  * - the `tea-evaluate` bin and the optional `eval-quality` peer (floor 8.0.0)
  *   are declared, and package-lock.json's root entry carries the same
  *
@@ -109,10 +110,101 @@ const packageJson = readJson(packageJsonPath, 'package.json');
 const packageLock = readJson(packageLockPath, 'package-lock.json');
 const marketplace = readJson(marketplacePath, '.claude-plugin/marketplace.json');
 const publishWorkflow = readText(publishWorkflowPath, 'publish.yaml');
+const parsedPublishWorkflow = parseYaml(publishWorkflow);
 const releaseStep = releaseStepFrom(publishWorkflow);
 const marketplacePlugin = (marketplace.plugins || []).find((plugin) => plugin && plugin.name === packageJson.name);
 
 const errors = [];
+
+// A one-time tag update cannot hold while pushes or a manual `next` path still publish independent prereleases.
+if (Object.hasOwn(parsedPublishWorkflow?.on ?? {}, 'push'))
+  errors.push('publish.yaml must not publish an independent prerelease on a push.');
+if (parsedPublishWorkflow?.on?.workflow_dispatch?.inputs?.channel) errors.push('publish.yaml must not offer a separate release channel.');
+const operationInput = parsedPublishWorkflow?.on?.workflow_dispatch?.inputs?.operation;
+if (operationInput?.default !== 'release' || !operationInput?.options?.includes('sync-tags'))
+  errors.push('publish.yaml must expose a tag-only repair dispatch with release as the default operation.');
+if (packageJson.scripts?.['release:next']) errors.push('package.json must not dispatch an independent next release.');
+if (!packageJson.scripts?.['release:sync-tags']?.includes('operation=sync-tags'))
+  errors.push('package.json must expose the tag-only repair dispatch.');
+const publishSteps = parsedPublishWorkflow?.jobs?.publish?.steps ?? [];
+if (publishSteps.some((step) => typeof step?.run === 'string' && /npm publish\b[^\n]*--tag(?:=|\s+)next\b/.test(step.run)))
+  errors.push('publish.yaml must not publish next as an independent prerelease.');
+const preflightIndex = publishSteps.findIndex((step) => step?.name === 'Align existing npm tags and confirm permission');
+const bumpIndex = publishSteps.findIndex((step) => step?.name === 'Bump stable version');
+const stablePublishIndex = publishSteps.findIndex((step) => step?.name === 'Publish stable release to npm');
+const githubReleaseIndex = publishSteps.findIndex((step) => step?.name === 'Create GitHub Release');
+const syncTagsIndex = publishSteps.findIndex((step) => step?.name === 'Point next at the stable release');
+const repairStep = parsedPublishWorkflow?.jobs?.['sync-tags']?.steps?.find((step) => step?.name === 'Align next with latest');
+if (preflightIndex === -1 || bumpIndex <= preflightIndex)
+  errors.push('publish.yaml must verify tag-management permission before bumping the version.');
+if (stablePublishIndex === -1 || githubReleaseIndex <= stablePublishIndex || syncTagsIndex <= githubReleaseIndex)
+  errors.push('publish.yaml must create the GitHub Release before aligning the published npm tags.');
+if (!repairStep?.run?.includes('tools/sync-npm-tags.sh')) errors.push('publish.yaml must provide a tag-only repair job.');
+if (preflightIndex !== -1 && syncTagsIndex !== -1 && repairStep?.run) {
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tea-release-tags-'));
+  try {
+    const fakeBin = path.join(fixtureRoot, 'bin');
+    const tagsFile = path.join(fixtureRoot, 'tags.json');
+    const attemptsFile = path.join(fixtureRoot, 'attempts.txt');
+    fs.mkdirSync(fakeBin);
+    fs.symlinkSync(path.join(projectRoot, 'tools'), path.join(fixtureRoot, 'tools'));
+    fs.writeFileSync(path.join(fixtureRoot, 'package.json'), '{"name":"example-tea","version":"9.9.9"}\n');
+    fs.writeFileSync(
+      path.join(fakeBin, 'npm'),
+      `#!/usr/bin/env node
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+const tags = JSON.parse(fs.readFileSync(process.env.NPM_TAGS_FILE, 'utf8'));
+if (args[0] === 'dist-tag' && args[1] === 'add' && args[2] === 'example-tea@9.9.9' && args[3] === 'next') {
+  const attempts = Number(fs.readFileSync(process.env.NPM_TAG_ATTEMPTS_FILE, 'utf8')) + 1;
+  fs.writeFileSync(process.env.NPM_TAG_ATTEMPTS_FILE, String(attempts));
+  if (process.env.NPM_TAG_ADD_FAIL === '1' || (process.env.NPM_TAG_ADD_FAIL_ONCE === '1' && attempts === 1)) process.exit(1);
+  if (process.env.NPM_TAG_ADD_NOOP !== '1') tags.next = '9.9.9';
+  fs.writeFileSync(process.env.NPM_TAGS_FILE, JSON.stringify(tags));
+} else if (args[0] === 'view' && args[1] === 'example-tea@latest' && args[2] === 'version') {
+  process.stdout.write(tags.latest);
+} else if (args[0] === 'view' && args[1] === 'example-tea' && args[2] === 'dist-tags') {
+  process.stdout.write(JSON.stringify(tags));
+} else process.exit(2);
+`,
+    );
+    fs.writeFileSync(path.join(fakeBin, 'sleep'), '#!/bin/sh\nexit 0\n');
+    fs.chmodSync(path.join(fakeBin, 'npm'), 0o755);
+    fs.chmodSync(path.join(fakeBin, 'sleep'), 0o755);
+    const runTagStep = (step, options = {}) => {
+      fs.writeFileSync(tagsFile, '{"latest":"9.9.9","next":"9.8.8"}');
+      fs.writeFileSync(attemptsFile, '0');
+      return spawnSync('bash', ['-e', '-c', step.run], {
+        cwd: fixtureRoot,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: `${fakeBin}${path.delimiter}${process.env.PATH}`,
+          NPM_TAGS_FILE: tagsFile,
+          NPM_TAG_ATTEMPTS_FILE: attemptsFile,
+          TEA_TAG_SYNC_ATTEMPTS: '3',
+          NPM_TAG_ADD_NOOP: options.noOp ? '1' : '0',
+          NPM_TAG_ADD_FAIL: options.fail ? '1' : '0',
+          NPM_TAG_ADD_FAIL_ONCE: options.failOnce ? '1' : '0',
+        },
+      });
+    };
+    const success = runTagStep(publishSteps[syncTagsIndex], { failOnce: true });
+    if (success.status !== 0 || JSON.parse(fs.readFileSync(tagsFile, 'utf8')).next !== '9.9.9') {
+      errors.push(`publish.yaml failed to synchronize next after npm processing: ${success.stderr || success.stdout}`);
+    }
+    const stale = runTagStep(publishSteps[syncTagsIndex], { noOp: true });
+    if (stale.status === 0) errors.push('publish.yaml accepted a next tag that still points at an older version.');
+    const denied = runTagStep(publishSteps[preflightIndex], { fail: true });
+    if (denied.status === 0) errors.push('publish.yaml did not fail before the version bump when npm denied tag management.');
+    const repaired = runTagStep(repairStep);
+    if (repaired.status !== 0 || JSON.parse(fs.readFileSync(tagsFile, 'utf8')).next !== '9.9.9') {
+      errors.push(`publish.yaml failed to repair the current npm tags: ${repaired.stderr || repaired.stdout}`);
+    }
+  } finally {
+    fs.rmSync(fixtureRoot, { recursive: true, force: true });
+  }
+}
 
 if (packageJson.private === true) {
   errors.push('package.json must not set "private": true when publishing to npm.');
