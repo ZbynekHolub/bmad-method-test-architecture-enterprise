@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `tea-framework` runs packaged framework and CI setup with explicit scope and operation, resolved configuration, bounded vendor execution, retained prompts and streams, JSON and Markdown results, and checks against the saved setup journal before reporting completion.
+  Create reruns frozen test commands with the existing process supervisor, project environment, and selected timeout.
 - `tea-test-design` accepts epic or system requirement documents, invokes the packaged skill with a selected headless agent, verifies fresh reports and a completed checkpoint, and publishes the plan. Each attempt retains its prompt, raw streams and vendor/model record; `--agent none` saves a prompt-only invocation.
 - `tea-automate` CLI for the merged red/expand skill, with Create, Resume, Validate, Edit, default run-and-heal, JSON outcomes, and retained agent/runner evidence.
 - Real Codex generation captures and an independent fixed-versus-mutated voucher-suite scorer, complementing the deterministic AUTOMATE fixture evaluator.
@@ -20,6 +22,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Framework CLI Resume restores the original requested work and input digests from a run-owned snapshot, even when the instructions file changes after an interrupted run.
+- Framework CLI setup prompts show the controller's Python version and command environment so the generated frozen local command can match native verification.
+- Framework CLI adds an explicit `--allow-network` Codex option for dependency installation and local service tests while keeping its default sandbox network policy.
+- Framework CLI completion requires runnable CI test jobs, same-run validation reports for selected artifacts, and recorded Edit outcomes.
+  Native verification counts every suite summary and resolves `npm --prefix` subprojects.
+  Failure reporting preserves late input aliases, and omitted `--retries` runs one attempt.
+- Framework CLI result publication preserves manifests, configuration, input files, and generated setup outputs through symlink and hard-link aliases.
+  Resume preserves frozen identity, contract, hook ledgers, and selected target, report, and edit scope.
+  Completion requires configured hooks, frozen output paths, and positive native test execution.
+  Retries reject unrelated completed history, and journal paths remain confined to the project.
+- Framework and CI Create require a Git worktree before activation or framework writes.
+  The Codex evaluation exposed a run that skipped this CI prerequisite.
+  The CLI rejects this condition before model execution.
 - Test Design risk guidance requires bare numeric probability, impact, and score cells after a live run put explanations inside those cells and failed CLI publication and evaluation shape checks.
 - Test Design evaluation recognizes observed descriptions of erased or discarded offline edits and build-based disablement, and reports the actual CLI selected by `--agent-cmd` in preflight and result provenance.
 - Test Design rejects required sections that appear only inside fenced examples and rejects unscored risk registers with noncanonical IDs before publishing a plan.

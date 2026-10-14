@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "archive": "evidence.json.gz",
+  "sha256": "e52939e0be58b4ed0aa7855ea0504791dcae526897e8bab923bdb8dd2f1c0097",
+  "fileCount": 76,
+  "manifest": {
+    "schemaVersion": 1,
+    "capturedAt": "2026-10-14T02:03:06.260Z",
+    "beforeSourceCommit": "def7f26c",
+    "afterSourceCommit": "2d875dc9",
+    "agent": "codex",
+    "model": "gpt-6.1-sol",
+    "fixture": "Python voucher service, stdlib unittest, framework and CI Create",
+    "before": {
+      "initialOutcome": "incomplete: missing pyproject.toml fixture prerequisite",
+      "resumeOutcome": "incomplete: native verifier resolved python3 to 3.9.6 while agent used 3.12.13"
+    },
+    "after": {
+      "outcome": "completed: eight native passing tests, runnable GitHub Actions pipeline",
+      "mutationCatches": 3,
+      "mutationTotal": 3
+    },
+    "cost": "unknown: vendor cost telemetry not available in captured CLI output"
+  }
+}
