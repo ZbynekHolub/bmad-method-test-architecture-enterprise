@@ -116,6 +116,7 @@ const {
   callServer,
   createApiPort,
   degenerateApiPort,
+  freePort,
   portConfiguration,
   probeHttpPort,
 } = require('../cli/lib/evaluate/http-target');
@@ -639,6 +640,50 @@ async function unitService() {
 }
 
 async function checkPortUnits() {
+  let reservedAddress = null;
+  const selected = await freePort(['127.0.0.1'], () => ({
+    unref() {},
+    once() {},
+    listen(_port, address, ready) {
+      reservedAddress = address;
+      ready();
+    },
+    address: () => ({ port: 43_101 }),
+    close: (done) => done(),
+  }));
+  check(
+    reservedAddress === '127.0.0.1' && selected === 43_101,
+    `the allocator reserved ${reservedAddress}:${selected} instead of the target's IPv4 address`,
+  );
+  const occupied = net.createServer();
+  await new Promise((resolve) => occupied.listen(0, '127.0.0.1', resolve));
+  try {
+    const available = await freePort(['127.0.0.1']);
+    check(available !== occupied.address().port, 'the allocator selected a port held by another IPv4 listener');
+    if (
+      Object.values(os.networkInterfaces())
+        .flat()
+        .some((address) => address?.address === '::1')
+    ) {
+      let first = true;
+      const acrossAddresses = await freePort(['::1', '127.0.0.1'], () => {
+        if (!first) return net.createServer();
+        first = false;
+        return {
+          unref() {},
+          once() {},
+          listen(_port, _address, ready) {
+            ready();
+          },
+          address: () => ({ port: occupied.address().port }),
+          close: (done) => done(),
+        };
+      });
+      check(acrossAddresses !== occupied.address().port, 'the allocator selected a port held on a later authorized address');
+    }
+  } finally {
+    await new Promise((resolve) => occupied.close(resolve));
+  }
   const { default: createHttpProbePort, nodeTransport } = await import('../skills/bmad-testarch-evaluate/assets/http-probe-port.mjs');
   const engine = await loadEngine();
   const service = await unitService();
@@ -5008,8 +5053,8 @@ async function confinedPipelineVariants(providerPort, tunneledCount) {
 /**
  * The confined started service's reads and the confined HTTP port (Story
  * 1.31): a started service that reads the evaluation folder's contract.json is
- * refused, and one that reads a file outside its workspace is let through; the
- * audit lists both paths, by their real paths, as the trial set's observed
+ * refused. Darwin also refuses a file outside its workspace; Linux records the
+ * read and lets it through. The audit lists both paths, by their real paths, as the trial set's observed
  * mounts, and the file drops out once the entry declares its directory in
  * `systemPaths`. The evaluation's HTTP port, which runs with the evaluation
  * folder read-only, is refused each write it tries under `runs/`, and notes
@@ -5106,10 +5151,8 @@ async function checkConfinedServiceReads() {
   for (let again = 0; again < 2 && process.platform === 'darwin' && lostOnly(confined); again += 1) confined = runReading('confined-reads');
   checkExit('confined-reads', confined, true);
   check(refusal.test(confined.evidence), `a confined started service's read of contract.json was not refused: ${confined.evidence}`);
-  check(
-    /outside: allowed/.test(confined.evidence),
-    `a confined started service could not read the ungranted file, so the case proves nothing: ${confined.evidence}`,
-  );
+  const outsideRead = process.platform === 'darwin' ? /outside: refused (EPERM|EACCES|ENOENT|EROFS)/ : /outside: allowed/;
+  check(outsideRead.test(confined.evidence), `a confined started service's ungranted read was unexpected: ${confined.evidence}`);
   check(
     JSON.stringify(confined.observed) === JSON.stringify(wanted(confined)),
     `a confined started service's trial set observed ${JSON.stringify(confined.observed)}; expected the contract and the file outside, recorded as ${JSON.stringify(wanted(confined))}`,

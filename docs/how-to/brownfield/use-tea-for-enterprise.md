@@ -128,7 +128,7 @@ Tell it you need separate test environments (dev, staging, prod-mirror), secure 
 To set up CI in the same run, ask for the framework and CI together and give it the step 3 requirements.
 
 **3.
-CI/CD with compliance.** Run `/bmad-testarch-ci`, or `/bmad-testarch-framework` and ask for CI.
+CI/CD with compliance.** Run `/bmad-testarch-framework` and ask for CI.
 Tell it you need secrets management (Vault, AWS Secrets Manager), test isolation, artifact retention for the compliance audit trail, and access controls over who can run production tests.
 
 ### Phase 4: Implementation (Required)
@@ -136,7 +136,7 @@ Tell it you need secrets management (Vault, AWS Secrets Manager), test isolation
 Per epic:
 
 1. `/bmad-testarch-test-design` at epic level, focused on compliance, security, and performance for this epic
-2. `/bmad-testarch-atdd` (optional) to generate tests including security and compliance scenarios
+2. `/bmad-testarch-automate` in red mode (optional) to generate tests including security and compliance scenarios
 3. A developer implements the story
 4. `/bmad-testarch-automate` to expand coverage, including compliance edge cases
 5. `/bmad-testarch-test-review` to audit quality (target above 80 per epic, rising to above 85 at release)
@@ -284,7 +284,7 @@ Confirm retention periods with your compliance team for each artifact type.
 Security failures block everything else in enterprise, so make security requirements Priority 1:
 
 1. Document all security requirements
-2. Generate security tests with `/bmad-testarch-atdd`
+2. Generate security tests with `/bmad-testarch-automate` in red mode
 3. Run the security test suite
 4. Pass the security audit before moving forward
 

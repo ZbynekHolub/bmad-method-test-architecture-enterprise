@@ -10,7 +10,7 @@ so that the locker is still free when I reach it and nobody else's parcel is put
 
 ## Context
 
-`quay-locker-service` already answers `GET /lockers` and `GET /lockers/{lockerId}` from the inventory in `src/lockers.js`. Nothing in the service knows about reservations yet: there is no reservation route, no reservation state, and the locker payload carries only `id`, `location` and `size`.
+`quay-locker-service` already answers `GET /lockers` and `GET /lockers/{lockerId}` from the inventory in `src/lockers.js`. The reservation routes are not implemented, and the locker payload carries only `id`, `location` and `size`. `src/reservations.js` provides stable seeded reservation state for acceptance tests; no route reads it yet.
 
 The service has no user interface. Every behavior below is an HTTP endpoint that speaks JSON, and the acceptance tests are API tests that run against the service started by `playwright.config.ts`.
 
@@ -30,6 +30,7 @@ The service has no user interface. Every behavior below is an HTTP endpoint that
 
 ## Dev Notes
 
-- The inventory is in memory and resets when the process restarts, so a reservation store can live beside it in `src/`.
+- The inventory and seeded reservation map are in memory and reset when the process restarts.
+- Use the existing `reservationsByLocker` map in `src/reservations.js` when implementing reservation routes. `L-104` starts free. `L-217` starts reserved as `R-SEED-217` for AC-2 and AC-5. `L-330` starts reserved as `R-SEED-330` for AC-4, so its release test can delete a real reservation without first calling an unimplemented create route. These lockers keep the scenarios independent.
 - `src/server.js` answers `404 { "error": "not-found" }` for every route it does not know, which is what the reservation routes return until they exist.
 - Tests live under `tests/` and run with `npm test`, which starts the service through the `webServer` block of `playwright.config.ts`.

@@ -230,6 +230,7 @@ function coercePactMcp(value, source = CONFIG_RELATIVE_PATH) {
   throw configError(`tea_pact_mcp from ${source} must be one of ${PACT_MCP_VALUES.join(' | ')}, got ${JSON.stringify(value)}`);
 }
 
+/** Accept configuration tables while excluding arrays, dates and null. */
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date);
 }
@@ -552,6 +553,8 @@ function resolveTeaConfig({ projectRoot, flags = {}, baseRef, skillRoot, skillNa
 module.exports = {
   resolveTeaConfig,
   readTeaConfigFile,
+  readWorkflowCustomization,
+  configSource,
   isPackageInstalled,
   KEY_TO_PACKAGE,
   KEY_TO_INSTALLED_FIELD,

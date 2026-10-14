@@ -13,7 +13,7 @@ The commands below use `.claude/skills/`; substitute your host's folder.
 
 ### TEA Skills Not Found After Installation
 
-**Symptom**: After `npx skills add bmad-code-org/bmad-method-test-architecture-enterprise`, the TEA agent or skills are not available.
+**Symptom**: After `npx skills add bmad-code-org/bmad-method-test-architecture-enterprise`, the TEA agent or workflows are not available.
 
 **Cause**: The install did not finish, it went to a different scope (project or global) than the one your host reads, or the host was started before the skills existed.
 
@@ -22,7 +22,7 @@ ls .claude/skills/ | grep -E 'bmad-tea|bmad-testarch|bmad-teach|bmod-tea'
 npx skills add bmad-code-org/bmad-method-test-architecture-enterprise   # re-run to add what is missing
 ```
 
-Expect the `bmad-tea` agent, `bmod-tea` module, and ten direct capability commands: `bmad-teach-me-testing` and nine `bmad-testarch-*` entries. These commands map to eight canonical skills; ATDD belongs to Automate and CI belongs to Framework.
+Expect the `bmad-tea` agent, `bmod-tea` module, and eight direct workflows: `bmad-teach-me-testing` and seven `bmad-testarch-*` entries. Automate handles ATDD through red mode; Framework handles CI setup through CI scope.
 Restart the host or start a fresh chat after installing.
 
 ### Install Hangs or Cannot Reach GitHub
@@ -62,15 +62,15 @@ Skills find the knowledge base at `../bmod-tea/knowledge` from their own folder,
 
 ### TEA Loads But Commands Don't Work
 
-**Symptom**: The TEA agent loads, but skill codes (TF, TD, AT, and the rest) do not execute.
+**Symptom**: The TEA agent loads, but workflow codes such as TF and TD do not execute.
 
 **Cause**: Skills are missing from the install.
 
 ```bash
-ls .claude/skills/ | grep bmad-testarch   # all nine must be present
-# bmad-testarch-atdd       bmad-testarch-evaluate    bmad-testarch-nfr
-# bmad-testarch-automate   bmad-testarch-framework   bmad-testarch-test-design
-# bmad-testarch-ci         bmad-testarch-test-review bmad-testarch-trace
+ls .claude/skills/ | grep bmad-testarch   # seven workflow folders must be present
+# bmad-testarch-automate   bmad-testarch-framework   bmad-testarch-nfr
+# bmad-testarch-evaluate   bmad-testarch-test-design bmad-testarch-test-review
+# bmad-testarch-trace
 ```
 
 Try invoking the skill by its full skill name:

@@ -49,7 +49,7 @@ Each skill also works directly in a fresh session.
 Use the command in chat.
 On Codex, replace the leading `/` with `$`.
 Menu codes work after loading `bmad-tea`.
-Ten direct capability commands start the eight canonical skills.
+Eight direct capability commands start the eight workflows.
 See [Commands](/reference/commands) for every invocation and menu code.
 
 - [Automate](/how-to/workflows/run-automate): Generate red acceptance scaffolds or expand coverage.
@@ -68,7 +68,7 @@ See [Commands](/reference/commands) for every invocation and menu code.
 
 - [Evaluate](/tutorials/evaluate-your-first-skill) builds and runs a behavioral evaluation.
 
-[Automate red mode](/how-to/workflows/run-automate#red-mode) keeps the ATDD command and `AT` menu code. [Framework CI setup](/how-to/workflows/setup-test-framework#ci-setup) keeps the CI command and `CI` menu code. Existing customizations and progress remain usable.
+[Automate red mode](/how-to/workflows/run-automate#red-mode) handles acceptance tests before implementation; the agent's `AT` code selects it. [Framework CI setup](/how-to/workflows/setup-test-framework#ci-setup) handles pipeline setup; the agent's `CI` code selects it. Existing customizations and progress remain usable.
 
 The agent menu's `GATE` intent routes you through test review, NFR evidence audit, and trace Phase 2.
 It produces no artifact of its own.

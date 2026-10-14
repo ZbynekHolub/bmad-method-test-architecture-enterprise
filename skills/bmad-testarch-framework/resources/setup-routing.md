@@ -1,6 +1,6 @@
 # Shared Setup Router
 
-Read this resource and `{skill-root}/resources/setup-state.md` completely before activation. `{skill-root}` always names `bmad-testarch-framework`; `{ci-skill-root}` names its sibling `bmad-testarch-ci` when installed. Keep the original request and supplied artifact paths through every handoff.
+Read this resource and `{skill-root}/resources/setup-state.md` completely before activation. `{skill-root}` always names `bmad-testarch-framework`. Keep the original request and supplied artifact paths through every handoff.
 
 ## 1. Read-Only Request Gate: Before Activation
 
@@ -11,9 +11,11 @@ Read effective config and all applicable run/phase history and execute `setup-st
 Resolve `setup_scope` as `framework`, `ci`, or `both`:
 
 - Explicit scope and a supplied operation take priority. Requests mentioning framework and pipeline setup select `both`.
-- A CI pipeline, quality gates, CI artifact target, or the CI entry/menu code presets `ci`.
+- A CI pipeline, quality gates, or CI artifact target selects `ci`.
 - Framework-only wording or a supplied framework artifact selects `framework`.
 - For setup requests whose CI intent remains unclear, ask exactly once: **“Do you want CI too?”** A yes selects `both`; a no selects `framework`. Record `ci_scope_answered = true`. Wait for the answer before any project writes, including custom activation hooks. An unattended/headless run with no scope answer defaults to `framework`, records `ci_scope_defaulted = true`, and says in its completion summary that CI was not included. Explicit or inferred CI intent still selects `ci` or `both` in unattended runs.
+
+For fresh Create whose scope includes CI, verify a Git worktree before activation, hooks, checkpoints, dependency installation or framework generation. Run `git rev-parse --is-inside-work-tree` from the project root and require a successful `true` result. A worktree marker file is valid. If missing, halt with "Git repository required for CI/CD setup." Keep the project untouched and ask the caller to initialize its repository separately. A headless run cannot silently skip this prerequisite or initialize `.git` as part of setup. Resume retains its journal and checks this prerequisite before continuing CI preflight.
 
 For CI Create without an existing framework, make a read-only inventory before any hook or checkpoint writes. Search root and configured test directories, scripts and their config paths, language manifests, and mobile test directories. A config can live under `tests/`; a Go suite needs test files. If the framework is missing, ask once: **“There is no test framework yet. Set it up now and continue CI in this run?”** Acceptance sets `setup_scope = both`, `framework_first_accepted = true`, and returns to framework selection before continuing CI. Declining stops the run and leaves the project untouched. This choice occurs before shared or CI checkpoints are created. An explicit request for both already authorizes framework setup. Resume uses its existing consent and saved current position.
 
@@ -27,8 +29,8 @@ Before SKILL.md executes prepend hooks or greets, resolve settings for every req
 
 When scope includes CI:
 
-1. Start with canonical-owned CI defaults: `ci_platform = auto`, empty `activation_steps_prepend`, `activation_steps_append`, `persistent_facts`, and `on_complete`. These defaults make canonical CI functional when the alias directory is absent.
-2. If `{ci-skill-root}/customize.toml` exists, resolve it through `uv run {project-root}/_bmad/scripts/resolve_customization.py --skill {ci-skill-root} --project-root {project-root} --key workflow`. If the alias is absent or the resolver fails, structurally merge the canonical-owned CI defaults, the legacy defaults when present, `_bmad/custom/bmad-testarch-ci.toml`, and `_bmad/custom/bmad-testarch-ci.user.toml`, skipping missing files. All legacy overrides, including migrated platform settings, remain effective even without the installed alias.
+1. Start with CI defaults: `ci_platform = auto`, empty `activation_steps_prepend`, `activation_steps_append`, `persistent_facts`, and `on_complete`.
+2. Structurally merge the CI defaults, `_bmad/custom/bmad-testarch-ci.toml`, and `_bmad/custom/bmad-testarch-ci.user.toml`, skipping missing files. Existing CI overrides, including migrated platform settings, remain effective.
 3. Store the result as `ci_workflow`. SKILL.md executes applicable prepend entries before greeting, loads applicable facts/globs in lexical order, and executes append entries after greeting through `setup-state.md` section 3's individual durable hook protocol. On Resume, resolve current settings and reload applicable facts; skip completed hook entries and halt on uncertain started entries. Save each applicable phase in `activation_completed` only after its activation succeeds. This section resolves settings; it does not replay activation at phase or worker handoffs.
 4. Framework steps use canonical `workflow`. CI steps read `ci_workflow` for their legacy hooks/facts and the effective platform below. Keep `{skill-root}` bound to the canonical directory for every CI asset.
 

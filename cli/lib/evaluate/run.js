@@ -236,11 +236,12 @@ function refusal({ folder, selectedProbeIds = null }) {
  *   (`before-state.js`) may fail its baseline, and the run is marked so it is never accepted as a baseline
  * @param {NodeJS.ProcessEnv} [options.env]
  * @param {(line: string) => void} [options.log]
+ * @param {number} [options.progressIntervalMs] heartbeat interval used by integration tests
  * @returns {Promise<PreflightOutcome>}
  */
 function runRunCommand(
   folder,
-  { fromWorkingTree = false, partition, trials, seed, beforeState = false, env = process.env, log = () => {} } = {},
+  { fromWorkingTree = false, partition, trials, seed, beforeState = false, env = process.env, log = () => {}, progressIntervalMs } = {},
 ) {
   if (trials !== undefined && !(Number.isInteger(trials) && trials >= 1))
     return Promise.resolve(
@@ -260,7 +261,7 @@ function runRunCommand(
   } catch {
     // The pipeline's check reports malformed source files with authoring findings; it keeps the partition, so a development
     // run still does not open the held-out plan.
-    return runPipeline(folder, { command: 'run', partition, fromWorkingTree, seed, env, log });
+    return runPipeline(folder, { command: 'run', partition, fromWorkingTree, seed, env, log, progressIntervalMs });
   }
   if (selection.refusal !== undefined) return Promise.resolve(new PreflightOutcome({ stage: 'check', ...selection.refusal }));
   const { selectedProbeIds } = selection;
@@ -276,6 +277,8 @@ function runRunCommand(
     seed,
     env,
     log,
+    progressIntervalMs,
+    progressStartedAt: started,
     prepare: async (context) => {
       const refused = refusal({ ...context, selectedProbeIds });
       if (refused !== null) return refused;
@@ -1148,6 +1151,8 @@ async function runTrialSets(given) {
     sealed,
   } = context;
   const { treeUnchanged, stop, log, snapshot } = context;
+  const progress = context.progress ?? (() => {});
+  progress('clean-control-qualification', { detail: 'Qualifying clean controls' });
 
   const cleanControls = await qualifyCleanControls({ ...context, seed: run.seed });
   // The gameability probes the shared pipeline qualified before the verdict.
@@ -1214,8 +1219,19 @@ async function runTrialSets(given) {
   const { kind } = snapshot.layer.evaluator;
   if (kind === 'records') {
     if (sealed === null) throw noStages();
+    // Imported sets can share arm work, and the importer does not attest to
+    // complete usage reports. Leave both the trial count and cost unknown.
+    progress('records-import', {
+      detail: 'Importing existing evaluator records',
+      completedTrials: null,
+      totalTrials: null,
+      usage: null,
+    });
     return concludeImportedRecords({ ...context, arms, refusedIds });
   }
+  const trialCount = snapshot.trials ?? evaluation.trials;
+  const totalTrials = arms.length * trialCount;
+  progress('trial-preparation', { detail: 'Preparing scored trials', totalTrials });
   if (convertsRows(kind)) {
     // A command evaluator and a sealed-brief agent read the brief the run sealed, as its bytes were written.
     if (sealed === null) throw noStages();
@@ -1242,6 +1258,7 @@ async function runTrialSets(given) {
 
   let calibrationDigest = null;
   if ((contract.rubrics ?? []).length > 0) {
+    progress('calibration', { detail: 'Calibrating rubric judge' });
     const { layer } = snapshot;
     const judgeItem = async ({ rubric, criterion, response, responseKind }) => {
       const stepId = /^\/interactions\/([^/]+)/.exec(criterion.evidence)?.[1];
@@ -1357,7 +1374,6 @@ async function runTrialSets(given) {
     }
   }
 
-  const trialCount = snapshot.trials ?? evaluation.trials;
   if (sealed === null) throw noStages();
   const { contractDigest, sealedBriefDigest } = sealed;
   const { conditions, layer } = snapshot;
@@ -1439,12 +1455,22 @@ async function runTrialSets(given) {
   };
 
   // A sealed-brief agent chooses its own calls, so its verdicts count only once it agrees with itself on the arms it will judge.
-  if (kind === 'sealed-brief-agent') await qualifyEvaluator({ ...context, arms, sealing });
+  if (kind === 'sealed-brief-agent') {
+    progress('evaluator-qualification', { detail: 'Qualifying evaluator agreement' });
+    await qualifyEvaluator({ ...context, arms, sealing });
+  }
+
+  let completedTrials = 0;
+  let reportedUse = ZERO;
+  let missingReports = 0;
+  progress('trials', { detail: 'Running scored trials', totalTrials, completedTrials });
 
   for (const arm of arms) {
     arm.trials = [];
     for (let trialIndex = 1; trialIndex <= trialCount; trialIndex += 1) {
-      log(`${arm.conditionArm}: trial ${trialIndex} of ${trialCount}`);
+      const trialDetail = `${arm.conditionArm}: trial ${trialIndex} of ${trialCount}`;
+      log(trialDetail);
+      progress('trials', { detail: trialDetail, completedTrials });
       const trial = await runTrial({ ...context, arm, trialIndex });
       const versionReadBegan = Date.now();
       const agentMoved = await agentVersionChange(context);
@@ -1452,6 +1478,19 @@ async function runTrialSets(given) {
         throw stop({ stage: 'trial', exitCode: 12, message: `the installed agent version could not be held after a trial: ${agentMoved}` });
       trial.elapsedMs += Date.now() - versionReadBegan;
       arm.trials.push(trial);
+      reportedUse = addUsage(reportedUse, trial.resourceUse);
+      missingReports += trial.unreportedSteps.length;
+      completedTrials += 1;
+      progress('trials', {
+        detail: `${trialDetail} completed`,
+        completedTrials,
+        usage: {
+          trialCostUsd: missingReports === 0 && completedTrials === totalTrials ? reportedUse.costUsd : null,
+          reportedTrialCostUsd: reportedUse.costUsd,
+          missingReports,
+          scope: 'trials-only',
+        },
+      });
       // Read after every trial, so a target that writes into the project stops the run at once.
       treeUnchanged('trials');
     }
@@ -1493,6 +1532,7 @@ async function runTrialSets(given) {
   // wrote, and the run directory nothing else, before any trial set is written.
   writer.verify('after the trials');
 
+  progress('sealing', { detail: 'Sealing trial sets and evidence' });
   const trialSets = [];
   const recordDigests = {};
   const manifestDigests = {};
@@ -2103,6 +2143,7 @@ async function completeRun(
   // runtime wrote, before run.json says completed; that write is the run's last.
   treeUnchanged('sealing', { record: false });
   writer.verify('after the trial sets were sealed');
+  context.progress?.('complete', { detail: 'Run sealed' });
   Object.assign(run, {
     artifacts,
     contractDigest: sealed.contractDigest,
