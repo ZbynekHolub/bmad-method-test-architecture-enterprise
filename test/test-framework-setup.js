@@ -327,6 +327,29 @@ test('retained Codex unittest suite executes and detects both application regres
   }
 });
 
+test('current Codex live capture retains failed and successful native outcomes', () => {
+  const dir = path.join(__dirname, 'results/framework-codex-2026-10-14');
+  const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8'));
+  const bytes = fs.readFileSync(path.join(dir, index.archive));
+  const sha = (value) => createHash('sha256').update(value).digest('hex');
+  assert.equal(sha(bytes), index.sha256);
+  const capture = JSON.parse(gunzipSync(bytes));
+  assert.deepEqual(capture.manifest, index.manifest);
+  assert.equal(Object.keys(capture.files).length, index.fileCount);
+  for (const [name, file] of Object.entries(capture.files)) assert.equal(sha(Buffer.from(file.base64, 'base64')), file.sha256, name);
+  const read = (name) => JSON.parse(Buffer.from(capture.files[name].base64, 'base64').toString('utf8'));
+  const before = read('before/artifacts/framework/cli-runs/tea-framework-ygrFab/result.json');
+  const after = read('after/artifacts/framework/cli-runs/tea-framework-gXHmPE/result.json');
+  const score = read('independent-validation/score.json');
+  assert.equal(before.completed, false);
+  assert.equal(before.verification[0].errors, 8);
+  assert.equal(after.completed, true);
+  assert.equal(after.verification[0].passedTests, 8);
+  assert.equal(score.results.length, 4);
+  assert.ok(score.results.every((result) => result.pass));
+  assert.equal(capture.manifest.model, 'gpt-6.1-sol');
+});
+
 test('Resume preserves reserved Validate report and confirmed Edit request scope', (t) => {
   const f = fixture(t);
   fs.writeFileSync(path.join(f.root, 'reserved.md'), '# Reserved report\n');
