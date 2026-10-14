@@ -193,6 +193,7 @@ const {
   signatureOf: nfrSignatureOf,
   parseReport: parseNfrReport,
   canonicalCitation: canonicalNfrCitation,
+  stripCriterionAnnotation: stripNfrCriterionAnnotation,
   DOMAINS: NFR_DOMAINS,
   NFR_REPORT,
 } = require('./eval-nfr');
@@ -1236,7 +1237,21 @@ function checkNfrCitationCanonicalization() {
     canonicalNfrCitation(`${projectRoot}/${canonical}`, projectRoot) === canonical,
     'nfr citations accept the documented project-root-prefixed spelling',
   );
-  for (const invalid of [`${projectRoot}/${projectRoot}/${canonical}`, `../${canonical}`, `/tmp/${canonical}`, `C:/${canonical}`]) {
+  assert(
+    canonicalNfrCitation(`../../${canonical}`, projectRoot) === canonical,
+    'nfr citations resolve Markdown links from the generated report directory',
+  );
+  assert(
+    stripNfrCriterionAnnotation('Response time.') === 'Response time',
+    'nfr criterion headings accept sentence punctuation without losing grounding',
+  );
+  for (const invalid of [
+    `${projectRoot}/${projectRoot}/${canonical}`,
+    `../${canonical}`,
+    `../../../${canonical}`,
+    `/tmp/${canonical}`,
+    `C:/${canonical}`,
+  ]) {
     assert(
       canonicalNfrCitation(invalid, projectRoot) === invalid,
       `nfr citations leave invalid absolute, traversal, and repeated-prefix paths uncanonicalized: ${invalid}`,

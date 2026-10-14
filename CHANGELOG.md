@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `tea-nfr` to run the installed NFR evidence audit with explicit requirement, implementation and evidence inputs; scope-specific report/context validation; retained raw vendor attempts; and transactional publication with source alias guards.
 - `tea-framework` runs packaged framework and CI setup with explicit scope and operation, resolved configuration, bounded vendor execution, retained prompts and streams, JSON and Markdown results, and checks against the saved setup journal before reporting completion.
   Create reruns frozen test commands with the existing process supervisor, project environment, and selected timeout.
 - `tea-test-design` accepts epic or system requirement documents, invokes the packaged skill with a selected headless agent, verifies fresh reports and a completed checkpoint, and publishes the plan. Each attempt retains its prompt, raw streams and vendor/model record; `--agent none` saves a prompt-only invocation.
@@ -17,11 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- NFR live evaluation prints each case start and a minute-by-minute heartbeat while an agent call runs.
 - Test Design live evaluation prints each case start and a minute-by-minute heartbeat while an agent call runs.
 - Built-in Codex CLI adapters now use `gpt-6.1-sol` as their current default model, including Automate and Test Review. Explicit `--model` overrides still take precedence.
 
 ### Fixed
 
+- NFR evaluation resolves report-relative Markdown evidence links and sentence-style criterion headings, so equivalent live reports receive the same grounding and stability score.
+- NFR publication detects supplied file and directory permission/type changes and parses actual Markdown headings and YAML fences. Valid native enum decorations and source-backed code quotations preserve canonical status and evidence checks. Retained original Codex parser failures and separate controlled replay regressions.
+- Corrected the clean NFR evaluation fixture outbound transport evidence to TLS 1.3, matching its requirement. Preserved the original conflicting baseline as historical evidence. NFR evaluator single runs report stability as unmeasured, and `--artifacts-dir` retains every attempt before retry or cleanup.
+- NFR CLI rejects an invalid configured artifact root before invoking an agent, publishes validated artifact text, and preserves workflow error failure classes during publication rollback.
+- Synchronize test chain count and isolate boundary helper naming in NFR test tooling.
 - Evaluate checks locally started server ports on every authorized address, avoiding false availability when another process already listens on the same port through a different IP family.
 - Framework CLI Resume restores the original requested work and input digests from a run-owned snapshot, even when the instructions file changes after an interrupted run.
 - Framework CLI setup prompts show the controller's Python version and command environment so the generated frozen local command can match native verification.

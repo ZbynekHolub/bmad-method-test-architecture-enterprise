@@ -59,3 +59,8 @@ test/results/automate-codex-2026-10-09/after/
 test/results/automate-codex-2026-10-09/red/
 test/results/automate-codex-2026-10-09/final/
 test/results/automate-codex-2026-10-09/reviewed/
+
+# Immutable live NFR observations.
+test/results/codex-nfr/raw/
+test/results/codex-nfr/public-cli-original/
+test/results/codex-nfr/parser-replay/
