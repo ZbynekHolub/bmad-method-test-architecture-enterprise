@@ -59,6 +59,7 @@ function main(argv = process.argv) {
     .option('--skill-root <dir>', 'explicit skill copy; defaults to the packaged framework skill')
     .option('--output <dir>', 'project directory for retained CLI reports and agent evidence')
     .option('--json <path>', 'additional project-relative machine-readable result path')
+    .option('--allow-network', 'allow unrestricted outbound network access in the Codex workspace sandbox')
     .option('--use-playwright-utils', 'enable Playwright utilities when applicable')
     .option('--no-use-playwright-utils', 'disable Playwright utilities')
     .option('--use-pactjs-utils', 'enable Pact utilities when applicable')
@@ -78,6 +79,8 @@ function main(argv = process.argv) {
   let request;
   let jsonPath;
   try {
+    if (options.allowNetwork && options.agent !== 'codex') throw new Error('--allow-network requires --agent codex');
+    if (options.allowNetwork) options.agentArg = ['-c', 'sandbox_workspace_write.network_access=true', ...options.agentArg];
     const projectRoot = fs.realpathSync(path.resolve(options.projectRoot));
     agentOptions(options, projectRoot);
     if (!fs.statSync(projectRoot).isDirectory()) throw new Error('--project-root must be a directory');

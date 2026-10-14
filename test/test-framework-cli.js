@@ -105,6 +105,29 @@ test('packaged preview resolves config and writes no files to the project', (t) 
   assert.deepEqual(fs.readdirSync(f.root), before);
 });
 
+test('Codex network access requires an explicit Framework CLI opt-in', (t) => {
+  const f = fixture(t);
+  const stub = path.join(f.root, 'codex-stub.cjs');
+  fs.writeFileSync(
+    stub,
+    "#!/usr/bin/env node\nif (process.argv.includes('--version')) console.log('codex-cli 0.162.1'); else { console.log(process.argv.slice(2).join(' ')); process.exitCode = 1; }\n",
+  );
+  fs.chmodSync(stub, 0o755);
+  const run = (extra = []) => {
+    const response = f.run(['--agent', 'codex', '--agent-cmd', stub, ...extra]);
+    assert.equal(response.status, 3, response.stderr);
+    const result = JSON.parse(response.stdout);
+    return fs.readFileSync(path.join(result.runDirectory, 'attempt-1/stdout.txt'), 'utf8');
+  };
+  assert.doesNotMatch(run(), /sandbox_workspace_write\.network_access=true/);
+  assert.match(run(['--allow-network']), /sandbox_workspace_write\.network_access=true/);
+  const override = run(['--allow-network', '--agent-arg=-c', '--agent-arg=sandbox_workspace_write.network_access=false']);
+  assert.ok(
+    override.indexOf('sandbox_workspace_write.network_access=false') > override.indexOf('sandbox_workspace_write.network_access=true'),
+  );
+  assert.equal(f.run(['--agent', 'none', '--allow-network']).status, 2);
+});
+
 test('custom agent produces JSON, Markdown and raw evidence after verified both completion', (t) => {
   const f = fixture(t);
   const result = f.run([...f.agent(), '--scope', 'both', '--json', 'reports/setup.json']);

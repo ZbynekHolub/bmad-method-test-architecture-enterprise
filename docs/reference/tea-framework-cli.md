@@ -21,6 +21,8 @@ tea-framework --agent codex --scope both
 The command runs in the current project by default.
 `--project-root <dir>` selects another project.
 The agent can write setup files, install dependencies, and execute project commands.
+For a Codex run that needs package downloads or local HTTP services, pass `--allow-network`.
+This grants unrestricted outbound network access for that run.
 
 ## Operations
 
@@ -74,6 +76,7 @@ Framework and CI customizations keep their existing scope and hook rules.
 | `--json <path>`                              | Additional project-relative `.json` result file                                 |
 | `--agent <name>`                             | Required vendor adapter; `none` previews the prompt                             |
 | `--model <name>`                             | Model override; default is the adapter's pinned model                           |
+| `--allow-network`                            | Allow outbound network access in the Codex workspace sandbox                    |
 | `--timeout-ms <n>`                           | Wall-clock limit per attempt; default 1,200,000 ms                              |
 | `--retries <n>`                              | Additional transport or timeout attempts; default 0, maximum 3                  |
 | `--agent-cmd <path>`                         | Agent executable override                                                       |

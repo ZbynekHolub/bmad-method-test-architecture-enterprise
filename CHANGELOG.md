@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Framework CLI Resume restores the original requested work and input digests from a run-owned snapshot, even when the instructions file changes after an interrupted run.
 - Framework CLI setup prompts show the controller's Python version and command environment so the generated frozen local command can match native verification.
+- Framework CLI adds an explicit `--allow-network` Codex option for dependency installation and local service tests while keeping its default sandbox network policy.
 - Framework CLI completion requires runnable CI test jobs, same-run validation reports for selected artifacts, and recorded Edit outcomes.
   Native verification counts every suite summary and resolves `npm --prefix` subprojects.
   Failure reporting preserves late input aliases, and omitted `--retries` runs one attempt.
