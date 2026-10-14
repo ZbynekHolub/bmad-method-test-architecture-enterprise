@@ -106,6 +106,7 @@
  *   node test/eval-teach-me-testing.js --preflight-only --agent codex
  *   node test/eval-teach-me-testing.js --agent claude --runs 1
  *   node test/eval-teach-me-testing.js --agent claude --json results/teach-me-testing.json
+ *   node test/eval-teach-me-testing.js --agent codex --artifacts-dir /tmp/teach-eval-attempts
  *
  * Exit codes:
  *   0  the corpus is valid (--validate-only), the runner is ready
@@ -148,6 +149,7 @@ const { PROBE_TIMEOUT_MS, boundedProbe } = require('./lib/bounded-probe');
 const { nowMs, nowIso, elapsedMsSince } = require('./lib/clock');
 const { targetProblems } = require('./lib/probe-targets');
 const { readJson, readText, writeText } = require('./lib/file-system-port');
+const { retainSkillArtifacts, finishSkillAttempt } = require('./lib/retain-skill-artifacts');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const FIXTURE_ROOT = path.join(__dirname, 'fixtures', 'teach-me-testing-eval');
@@ -222,6 +224,7 @@ function parseArgs(argv) {
   let agentCmd;
   let model;
   let jsonPath;
+  let artifactsDir;
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     switch (arg) {
@@ -271,6 +274,13 @@ function parseArgs(argv) {
         index += 1;
         break;
       }
+      case '--artifacts-dir': {
+        const value = argv[index + 1];
+        if (!value) fatal(2, '--artifacts-dir requires a directory path');
+        artifactsDir = path.resolve(value);
+        index += 1;
+        break;
+      }
       case '--validate-only': {
         validateOnly = true;
         break;
@@ -298,7 +308,7 @@ function parseArgs(argv) {
       `${colors.yellow}note${colors.reset}: --runs ${runs} spends ${runs * TURN_COUNT} real vendor calls; this suite is not free.`,
     );
   }
-  return { agents, runs, validateOnly, preflightOnly, agentCmd, agentArgs, envPass, model, jsonPath };
+  return { agents, runs, validateOnly, preflightOnly, agentCmd, agentArgs, envPass, model, jsonPath, artifactsDir };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1012,8 +1022,17 @@ function runnerRecord(agent, options, versions, { expected, completed, measureme
  */
 async function runCase(groundTruth, options, agent, runIndex) {
   const workspace = await stageWorkspace(groundTruth);
+  let turns;
+  let runError;
+  let heartbeatMinutes = 0;
+  console.log(`  run ${runIndex + 1}: started`);
+  const heartbeat = setInterval(() => {
+    heartbeatMinutes += 1;
+    console.log(`  run ${runIndex + 1}: still running (heartbeat ${heartbeatMinutes})`);
+  }, 60_000);
+  heartbeat.unref();
   try {
-    const { turns } = await runTranscript({
+    ({ turns } = await runTranscript({
       workspace,
       buildTurnPrompt: makeBuildTurnPrompt(groundTruth),
       turnCount: TURN_COUNT,
@@ -1025,7 +1044,7 @@ async function runCase(groundTruth, options, agent, runIndex) {
         model: options.model,
         timeoutMs: RUN_TIMEOUT_MS,
       },
-    });
+    }));
 
     if (turns.length !== TURN_COUNT || !turns.every((turn) => turn.ok)) {
       const lost = turns.at(-1);
@@ -1046,8 +1065,27 @@ async function runCase(groundTruth, options, agent, runIndex) {
       continuation: continuationHolds(groundTruth, turn2Text),
       mastery: masteryClaimHolds(groundTruth, progress, turn1Text),
     };
+  } catch (error) {
+    runError = error;
+    throw error;
   } finally {
-    fs.rmSync(workspace, { recursive: true, force: true });
+    clearInterval(heartbeat);
+    await finishSkillAttempt({
+      workspace: { dir: workspace },
+      runError,
+      retain: () =>
+        retainSkillArtifacts({
+          artifactsDir: options.artifactsDir,
+          workspace: { dir: workspace },
+          caseId: CASE_ID,
+          agent,
+          model: resolveModel(agent, options.model, options.agentArgs),
+          repetition: runIndex + 1,
+          attempt: 1,
+          prompt: turns?.map((turn) => `## Turn ${turn.turnIndex + 1}\n${turn.prompt}`).join('\n\n') ?? '',
+          observation: { turns: turns ?? [] },
+        }),
+    });
   }
 }
 

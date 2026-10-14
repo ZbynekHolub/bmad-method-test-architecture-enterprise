@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `tea-teach` runs one learner message through the packaged teaching skill, retains conversation and progress, and verifies caller-owned quiz evidence before publishing completion.
+  Prompt-only previews, explicit progress imports, fresh attempt evidence and atomic state replacement support durable learning from the terminal.
 - Added `tea-nfr` to run the installed NFR evidence audit with explicit requirement, implementation and evidence inputs; scope-specific report/context validation; retained raw vendor attempts; and transactional publication with source alias guards.
 - `tea-framework` runs packaged framework and CI setup with explicit scope and operation, resolved configuration, bounded vendor execution, retained prompts and streams, JSON and Markdown results, and checks against the saved setup journal before reporting completion.
   Create reruns frozen test commands with the existing process supervisor, project environment, and selected timeout.
@@ -18,12 +20,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Teach Me Testing live evaluation prints minute-by-minute progress and can retain each staged two-turn session for replay and inspection.
 - NFR live evaluation prints each case start and a minute-by-minute heartbeat while an agent call runs.
 - Test Design live evaluation prints each case start and a minute-by-minute heartbeat while an agent call runs.
 - Built-in Codex CLI adapters now use `gpt-6.1-sol` as their current default model, including Automate and Test Review. Explicit `--model` overrides still take precedence.
 
 ### Fixed
 
+- Teach Me Testing evaluation heartbeats use interval counts while scored durations continue through the shared clock port.
+- `tea-teach` restores learner state after interrupted publication, rejects negated learner facts, and verifies that displayed quiz choices keep their canonical letters.
+- `tea-teach` preserves a completed quiz's caller evidence during practice retakes and lets below-pass learners replace an in-progress grade after answering a fresh round.
+- `tea-teach` rejects unpaired saved state and completed sessions whose caller quiz evidence is missing.
+  Configuration and customization inputs are checked for byte, permission, inode and topology changes before publication; completed summaries keep their flags, path, date and exact content.
+  Invalid artifact configuration receives a clear path-type error.
+  The native two-turn CLI assessment capture remains archived with its original source and byte hashes.
+- Teach Me Testing writes its saved progress as one YAML document.
+  Its first two quizzes correctly state that three of three answers are needed to reach the 70 percent passing score.
+  The original Codex baseline and unreadable saved progress remain retained.
 - NFR evaluation resolves report-relative Markdown evidence links and sentence-style criterion headings, so equivalent live reports receive the same grounding and stability score.
 - NFR publication detects supplied file and directory permission/type changes and parses actual Markdown headings and YAML fences. Valid native enum decorations and source-backed code quotations preserve canonical status and evidence checks. Retained original Codex parser failures and separate controlled replay regressions.
 - Corrected the clean NFR evaluation fixture outbound transport evidence to TLS 1.3, matching its requirement. Preserved the original conflicting baseline as historical evidence. NFR evaluator single runs report stability as unmeasured, and `--artifacts-dir` retains every attempt before retry or cleanup.

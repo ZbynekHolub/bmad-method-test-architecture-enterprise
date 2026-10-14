@@ -64,3 +64,7 @@ test/results/automate-codex-2026-10-09/reviewed/
 test/results/codex-nfr/raw/
 test/results/codex-nfr/public-cli-original/
 test/results/codex-nfr/parser-replay/
+
+# Immutable Codex teaching observations and result records.
+test/results/teach-codex-2026-10-09/**/*.json
+test/results/teach-codex-2026-10-14/result.json

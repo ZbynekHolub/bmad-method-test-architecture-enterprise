@@ -113,6 +113,7 @@ It requires Node.js 22.20.0 or later:
 npm install --save-dev bmad-method-test-architecture-enterprise
 ```
 
+- [`tea-teach`](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/reference/tea-teach-cli/) teaches one learner turn and keeps conversation and session progress.
 - [`tea-test-review`](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/reference/tea-test-review-cli/) runs the review skill against changed tests and returns a gate verdict.
 - [`tea-framework`](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/reference/tea-framework-cli/) creates, resumes, validates, and edits test framework and CI setup with retained run evidence.
 - [`tea-trace`](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/reference/tea-trace-cli/) maps requirements to existing evidence and returns a coverage gate.
