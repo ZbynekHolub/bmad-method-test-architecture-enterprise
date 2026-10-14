@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-14
+
 ### Added
 
 - `tea-teach` runs one learner message through the packaged teaching skill, retains conversation and progress, and verifies caller-owned quiz evidence before publishing completion.
