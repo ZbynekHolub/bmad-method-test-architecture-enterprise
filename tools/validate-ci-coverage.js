@@ -409,7 +409,6 @@ const DELIBERATELY_LOCAL = {
   'release:major': 'a human-triggered `gh workflow run publish.yaml` call; a release is a deliberate action, not an automated gate',
   'release:minor': 'a human-triggered `gh workflow run publish.yaml` call; a release is a deliberate action, not an automated gate',
   'release:patch': 'a human-triggered `gh workflow run publish.yaml` call; a release is a deliberate action, not an automated gate',
-  'release:sync-tags': 'a human-triggered `gh workflow run publish.yaml` repair call; npm tag alignment is deliberate external state',
 };
 
 /**
