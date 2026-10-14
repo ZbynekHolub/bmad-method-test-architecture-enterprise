@@ -73,6 +73,24 @@ test('fresh completed both run checks actual journal and pipeline artifacts', (t
   assert.ok(incomplete.issues.some((issue) => issue.includes('Missing pipeline')));
 });
 
+test('CI scope reads shipped CI defaults from the installed framework skill', (t) => {
+  const f = fixture(t);
+  const skillRoot = path.join(f.root, 'installed-framework');
+  fs.mkdirSync(path.join(skillRoot, 'ci'), { recursive: true });
+  fs.writeFileSync(
+    path.join(skillRoot, 'ci', 'customize.toml'),
+    '[workflow]\nactivation_steps_prepend = ["CI default hook"]\nci_platform = "auto"\n',
+  );
+  const request = prepareSetup({
+    projectRoot: f.root,
+    skillRoot,
+    config: { configSnapshot: { modules: { tea: { test_artifacts: '{project-root}/test-artifacts' } } } },
+    options: { scope: 'ci', operation: 'create' },
+  });
+  assert.equal(request.requiredHooks['ci.activation_steps_prepend.0'], 'CI default hook');
+  assert.equal(request.ciWorkflowCustomization.ci_platform, 'auto');
+});
+
 test('agent success without a new journal cannot reuse previous Create completion', (t) => {
   const f = fixture(t);
   f.journal();

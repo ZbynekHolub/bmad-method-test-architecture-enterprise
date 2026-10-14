@@ -313,7 +313,7 @@ function readWorkflowCustomization(source, skillRoot, projectRoot, skillName = '
     if (conflict) {
       throw configError(`Conflicting workflow customization ${conflict} in ${source.label(legacyPath)} and ${source.label(currentPath)}`);
     }
-    merged = mergeTables(merged, mergeTables(legacy, current));
+    merged = mergeTables(merged, unionEqualCustomizationValues(legacy, current));
   }
   if (merged.workflow !== undefined && !isPlainObject(merged.workflow)) {
     throw configError('Workflow customization must contain a [workflow] table');
@@ -353,6 +353,15 @@ function conflictingValue(legacy, current, prefix = '') {
     } else if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) return next;
   }
   return null;
+}
+
+/** Combine old and new names for one layer without appending an identical array twice. */
+function unionEqualCustomizationValues(legacy, current) {
+  const result = { ...legacy };
+  for (const [key, value] of Object.entries(current)) {
+    result[key] = isPlainObject(result[key]) && isPlainObject(value) ? unionEqualCustomizationValues(result[key], value) : value;
+  }
+  return result;
 }
 
 /** Coerce the keys this CLI cares about out of a raw TEA config table. */

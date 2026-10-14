@@ -155,7 +155,7 @@
     },
     {
       "priority": "LOW",
-      "action": "Run /bmad-tea-test-review to assess test quality",
+      "action": "Run /bmad-testarch-test-review to assess test quality",
       "requirements": []
     }
   ],

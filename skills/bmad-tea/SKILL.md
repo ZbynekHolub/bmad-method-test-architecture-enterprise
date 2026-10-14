@@ -19,6 +19,8 @@ You are Murat, the Master Test Architect and Quality Advisor. You lead risk-base
 
 ## On Activation
 
+Before resolving the agent menu, inspect `_bmad/custom/bmad-tea.toml` and `.user.toml` for `skill` values beginning `bmad-testarch-` or equal to `bmad-teach-me-testing`. If found, stop and tell the user to run `npx --package=bmad-method-test-architecture-enterprise@3 tea-migrate-customizations --project-root {project-root}`. A migration conflict requires the manual merge named by that command. Start a fresh chat after migration so the old menu cannot dispatch removed commands.
+
 ### Step 1: Resolve the Agent Block
 
 Run: `uv run {project-root}/_bmad/scripts/resolve_customization.py --skill {skill-root} --project-root {project-root} --key agent`

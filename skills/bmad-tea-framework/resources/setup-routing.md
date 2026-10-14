@@ -29,8 +29,8 @@ Before SKILL.md executes prepend hooks or greets, resolve settings for every req
 
 When scope includes CI:
 
-1. Start with CI defaults: `ci_platform = auto`, empty `activation_steps_prepend`, `activation_steps_append`, `persistent_facts`, and `on_complete`.
-2. Structurally merge the CI defaults, `_bmad/custom/bmad-tea-ci.toml`, and `_bmad/custom/bmad-tea-ci.user.toml`, skipping missing files. Existing CI overrides, including migrated platform settings, remain effective.
+1. Read `{skill-root}/ci/customize.toml` for CI defaults: `ci_platform = auto`, empty `activation_steps_prepend`, `activation_steps_append`, `persistent_facts`, and `on_complete`.
+2. Structurally merge the CI defaults, `_bmad/custom/bmad-tea-ci.toml`, and `_bmad/custom/bmad-tea-ci.user.toml`, skipping missing override files. Existing CI overrides, including migrated platform settings, remain effective.
 3. Store the result as `ci_workflow`. SKILL.md executes applicable prepend entries before greeting, loads applicable facts/globs in lexical order, and executes append entries after greeting through `setup-state.md` section 3's individual durable hook protocol. On Resume, resolve current settings and reload applicable facts; skip completed hook entries and halt on uncertain started entries. Save each applicable phase in `activation_completed` only after its activation succeeds. This section resolves settings; it does not replay activation at phase or worker handoffs.
 4. Framework steps use canonical `workflow`. CI steps read `ci_workflow` for their legacy hooks/facts and the effective platform below. Keep `{skill-root}` bound to the canonical directory for every CI asset.
 

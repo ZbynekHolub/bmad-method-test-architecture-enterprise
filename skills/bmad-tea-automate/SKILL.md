@@ -28,6 +28,8 @@ The router selects exactly one customization surface; activation below uses that
 
 ## On Activation
 
+Before resolving customizations or running hooks, inspect `_bmad/custom/` for `bmad-testarch-automate.toml`, `bmad-testarch-automate.user.toml`, `bmad-testarch-atdd.toml`, and `bmad-testarch-atdd.user.toml`. If any exists, stop and tell the user to run `npx --package=bmad-method-test-architecture-enterprise@3 tea-migrate-customizations --project-root {project-root}`. Resolve any reported manual merge, then start a fresh chat. Do not continue with default settings while legacy overrides remain.
+
 ### Step 1: Resolve the Workflow Block
 
 When `workflow_customization_manual = true`, use the already resolved red workflow block and skip this resolver command.

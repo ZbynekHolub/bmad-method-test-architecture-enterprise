@@ -607,7 +607,7 @@ function prepareSetup({ projectRoot, skillRoot, config, options }) {
     throw problem('Resume has an uncertain started hook. Record explicit operator recovery in the journal before headless execution.');
   const scope = options.operation === 'resume' ? before.data.setup_scope : options.scope;
   const ciConfig = ['ci', 'both'].includes(scope)
-    ? resolveTeaConfig({ projectRoot, skillRoot: path.join(skillRoot, '..', 'bmad-tea-ci'), skillName: 'bmad-tea-ci' })
+    ? resolveTeaConfig({ projectRoot, skillRoot: path.join(skillRoot, 'ci'), skillName: 'bmad-tea-ci' })
     : null;
   const requiredHooks = {};
   for (const [phase, settings] of [

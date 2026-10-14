@@ -27,19 +27,19 @@ Restart the host or start a fresh chat after installing.
 
 ### Old Slash Commands Still Appear After 3.0
 
-An upgrade may leave earlier skill folders in the host's skills directory. Inspect both project and global install scopes. The example uses `.claude/skills/`; substitute the folder your host reads, such as `.agents/skills/`.
+An upgrade may leave old skill folders. Check project and global scopes; substitute your host's skills directory for `.claude/skills/`.
 
 ```bash
 ls .claude/skills/ | grep -E '^(bmad-testarch-(automate|evaluate|framework|nfr|test-design|test-review|trace)|bmad-teach-me-testing)$'
 ```
 
-After the [customization migration](/reference/configuration/#upgrading-customizations-to-30), inspect any edits in the listed folders and back up those folders outside the host's skills directory. For a project install managed by the skills CLI, run this from the project root:
+After [migrating customizations](/reference/configuration/#upgrading-customizations-to-30), inspect and back up the listed folders outside the skills directory. For a project install managed by the skills CLI, run:
 
 ```bash
 npx skills remove bmad-testarch-automate bmad-testarch-evaluate bmad-testarch-framework bmad-testarch-nfr bmad-testarch-test-design bmad-testarch-test-review bmad-testarch-trace bmad-teach-me-testing
 ```
 
-For a global install, add `--global`. If the CLI does not manage an old folder, move that folder out of the host's skills directory manually after backup. Keep `bmad-tea`, `bmod-tea`, and all new `bmad-tea-*` folders. Restart the host and verify the command list shows the new names.
+For a global install, add `--global`. Move unmanaged old folders out after backup. Keep `bmad-tea`, `bmod-tea`, and new `bmad-tea-*` folders. Restart the host and verify its command list.
 
 ### Install Hangs or Cannot Reach GitHub
 

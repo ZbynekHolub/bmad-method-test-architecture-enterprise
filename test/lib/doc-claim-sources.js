@@ -417,14 +417,19 @@ exports.declaredOutputPaths = declaredOutputPaths;
 exports.flatBodyTargets = flatBodyTargets;
 exports.misplacedOutputs = misplacedOutputs;
 
-// Evaluate is the one `bmad-tea-*` skill that writes nowhere under
-// `{test_artifacts}`: its evaluation folders live under its own
-// `evaluations_folder` customization (`{workflow.evaluations_folder}`), so the
-// folder rule does not govern it.
+// Evaluate writes under its `evaluations_folder` customization. Teaching uses
+// per-learner folders. The fixed workflow folder rule governs neither skill.
 const testarchRoot = path.join(PROJECT_ROOT, 'skills');
 const layoutSkillDirs = fs
   .readdirSync(testarchRoot)
-  .filter((name) => name.startsWith('bmad-tea-') && name !== 'bmad-tea-evaluate' && name !== 'bmad-tea-ci' && name !== 'bmad-tea-atdd')
+  .filter(
+    (name) =>
+      name.startsWith('bmad-tea-') &&
+      name !== 'bmad-tea-evaluate' &&
+      name !== 'bmad-tea-teach-me-testing' &&
+      name !== 'bmad-tea-ci' &&
+      name !== 'bmad-tea-atdd',
+  )
   .map((name) => path.join(testarchRoot, name));
 if (layoutSkillDirs.length === 0) refuse(`${testarchRoot} has no bmad-tea-* skill directories`);
 

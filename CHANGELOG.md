@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - TEA 3.0 publishes all eight direct workflows as `bmad-tea-*` commands. The former `bmad-testarch-*` and `bmad-teach-me-testing` commands are removed. The `bmad-tea` agent, `bmod-tea` module, menu codes, workflow behavior, and existing CLI executable names remain.
-- Existing workflow customization files can be moved with `tea-migrate-customizations`. The migration preserves values and reports conflicting old and new settings with both file paths. Headless CLIs continue to read legacy files during the transition.
+- Existing workflow customization files can be moved with `tea-migrate-customizations`. The migration preserves values, comments, and file permissions, updates old skill IDs in custom TEA agent menus, and requests a manual merge when old and new filenames coexist. Direct workflows flag legacy overrides before activation; headless CLIs continue to read them during the transition.
 - Teach Me Testing live evaluation prints minute-by-minute progress and can retain each staged two-turn session for replay and inspection.
 - NFR live evaluation prints each case start and a minute-by-minute heartbeat while an agent call runs.
 - Test Design live evaluation prints each case start and a minute-by-minute heartbeat while an agent call runs.

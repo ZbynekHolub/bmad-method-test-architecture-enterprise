@@ -201,6 +201,32 @@ async function runTests() {
       skillDirectories.every((name) => !name.startsWith('bmad-testarch-') && name !== 'bmad-teach-me-testing'),
       'the installed skill tree has no old public workflow roots',
     );
+    for (const [name, legacyNames] of [
+      ['bmad-tea-automate', ['bmad-testarch-automate', 'bmad-testarch-atdd']],
+      ['bmad-tea-evaluate', ['bmad-testarch-evaluate']],
+      ['bmad-tea-framework', ['bmad-testarch-framework', 'bmad-testarch-ci']],
+      ['bmad-tea-nfr', ['bmad-testarch-nfr']],
+      ['bmad-tea-teach-me-testing', ['bmad-teach-me-testing']],
+      ['bmad-tea-test-design', ['bmad-testarch-test-design']],
+      ['bmad-tea-test-review', ['bmad-testarch-test-review']],
+      ['bmad-tea-trace', ['bmad-testarch-trace']],
+    ]) {
+      const skillText = await fs.readFile(path.join(projectRoot, 'skills', name, 'SKILL.md'), 'utf8');
+      const guard = skillText.split('## On Activation\n')[1]?.split('### Step 1:')[0] ?? '';
+      assert(
+        guard.includes('tea-migrate-customizations') &&
+          legacyNames.every((legacyName) => guard.includes(`${legacyName}.toml`) && guard.includes(`${legacyName}.user.toml`)),
+        `${name} blocks activation while legacy customization files remain`,
+      );
+    }
+    const agentText = await fs.readFile(path.join(projectRoot, 'skills', 'bmad-tea', 'SKILL.md'), 'utf8');
+    const agentGuard = agentText.split('## On Activation\n')[1]?.split('### Step 1:')[0] ?? '';
+    assert(
+      agentGuard.includes('bmad-testarch-') &&
+        agentGuard.includes('bmad-teach-me-testing') &&
+        agentGuard.includes('tea-migrate-customizations'),
+      'bmad-tea blocks removed menu skill IDs before dispatch',
+    );
     assert(
       (bmod.config_questions || []).every((question) => typeof question.default === 'string'),
       'bmod.toml config_questions defaults are all strings',
@@ -880,9 +906,15 @@ async function runTests() {
         parallel.includes('CI workers consume that decision and ask no questions'),
       'coordinator settles effective platform and pipeline update/replace before CI workers start',
     );
+    const ciDefaults = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-framework/ci/customize.toml'), 'utf8'));
     assert(
-      router.includes('Start with CI defaults') &&
-        router.includes('Existing CI overrides, including migrated platform settings, remain effective'),
+      router.includes('Read `{skill-root}/ci/customize.toml` for CI defaults') &&
+        router.includes('Existing CI overrides, including migrated platform settings, remain effective') &&
+        ciDefaults.workflow.ci_platform === 'auto' &&
+        ['activation_steps_prepend', 'activation_steps_append', 'persistent_facts'].every(
+          (key) => Array.isArray(ciDefaults.workflow[key]) && ciDefaults.workflow[key].length === 0,
+        ) &&
+        ciDefaults.workflow.on_complete === '',
       'canonical CI uses owned defaults and preserves existing settings',
     );
     assert(

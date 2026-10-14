@@ -145,7 +145,7 @@
   "recommendations": [
     {
       "priority": "URGENT",
-      "action": "Run /bmad-tea-atdd for 1 P0 requirements",
+      "action": "Run /bmad-testarch-atdd for 1 P0 requirements",
       "requirements": ["AC-2"]
     },
     {
@@ -160,7 +160,7 @@
     },
     {
       "priority": "LOW",
-      "action": "Run /bmad-tea-test-review to assess test quality",
+      "action": "Run /bmad-testarch-test-review to assess test quality",
       "requirements": []
     }
   ],

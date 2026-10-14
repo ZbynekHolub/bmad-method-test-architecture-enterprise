@@ -111,6 +111,10 @@ test('configuration reads legacy customization and names both files on conflict'
     resolveTeaConfig({ projectRoot: root, skillRoot, skillName: 'bmad-tea-test-design' }).workflowCustomization.persistent_facts,
     ['design policy'],
   );
+  fs.writeFileSync(newFile, '[workflow]\npersistent_facts=["design policy"]\non_complete="new hook"\n');
+  const identical = resolveTeaConfig({ projectRoot: root, skillRoot, skillName: 'bmad-tea-test-design' }).workflowCustomization;
+  assert.deepEqual(identical.persistent_facts, ['design policy']);
+  assert.equal(identical.on_complete, 'new hook');
   fs.writeFileSync(newFile, '[workflow]\npersistent_facts=["another policy"]\n');
   assert.throws(
     () => resolveTeaConfig({ projectRoot: root, skillRoot, skillName: 'bmad-tea-test-design' }),
