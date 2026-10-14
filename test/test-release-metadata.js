@@ -207,6 +207,8 @@ if (args[0] === 'dist-tag' && args[1] === 'add' && args[2] === 'example-tea@9.9.
     }
     const stale = runTagStep(publishSteps[syncTagsIndex], { noOp: true });
     if (stale.status === 0) errors.push('publish.yaml accepted a next tag that still points at an older version.');
+    const staleNpm12 = runTagStep(publishSteps[syncTagsIndex], { noOp: true, viewArray: true });
+    if (staleNpm12.status === 0) errors.push('publish.yaml accepted an older next tag in npm 12 array output.');
     const preflight = runTagStep(publishSteps[preflightIndex], { aligned: true });
     const preflightTags = JSON.parse(fs.readFileSync(tagsFile, 'utf8'));
     if (preflight.status !== 0 || Number(fs.readFileSync(attemptsFile, 'utf8')) < 1 || Object.keys(preflightTags).length !== 2) {
