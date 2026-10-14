@@ -17,7 +17,7 @@
  * state a session needs across turns is whatever the agent (or, in a scripted
  * proof, the stand-in for one) chooses to leave in the workspace. That is what
  * keeps this command reusable for a story this one does not know about:
- * Story 6.11 measures `bmad-teach-me-testing`, a real multi-turn teaching
+ * Story 6.11 measures `bmad-tea-teach-me-testing`, a real multi-turn teaching
  * session, through the same engine and the same runner.
  *
  * The prompt belongs to whichever caller is driving the session — the

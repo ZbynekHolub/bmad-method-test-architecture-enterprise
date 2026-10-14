@@ -3,7 +3,7 @@
   "parentDigest": null,
   "revisionCount": 0,
   "contractId": "tea-atdd-behavioral",
-  "sourceSpecDigest": "sha256:bc439ec9d8bd65b89dc49d19f26da97ee1fc91c62a37f8f5de6d6d66081ae146",
+  "sourceSpecDigest": "sha256:8ae331f779eb0bb9ca208ecfa082df819e50159719287b91104997515ec862f4",
   "behaviors": [
     {
       "id": "B-001",
@@ -501,7 +501,7 @@
     "human-labels"
   ],
   "testData": {
-    "setup": "The one plan step stages the reservations fixture project into a disposable workspace: its files under reservations/, a resolved _bmad/config.toml, an empty tests/, and the canonical bmad-testarch-automate workflow under skill/, with red mode selected. ground-truth.json is never staged, and the harness asserts that no staged file carries its bytes or its keys before the run. The prompt names the one path generation must write, tests/api/reservations.spec.ts, which is what makes the scaffold addressable at all: a path an agent were free to invent is not one a contract can point at before the run. The sensitivity witness differs its two legs on {story_file} rather than on any value within the corpus's own story, because both legs stage the one project this suite has; both name the criterion pattern rather than executing anything, since neither leg is scored by running the scaffold it produces.",
+    "setup": "The one plan step stages the reservations fixture project into a disposable workspace: its files under reservations/, a resolved _bmad/config.toml, an empty tests/, and the canonical bmad-tea-automate workflow under skill/, with red mode selected. ground-truth.json is never staged, and the harness asserts that no staged file carries its bytes or its keys before the run. The prompt names the one path generation must write, tests/api/reservations.spec.ts, which is what makes the scaffold addressable at all: a path an agent were free to invent is not one a contract can point at before the run. The sensitivity witness differs its two legs on {story_file} rather than on any value within the corpus's own story, because both legs stage the one project this suite has; both name the criterion pattern rather than executing anything, since neither leg is scored by running the scaffold it produces.",
     "cleanup": "Delete the workspace. Neither leg writes into the fixture itself.",
     "principals": null,
     "resources": null

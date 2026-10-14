@@ -52,7 +52,7 @@ function suiteResult(id, overrides = {}) {
     suite: {
       id,
       evalType: 'behavioral',
-      skills: ['bmad-testarch-atdd'],
+      skills: ['bmad-tea-atdd'],
       contracts: [],
       ciTier: 'full-matrix',
       runnerCapabilities: ['read-only'],

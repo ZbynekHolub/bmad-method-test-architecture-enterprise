@@ -11,8 +11,8 @@ description: Compare compatible scored runs, review changes and limitations, and
 
 Have a completed, scored run from [How to Evaluate a Skill or Agent](/docs/how-to/evaluate/evaluate-a-skill-or-agent.md) or the equivalent guide for your target. For acceptance, the measured changes must be committed and the run must record `dirty: false`.
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-evaluate`
-- **Codex:** `$bmad-testarch-evaluate`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-evaluate`
+- **Codex:** `$bmad-tea-evaluate`
 - **Inside a `/bmad-tea` chat:** `EV`
 
 ```text

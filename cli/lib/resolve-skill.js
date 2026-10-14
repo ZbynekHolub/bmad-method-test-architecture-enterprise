@@ -1,5 +1,5 @@
 /**
- * Resolve the installed bmad-testarch-test-review skill root inside a consuming project.
+ * Resolve the installed bmad-tea-test-review skill root inside a consuming project.
  *
  * Probe order mirrors BMAD installer outputs: BMAD core layout, Claude Code, Codex.
  * The skill remains the source of truth for review logic; the CLI only locates it.
@@ -8,7 +8,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const SKILL_NAME = 'bmad-testarch-test-review';
+const SKILL_NAME = 'bmad-tea-test-review';
 
 // The classic installer's location comes last: a project upgraded from v6 can still hold that copy, and it must not shadow the skill the v7 install added.
 const SKILL_CANDIDATES = [

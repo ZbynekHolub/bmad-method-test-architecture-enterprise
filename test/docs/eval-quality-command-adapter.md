@@ -81,7 +81,7 @@ The implementations follow output shape:
 - `ci` generates or edits pipelines through `tea-ci-runner`.
 - `automate` executes four hand-authored spec sets against clean and mutated services.
 - `framework` installs and smoke-tests a scaffold fixture.
-- `bmad-tea` evaluates routing intents; `bmad-teach-me-testing` uses the persistent transcript harness.
+- `bmad-tea` evaluates routing intents; `bmad-tea-teach-me-testing` uses the persistent transcript harness.
 
 The ten behavioral suites and Evaluate's own authored suite cover all eleven skills.
 

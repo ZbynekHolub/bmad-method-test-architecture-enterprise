@@ -111,7 +111,11 @@ function resolveWorkflowSkill({ projectRoot, skillName, skillRoot }) {
     if (!fs.statSync(path.join(knowledge, 'tea-index.csv')).isFile()) throw new Error('sibling bmod-tea knowledge is missing');
     return fs.realpathSync(root);
   } catch (error) {
-    throw new WorkflowError('environment-configuration', `${skillName} is unavailable at ${root}: ${error.message}`, { cause: error });
+    throw new WorkflowError(
+      'environment-configuration',
+      `${skillName} is unavailable at ${root}: ${error.message}. Install TEA with npx skills add bmad-code-org/bmad-method-test-architecture-enterprise`,
+      { cause: error },
+    );
   }
 }
 /** Activate the actual skill using authoritative config and caller run inputs. */

@@ -3,7 +3,7 @@
  *
  * TEA's eight existing suites each score exactly one agent invocation per
  * case, so nothing can drive or record a multi-turn exchange, and
- * `bmad-teach-me-testing` — a live, multi-turn teaching skill — has stayed
+ * `bmad-tea-teach-me-testing` — a live, multi-turn teaching skill — has stayed
  * permanently `deferred` for exactly that reason. This suite is not the
  * measurement of that skill: Story 6.11 is. This suite proves the reusable
  * engine that measurement will run on, `test/lib/transcript-harness.js`'s

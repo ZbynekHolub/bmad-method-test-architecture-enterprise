@@ -285,7 +285,7 @@ function parseToml(content, label) {
 }
 
 /** Resolve trusted skill defaults and project workflow overrides from the same configuration source. */
-function readWorkflowCustomization(source, skillRoot, projectRoot, skillName = 'bmad-testarch-test-review') {
+function readWorkflowCustomization(source, skillRoot, projectRoot, skillName = 'bmad-tea-test-review') {
   if (!skillRoot) return {};
   const defaultsPath = path.join(skillRoot, 'customize.toml');
   source.recordInput?.(defaultsPath);
@@ -296,10 +296,24 @@ function readWorkflowCustomization(source, skillRoot, projectRoot, skillName = '
     if (error.code !== 'ENOENT') throw configError(`Failed to load ${defaultsPath}: ${error.message}`);
   }
   if (!/^[a-z0-9][a-z0-9-]*$/.test(skillName)) throw configError('Workflow skill name must be a lowercase kebab-case name');
-  const workflowPaths = ['.toml', '.user.toml'].map((suffix) => path.join('_bmad', 'custom', skillName + suffix));
-  for (const relativePath of workflowPaths) {
-    const content = source.read(relativePath);
-    if (content !== null) merged = mergeTables(merged, parseToml(content, source.label(relativePath)));
+  const oldName =
+    skillName === 'bmad-tea-teach-me-testing'
+      ? 'bmad-teach-me-testing'
+      : skillName.startsWith('bmad-tea-')
+        ? skillName.replace('bmad-tea-', 'bmad-testarch-')
+        : null;
+  for (const suffix of ['.toml', '.user.toml']) {
+    const legacyPath = oldName && path.join('_bmad', 'custom', oldName + suffix);
+    const currentPath = path.join('_bmad', 'custom', skillName + suffix);
+    const legacyContent = legacyPath && source.read(legacyPath);
+    const currentContent = source.read(currentPath);
+    const legacy = legacyContent === null ? {} : parseToml(legacyContent, source.label(legacyPath));
+    const current = currentContent === null ? {} : parseToml(currentContent, source.label(currentPath));
+    const conflict = conflictingValue(legacy, current);
+    if (conflict) {
+      throw configError(`Conflicting workflow customization ${conflict} in ${source.label(legacyPath)} and ${source.label(currentPath)}`);
+    }
+    merged = mergeTables(merged, mergeTables(legacy, current));
   }
   if (merged.workflow !== undefined && !isPlainObject(merged.workflow)) {
     throw configError('Workflow customization must contain a [workflow] table');
@@ -325,6 +339,20 @@ function readWorkflowCustomization(source, skillRoot, projectRoot, skillName = '
     });
   }
   return workflow;
+}
+
+/** Find the first setting whose legacy and current values disagree. */
+function conflictingValue(legacy, current, prefix = '') {
+  for (const [key, oldValue] of Object.entries(legacy)) {
+    if (!Object.hasOwn(current, key)) continue;
+    const next = prefix ? `${prefix}.${key}` : key;
+    const newValue = current[key];
+    if (isPlainObject(oldValue) && isPlainObject(newValue)) {
+      const nested = conflictingValue(oldValue, newValue, next);
+      if (nested) return nested;
+    } else if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) return next;
+  }
+  return null;
 }
 
 /** Coerce the keys this CLI cares about out of a raw TEA config table. */

@@ -182,6 +182,25 @@ async function runTests() {
     assert(bmod.code === 'tea', 'bmod.toml has correct code: tea');
     assert(typeof bmod.version === 'string' && bmod.version.length > 0, 'bmod.toml has a version');
     assert(Array.isArray(bmod.skills) && bmod.skills.includes('bmad-tea'), 'bmod.toml lists the bmad-tea skill');
+    const directSkills = [
+      'bmad-tea-automate',
+      'bmad-tea-evaluate',
+      'bmad-tea-framework',
+      'bmad-tea-nfr',
+      'bmad-tea-teach-me-testing',
+      'bmad-tea-test-design',
+      'bmad-tea-test-review',
+      'bmad-tea-trace',
+    ];
+    assert(
+      JSON.stringify([...bmod.skills].sort()) === JSON.stringify(['bmad-tea', ...directSkills].sort()),
+      'bmod.toml publishes exactly the bmad-tea agent and eight renamed workflows',
+    );
+    const skillDirectories = await fs.readdir(path.join(projectRoot, 'skills'));
+    assert(
+      skillDirectories.every((name) => !name.startsWith('bmad-testarch-') && name !== 'bmad-teach-me-testing'),
+      'the installed skill tree has no old public workflow roots',
+    );
     assert(
       (bmod.config_questions || []).every((question) => typeof question.default === 'string'),
       'bmod.toml config_questions defaults are all strings',
@@ -203,13 +222,13 @@ async function runTests() {
   }
 
   try {
-    const evaluateCustomize = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-evaluate/customize.toml'), 'utf8'));
+    const evaluateCustomize = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-evaluate/customize.toml'), 'utf8'));
     assert(
       evaluateCustomize.workflow?.evaluations_folder === 'evals',
-      'bmad-testarch-evaluate customize.toml defaults evaluations_folder to evals',
+      'bmad-tea-evaluate customize.toml defaults evaluations_folder to evals',
     );
   } catch (error) {
-    assert(false, 'bmad-testarch-evaluate customize.toml loads', error.message);
+    assert(false, 'bmad-tea-evaluate customize.toml loads', error.message);
   }
 
   try {
@@ -249,16 +268,16 @@ async function runTests() {
     }
 
     // The CI key retains its customization filename, while Framework owns the CI phase.
-    const ciCustomize = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-framework/customize.toml'), 'utf8'));
-    const evaluateCustomize = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-evaluate/customize.toml'), 'utf8'));
+    const ciCustomize = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-framework/customize.toml'), 'utf8'));
+    const evaluateCustomize = TOML.parse(await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-evaluate/customize.toml'), 'utf8'));
     assert(
       ciCustomize.workflow?.ci_platform === 'auto',
-      'bmad-testarch-framework customize.toml declares ci_platform for the migrated CI setting',
+      'bmad-tea-framework customize.toml declares ci_platform for the migrated CI setting',
     );
     assert(
       typeof evaluateCustomize.workflow?.evaluations_folder === 'string' &&
-        migration.guide.includes('bmad-testarch-evaluate.toml') &&
-        migration.guide.includes('bmad-testarch-ci.toml') &&
+        migration.guide.includes('bmad-tea-evaluate.toml') &&
+        migration.guide.includes('bmad-tea-ci.toml') &&
         migration.guide.includes('`[workflow]` `evaluations_folder`') &&
         migration.guide.includes('`[workflow]` `ci_platform`'),
       'migration-1.toml writes evaluations_folder and ci_platform to the customization files of the skills that declare them',
@@ -326,16 +345,16 @@ async function runTests() {
 
       // Verify all capability codes live on the [[agent.menu]] array-of-tables
       const expectedMenu = [
-        { code: 'TMT', skill: 'bmad-teach-me-testing' },
-        { code: 'TF', skill: 'bmad-testarch-framework' },
-        { code: 'CI', skill: 'bmad-testarch-framework' },
-        { code: 'AT', skill: 'bmad-testarch-automate' },
-        { code: 'TA', skill: 'bmad-testarch-automate' },
-        { code: 'EV', skill: 'bmad-testarch-evaluate' },
-        { code: 'TD', skill: 'bmad-testarch-test-design' },
-        { code: 'TR', skill: 'bmad-testarch-trace' },
-        { code: 'NR', skill: 'bmad-testarch-nfr' },
-        { code: 'RV', skill: 'bmad-testarch-test-review' },
+        { code: 'TMT', skill: 'bmad-tea-teach-me-testing' },
+        { code: 'TF', skill: 'bmad-tea-framework' },
+        { code: 'CI', skill: 'bmad-tea-framework' },
+        { code: 'AT', skill: 'bmad-tea-automate' },
+        { code: 'TA', skill: 'bmad-tea-automate' },
+        { code: 'EV', skill: 'bmad-tea-evaluate' },
+        { code: 'TD', skill: 'bmad-tea-test-design' },
+        { code: 'TR', skill: 'bmad-tea-trace' },
+        { code: 'NR', skill: 'bmad-tea-nfr' },
+        { code: 'RV', skill: 'bmad-tea-test-review' },
       ];
       const menu = TOML.parse(customizeContent).agent.menu;
       assert(Array.isArray(menu), 'customize.toml has an agent menu');
@@ -416,16 +435,16 @@ async function runTests() {
   console.log(`${colors.yellow}Test Suite 4: Workflow Structure${colors.reset}\n`);
 
   const workflowDirs = [
-    'bmad-teach-me-testing',
-    'bmad-testarch-framework',
-    'bmad-testarch-test-design',
-    'bmad-testarch-automate',
-    'bmad-testarch-test-review',
-    'bmad-testarch-nfr',
-    'bmad-testarch-trace',
+    'bmad-tea-teach-me-testing',
+    'bmad-tea-framework',
+    'bmad-tea-test-design',
+    'bmad-tea-automate',
+    'bmad-tea-test-review',
+    'bmad-tea-nfr',
+    'bmad-tea-trace',
   ];
 
-  const canonicalAutomateRoot = path.join(projectRoot, 'skills/bmad-testarch-automate');
+  const canonicalAutomateRoot = path.join(projectRoot, 'skills/bmad-tea-automate');
   const redWorkflow = yaml.load(await fs.readFile(path.join(canonicalAutomateRoot, 'red/workflow.yaml'), 'utf8'));
   for (const [component, expected] of Object.entries({
     installed_path: 'red',
@@ -456,7 +475,7 @@ async function runTests() {
           assert(skillContent.includes('## On Activation'), `${dirName}/SKILL.md has On Activation section`);
           assert(
             skillContent.includes(
-              `resolve_customization.py --skill ${dirName === 'bmad-testarch-automate' ? '{workflow-skill-root}' : '{skill-root}'} --project-root {project-root} --key workflow`,
+              `resolve_customization.py --skill ${dirName === 'bmad-tea-automate' ? '{workflow-skill-root}' : '{skill-root}'} --project-root {project-root} --key workflow`,
             ),
             `${dirName}/SKILL.md resolves the selected workflow customization block`,
           );
@@ -468,7 +487,7 @@ async function runTests() {
             `${dirName}/SKILL.md explains sibling workflow path resolution`,
           );
           assert(
-            dirName === 'bmad-testarch-automate'
+            dirName === 'bmad-tea-automate'
               ? skillContent.includes('{skill-root}/resources/test-generation-routing.md')
               : /\{skill-root\}\/steps-[cev]\//.test(skillContent),
             `${dirName}/SKILL.md routes first step from {skill-root}`,
@@ -595,7 +614,7 @@ async function runTests() {
               `${stepLabel} claims its validation report path atomically`,
             );
 
-            if (dirName !== 'bmad-teach-me-testing') {
+            if (dirName !== 'bmad-tea-teach-me-testing') {
               assert(
                 reportPathTemplate.includes('{validation_scope}'),
                 `${stepLabel} identifies the artifact scope in the validation report path`,
@@ -670,18 +689,15 @@ async function runTests() {
 
   // Setup routing remains shared across all requested scopes.
   try {
-    const router = await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-framework/resources/setup-routing.md'), 'utf8');
-    const canonical = await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-framework/SKILL.md'), 'utf8');
+    const router = await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-framework/resources/setup-routing.md'), 'utf8');
+    const canonical = await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-framework/SKILL.md'), 'utf8');
     assert(
       canonical.includes('CI-only skips framework prepend/append hooks, persistent facts and completion hooks') &&
         canonical.indexOf('execute each `ci_workflow.activation_steps_prepend`') < canonical.indexOf('### Step 5: Greet the User') &&
         canonical.includes('CI-only loads its CI facts and skips framework facts'),
       'CI-only activation owns CI hooks/facts and executes its prepend before greeting',
     );
-    const completion = await fs.readFile(
-      path.join(projectRoot, 'skills/bmad-testarch-framework/resources/setup-phase-completion.md'),
-      'utf8',
-    );
+    const completion = await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-framework/resources/setup-phase-completion.md'), 'utf8');
     assert(setupCompletionProblems(completion).length === 0, 'Create, Validate and Edit retain distinct completion gates');
     for (const heading of ['### Validate', '### Edit']) {
       assert(
@@ -723,7 +739,7 @@ async function runTests() {
       'headless ambiguous requests retain framework-only setup',
     );
     assert(
-      router.includes('_bmad/custom/bmad-testarch-ci.user.toml') && router.includes('ci_workflow.ci_platform'),
+      router.includes('_bmad/custom/bmad-tea-ci.user.toml') && router.includes('ci_workflow.ci_platform'),
       'canonical CI scope reads legacy migrated customization',
     );
     for (const prefix of ['', 'ci/']) {
@@ -743,7 +759,7 @@ async function runTests() {
       router.includes('A completed framework checkpoint with pending CI continues to CI'),
       'completed framework resume can continue pending CI',
     );
-    const state = await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-framework/resources/setup-state.md'), 'utf8');
+    const state = await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-framework/resources/setup-state.md'), 'utf8');
     assert(
       router.includes('All scopes and operations use `{test_artifacts}/framework/setup-run-progress.md`') &&
         state.includes('create or adopt the active journal before executing any custom activation hook'),
@@ -838,7 +854,7 @@ async function runTests() {
       'archive guard rejects resumed legacy history replaced by a foreign modern checkpoint',
     );
     for (const scope of ['', 'ci/']) {
-      const resume = await fs.readFile(path.join(projectRoot, `skills/bmad-testarch-framework/${scope}steps-c/step-01b-resume.md`), 'utf8');
+      const resume = await fs.readFile(path.join(projectRoot, `skills/bmad-tea-framework/${scope}steps-c/step-01b-resume.md`), 'utf8');
       assert(
         resume.includes('first archive any displaced modern counterpart') &&
           resume.includes('Select that restored legacy checkpoint deterministically, including in headless mode') &&
@@ -852,7 +868,7 @@ async function runTests() {
         state.includes('an explicit Resume keeps its recovered run'),
       'headless start-over preserves explicitly requested Resume',
     );
-    const parallel = await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-framework/resources/setup-parallel.md'), 'utf8');
+    const parallel = await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-framework/resources/setup-parallel.md'), 'utf8');
     assert(
       parallel.includes('Before launch, atomically persist `setup_parallel_started = true`') &&
         parallel.includes('relaunch each incomplete worker at its exact saved position') &&
@@ -875,9 +891,9 @@ async function runTests() {
       ) && router.includes('an empty contract cannot proceed to generation'),
       'CI-only generation and validation use the existing framework contract',
     );
-    const ciPreflight = await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-framework/ci/steps-c/step-01-preflight.md'), 'utf8');
+    const ciPreflight = await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-framework/ci/steps-c/step-01-preflight.md'), 'utf8');
     const ciGeneration = await fs.readFile(
-      path.join(projectRoot, 'skills/bmad-testarch-framework/ci/steps-c/step-02-generate-pipeline.md'),
+      path.join(projectRoot, 'skills/bmad-tea-framework/ci/steps-c/step-02-generate-pipeline.md'),
       'utf8',
     );
     assert(
@@ -934,7 +950,7 @@ async function runTests() {
     );
     const savedExample = yaml.load(
       extractFrontmatter(
-        await fs.readFile(path.join(projectRoot, 'skills/bmad-testarch-framework/resources/setup-run-progress.example.md'), 'utf8'),
+        await fs.readFile(path.join(projectRoot, 'skills/bmad-tea-framework/resources/setup-run-progress.example.md'), 'utf8'),
       ),
     );
     assert(
@@ -980,7 +996,7 @@ async function runTests() {
   }
 
   try {
-    const generationRoot = path.join(projectRoot, 'skills/bmad-testarch-automate');
+    const generationRoot = path.join(projectRoot, 'skills/bmad-tea-automate');
     const router = await fs.readFile(path.join(generationRoot, 'resources/test-generation-routing.md'), 'utf8');
     const entry = await fs.readFile(path.join(generationRoot, 'SKILL.md'), 'utf8');
     assert(
@@ -1010,11 +1026,11 @@ async function runTests() {
           .map((cell) => cell.trim()),
       );
     for (const example of [
-      ['`bmad-testarch-automate`', 'none', 'interactive', 'expand (default)', 'no'],
-      ['`bmad-testarch-automate`', 'lets write acceptance tests', 'interactive or headless', 'red', 'no'],
-      ['`bmad-testarch-automate`', 'acceptance test scaffolds', 'interactive or headless', 'red', 'no'],
-      ['`bmad-testarch-automate`', 'red and expand task signals', 'interactive', 'unresolved', 'ask once'],
-      ['`bmad-testarch-automate`', 'red and expand task signals', 'headless', 'expand (default)', 'no'],
+      ['`bmad-tea-automate`', 'none', 'interactive', 'expand (default)', 'no'],
+      ['`bmad-tea-automate`', 'lets write acceptance tests', 'interactive or headless', 'red', 'no'],
+      ['`bmad-tea-automate`', 'acceptance test scaffolds', 'interactive or headless', 'red', 'no'],
+      ['`bmad-tea-automate`', 'red and expand task signals', 'interactive', 'unresolved', 'ask once'],
+      ['`bmad-tea-automate`', 'red and expand task signals', 'headless', 'expand (default)', 'no'],
     ]) {
       assert(
         routingExamples.some((row) => row.length === example.length && row.every((value, index) => value === example[index])),
@@ -1045,7 +1061,7 @@ async function runTests() {
     assert(
       router.includes('workflow_customization_manual = true') &&
         router.includes('red/customize.toml') &&
-        router.includes('_bmad/custom/bmad-testarch-atdd.toml') &&
+        router.includes('_bmad/custom/bmad-tea-atdd.toml') &&
         entry.includes('skip this resolver command'),
       'red mode retains the existing customization namespace with embedded defaults',
     );
@@ -1053,7 +1069,7 @@ async function runTests() {
     assert(false, 'generation routing and Resume contract validates', error.message);
   }
 
-  const frameworkScaffoldStepPath = path.join(projectRoot, 'skills/bmad-testarch-framework/steps-c/step-03-scaffold-framework.md');
+  const frameworkScaffoldStepPath = path.join(projectRoot, 'skills/bmad-tea-framework/steps-c/step-03-scaffold-framework.md');
   try {
     const frameworkScaffoldStep = await fs.readFile(frameworkScaffoldStepPath, 'utf8');
     assert(frameworkScaffoldStep.includes('recurse.md'), 'framework scaffold step loads recurse.md when Playwright Utils is enabled');
@@ -1073,12 +1089,12 @@ async function runTests() {
   // ============================================================
   console.log(`${colors.yellow}Test Suite 5: Lean Skill Shape${colors.reset}\n`);
 
-  const LEAN_SKILL_DIRS = ['bmad-testarch-evaluate'];
+  const LEAN_SKILL_DIRS = ['bmad-tea-evaluate'];
   const LEAN_REQUIRED = ['SKILL.md', 'customize.toml', 'references', 'assets'];
   const LEAN_FORBIDDEN = ['workflow.yaml', 'steps-c', 'steps-e', 'steps-v', 'instructions.md', 'checklist.md', 'scripts'];
 
   // A skill is lean when it has neither workflow.yaml nor steps-c/. Both
-  // conditions matter: bmad-teach-me-testing has no workflow.yaml and would
+  // conditions matter: bmad-tea-teach-me-testing has no workflow.yaml and would
   // misclassify as lean under a "no workflow.yaml" rule alone, but it does
   // carry steps-c/ and stays on the house set.
   async function isLeanSkill(workflowDir) {
@@ -1089,8 +1105,8 @@ async function runTests() {
   }
 
   try {
-    const teachMeDir = path.join(projectRoot, 'skills/bmad-teach-me-testing');
-    assert(!(await isLeanSkill(teachMeDir)), 'bmad-teach-me-testing (no workflow.yaml, has steps-c/) classifies as house');
+    const teachMeDir = path.join(projectRoot, 'skills/bmad-tea-teach-me-testing');
+    assert(!(await isLeanSkill(teachMeDir)), 'bmad-tea-teach-me-testing (no workflow.yaml, has steps-c/) classifies as house');
 
     const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'tea-lean-shape-'));
     try {
@@ -1138,11 +1154,11 @@ async function runTests() {
 
   for (const [root, required] of [
     [
-      'bmad-testarch-automate/red',
+      'bmad-tea-automate/red',
       ['instructions.md', 'checklist.md', 'atdd-checklist-template.md', 'resources', 'steps-c', 'steps-v', 'steps-e'],
     ],
     [
-      'bmad-testarch-framework/ci',
+      'bmad-tea-framework/ci',
       [
         'instructions.md',
         'checklist.md',
@@ -1203,13 +1219,13 @@ async function runTests() {
   // npm test green.
   try {
     const helpContent = await fs.readFile(path.join(projectRoot, 'skills/bmod-tea/help/help.md'), 'utf8');
-    assert(helpContent.includes('`bmad-testarch-evaluate`:'), 'skills/bmod-tea/help/help.md describes bmad-testarch-evaluate');
+    assert(helpContent.includes('`bmad-tea-evaluate`:'), 'skills/bmod-tea/help/help.md describes bmad-tea-evaluate');
     assert(
       helpContent.includes('evaluations_folder') && helpContent.includes('`evals/`'),
       'skills/bmod-tea/help/help.md says where evaluate writes (evals/ by default, evaluations_folder to change it)',
     );
   } catch (error) {
-    assert(false, 'skills/bmod-tea/help/help.md bmad-testarch-evaluate entry validates', error.message);
+    assert(false, 'skills/bmod-tea/help/help.md bmad-tea-evaluate entry validates', error.message);
   }
 
   // A bmad-workflow-builder session writes .memlog.md and .analysis/ inside
@@ -1225,8 +1241,8 @@ async function runTests() {
     // skill directory (its own memlog and analysis reports live here by
     // design), so this only creates what does not already exist and only
     // removes what it created.
-    const plantedMemlog = path.join(projectRoot, 'skills/bmad-testarch-evaluate/.memlog.md');
-    const plantedAnalysisDir = path.join(projectRoot, 'skills/bmad-testarch-evaluate/.analysis');
+    const plantedMemlog = path.join(projectRoot, 'skills/bmad-tea-evaluate/.memlog.md');
+    const plantedAnalysisDir = path.join(projectRoot, 'skills/bmad-tea-evaluate/.analysis');
     const plantedReport = path.join(plantedAnalysisDir, `tea-pack-probe-${process.pid}.md`);
     const memlogPreexisted = await pathExists(plantedMemlog);
     const analysisDirPreexisted = await pathExists(plantedAnalysisDir);
@@ -1312,8 +1328,7 @@ async function runTests() {
   const ONCE_PER_PROJECT_DELIVERABLES = new Set(['test-design-architecture.md', 'test-design-qa.md', '{project_name}-handoff.md']);
 
   async function stepFrontmatter(workflow, stepsDir, fileName) {
-    const phase =
-      workflow === 'ci' ? 'bmad-testarch-framework/ci' : workflow === 'atdd' ? 'bmad-testarch-automate/red' : `bmad-testarch-${workflow}`;
+    const phase = workflow === 'ci' ? 'bmad-tea-framework/ci' : workflow === 'atdd' ? 'bmad-tea-automate/red' : `bmad-tea-${workflow}`;
     const text = await fs.readFile(path.join(projectRoot, 'skills', phase, stepsDir, fileName), 'utf8');
     return yaml.load(extractFrontmatter(text)) ?? {};
   }
@@ -1322,7 +1337,7 @@ async function runTests() {
     const folder = `{test_artifacts}/${workflow}/`;
     const carriesScope = (value) => typeof value === 'string' && value.startsWith(folder) && tokens.some((token) => value.includes(token));
     try {
-      const phase = workflow === 'atdd' ? 'bmad-testarch-automate/red' : `bmad-testarch-${workflow}`;
+      const phase = workflow === 'atdd' ? 'bmad-tea-automate/red' : `bmad-tea-${workflow}`;
       const stepsCDir = path.join(projectRoot, 'skills', phase, 'steps-c');
       const stepFiles = (await fs.readdir(stepsCDir)).filter((name) => name.endsWith('.md')).sort();
       let outputSteps = 0;

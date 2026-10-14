@@ -33,7 +33,7 @@ Understand what you have before changing anything.
 Run the trace skill and select Phase 1 (Requirements Traceability):
 
 ```text
-/bmad-testarch-trace
+/bmad-tea-trace
 ```
 
 **Provide:**
@@ -71,7 +71,7 @@ Run the trace skill and select Phase 1 (Requirements Traceability):
 Run the test review skill and answer `tests/` when it asks for scope:
 
 ```text
-/bmad-testarch-test-review
+/bmad-tea-test-review
 ```
 
 **Output:** `test-review/test-review-{run_key}.md` under `{test_artifacts}` with quality score and issues.
@@ -110,7 +110,7 @@ Don't try to fix everything at once.
 **Priority 1: P0 Requirements.** Goal: P0 coverage at 100%.
 
 1. Identify P0 requirements with no tests (from the trace matrix)
-2. Run `/bmad-testarch-automate` to generate tests for the missing P0 scenarios
+2. Run `/bmad-tea-automate` to generate tests for the missing P0 scenarios
 3. Fix the critical quality issues those tests carry (from the test-review report)
 
 **Priority 2: Fix Flaky Tests.** Goal: eliminate flakiness.
@@ -217,11 +217,11 @@ Apply TEA skills to new work while improving legacy tests.
 
 **Use the full TEA sequence:**
 
-1. `/bmad-testarch-test-design` (epic-level) to plan tests for the new feature
-2. `/bmad-testarch-automate` in red mode to generate failing tests first
+1. `/bmad-tea-test-design` (epic-level) to plan tests for the new feature
+2. `/bmad-tea-automate` in red mode to generate failing tests first
 3. Implement the feature
-4. `/bmad-testarch-automate` to expand coverage
-5. `/bmad-testarch-test-review` to check quality
+4. `/bmad-tea-automate` to expand coverage
+5. `/bmad-tea-test-review` to check quality
 
 #### For Bug Fixes (Regression Prevention)
 
@@ -230,16 +230,16 @@ Apply TEA skills to new work while improving legacy tests.
 1. Reproduce the bug with a failing test
 2. Fix the bug
 3. Verify the test passes
-4. Run `/bmad-testarch-test-review` on the regression test
+4. Run `/bmad-tea-test-review` on the regression test
 5. Add it to the regression suite
 
 #### For Refactoring (Regression Safety)
 
 **Before refactoring:**
 
-1. Run `/bmad-testarch-trace` for a baseline and note the coverage percentage
+1. Run `/bmad-tea-trace` for a baseline and note the coverage percentage
 2. Refactor the code
-3. Run `/bmad-testarch-trace` again; no priority's coverage should have decreased
+3. Run `/bmad-tea-trace` again; no priority's coverage should have decreased
 
 ### Phase 4: Continuous Improvement
 
@@ -326,7 +326,7 @@ test.skip('flaky test - needs fixing', async ({ page }) => {
 
 Take one directory per week (`tests/auth/`, then `tests/api/`, then `tests/e2e/`), running the same loop on each:
 
-1. Run `/bmad-testarch-test-review` and give that directory as the scope
+1. Run `/bmad-tea-test-review` and give that directory as the scope
 2. Fix the critical issues
 3. Re-review
 4. Mark the directory as "modernized"
@@ -358,7 +358,7 @@ Take one directory per week (`tests/auth/`, then `tests/api/`, then `tests/e2e/`
 
 No documentation, unclear what tests do.
 
-1. Run `/bmad-testarch-trace`; TEA analyzes the tests and maps them to requirements
+1. Run `/bmad-tea-trace`; TEA analyzes the tests and maps them to requirements
 2. Review the traceability matrix
 3. Document the findings
 4. Use it as your improvement baseline
@@ -415,7 +415,7 @@ Measure the result with your suite and runner capacity.
 
 Tests are so flaky they're ignored.
 
-1. Run `/bmad-testarch-test-review` to identify the flakiness patterns
+1. Run `/bmad-tea-test-review` to identify the flakiness patterns
 2. Fix the tests with the highest failure rate
 3. Quarantine the rest
 4. Re-enable them as you fix them
@@ -429,24 +429,24 @@ Tests are so flaky they're ignored.
 ### Recommended Sequence
 
 The BMad Method module provides `document-project`, `prd`, and `architecture`.
-The `/bmad-testarch-*` commands are TEA skills.
+The `/bmad-tea-*` commands are TEA skills.
 On Codex, use `$` for the skill prefix.
 
-| Stage                        | Command                                    | Purpose                                           |
-| ---------------------------- | ------------------------------------------ | ------------------------------------------------- |
-| 1. Documentation (if needed) | `document-project` (BMM)                   | Baseline docs for an undocumented codebase        |
-| 2. Baseline (Phase 2)        | `/bmad-testarch-trace`, Phase 1            | Coverage baseline                                 |
-| 2. Baseline (Phase 2)        | `/bmad-testarch-test-review`               | Quality baseline                                  |
-| 3. Planning (Phase 2-3)      | `prd`, `architecture` (BMM)                | Document requirements and architecture if missing |
-| 3. Planning (Phase 2-3)      | `/bmad-testarch-test-design`, system-level | Testability review                                |
-| 4. Infrastructure (Phase 3)  | `/bmad-testarch-framework`                 | Modernize the framework; include CI if needed     |
-| 4. Infrastructure (Phase 3)  | `/bmad-testarch-framework` with CI scope   | Set up or improve CI/CD                           |
-| 5. Per epic (Phase 4)        | `/bmad-testarch-test-design`, epic-level   | Focus on regression hotspots                      |
-| 5. Per epic (Phase 4)        | `/bmad-testarch-automate`                  | Add the missing tests                             |
-| 5. Per epic (Phase 4)        | `/bmad-testarch-test-review`               | Check quality                                     |
-| 5. Per epic (Phase 4)        | `/bmad-testarch-trace`, Phase 1            | Refresh coverage                                  |
-| 6. Release gate              | `/bmad-testarch-nfr`                       | Audit NFR evidence, where evidence exists         |
-| 6. Release gate              | `/bmad-testarch-trace`, Phase 2            | Gate decision                                     |
+| Stage                        | Command                               | Purpose                                           |
+| ---------------------------- | ------------------------------------- | ------------------------------------------------- |
+| 1. Documentation (if needed) | `document-project` (BMM)              | Baseline docs for an undocumented codebase        |
+| 2. Baseline (Phase 2)        | `/bmad-tea-trace`, Phase 1            | Coverage baseline                                 |
+| 2. Baseline (Phase 2)        | `/bmad-tea-test-review`               | Quality baseline                                  |
+| 3. Planning (Phase 2-3)      | `prd`, `architecture` (BMM)           | Document requirements and architecture if missing |
+| 3. Planning (Phase 2-3)      | `/bmad-tea-test-design`, system-level | Testability review                                |
+| 4. Infrastructure (Phase 3)  | `/bmad-tea-framework`                 | Modernize the framework; include CI if needed     |
+| 4. Infrastructure (Phase 3)  | `/bmad-tea-framework` with CI scope   | Set up or improve CI/CD                           |
+| 5. Per epic (Phase 4)        | `/bmad-tea-test-design`, epic-level   | Focus on regression hotspots                      |
+| 5. Per epic (Phase 4)        | `/bmad-tea-automate`                  | Add the missing tests                             |
+| 5. Per epic (Phase 4)        | `/bmad-tea-test-review`               | Check quality                                     |
+| 5. Per epic (Phase 4)        | `/bmad-tea-trace`, Phase 1            | Refresh coverage                                  |
+| 6. Release gate              | `/bmad-tea-nfr`                       | Audit NFR evidence, where evidence exists         |
+| 6. Release gate              | `/bmad-tea-trace`, Phase 2            | Gate decision                                     |
 
 ## Related Guides
 

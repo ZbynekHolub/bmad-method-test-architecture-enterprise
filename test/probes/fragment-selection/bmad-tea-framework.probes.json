@@ -1,0 +1,107 @@
+[
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-001",
+    "probeClass": "gameability",
+    "behaviorId": "B-002",
+    "systemId": "tea-fragment-selection-bmad-tea-framework",
+    "implementationDigest": "sha256:0c256bd087ffa7c78a20b51e7e232098ce7cde8a94eedc444154b6af435365c0",
+    "artifactDigest": "sha256:e1b8c79cb8bfc0a34aa2af9adfb7f35253f5c88ce6596be900a2576d83c986d7",
+    "commitDigest": "sha256:0c256bd087ffa7c78a20b51e7e232098ce7cde8a94eedc444154b6af435365c0",
+    "rationale": "A run that names every fragment in the index satisfies O-001 for framework-mobile-scaffold, because every mandated fragment is in the list, and violates O-002, because so is every forbidden one. The containment oracle alone cannot tell that reply from a correct selection, and the exclusion oracle can.",
+    "qualification": {
+      "route": "gameability",
+      "degenerateResponse": "A selection naming every fragment the bmad-tea-framework index offers, mandated and forbidden alike.",
+      "naiveOracleSatisfiedEvidence": {
+        "storage": "public",
+        "path": "test/evals/bmad-tea-framework/evals.json",
+        "privateRef": null,
+        "digest": "sha256:e1b8c79cb8bfc0a34aa2af9adfb7f35253f5c88ce6596be900a2576d83c986d7"
+      },
+      "disciplinedOracleRejectedEvidence": {
+        "storage": "public",
+        "path": "test/evals/bmad-tea-framework/evals.json",
+        "privateRef": null,
+        "digest": "sha256:e1b8c79cb8bfc0a34aa2af9adfb7f35253f5c88ce6596be900a2576d83c986d7"
+      }
+    },
+    "expectedClean": false,
+    "defects": [],
+    "defectSignature": {
+      "interfaceKind": "cli",
+      "invocation": {
+        "executable": "tea-fragment-selection-runner",
+        "subcommandPath": []
+      },
+      "observableChannel": "stdout",
+      "condition": {
+        "selector": {
+          "inputBinding": {
+            "path": null,
+            "query": null,
+            "header": null,
+            "body": null,
+            "argument": null,
+            "option": {
+              "agent": {
+                "matcher": "any"
+              }
+            },
+            "environment": null,
+            "stdin": {
+              "prompt": {
+                "matcher": "any"
+              }
+            },
+            "arguments": null
+          }
+        },
+        "predicate": {
+          "op": "for-any",
+          "collection": {
+            "pointer": "/interactions/observed/stdout/fragments"
+          },
+          "predicate": {
+            "op": "set-membership",
+            "operands": [
+              {
+                "pointer": "@/"
+              },
+              {
+                "literal": ["network-first.md", "playwright-config.md", "intercept-network-call.md"]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-002",
+    "probeClass": "zero-action",
+    "behaviorId": "B-001",
+    "systemId": "tea-fragment-selection-bmad-tea-framework",
+    "implementationDigest": "sha256:0c256bd087ffa7c78a20b51e7e232098ce7cde8a94eedc444154b6af435365c0",
+    "artifactDigest": "sha256:e1b8c79cb8bfc0a34aa2af9adfb7f35253f5c88ce6596be900a2576d83c986d7",
+    "commitDigest": "sha256:0c256bd087ffa7c78a20b51e7e232098ce7cde8a94eedc444154b6af435365c0",
+    "rationale": "framework-mobile-scaffold declares the exact set the step files mandate and the exact set they exclude, so a selection naming the first and none of the second is the run this contract exists to confirm.",
+    "qualification": {
+      "route": "clean-control",
+      "baselinePassEvidence": {
+        "storage": "public",
+        "path": "test/evals/bmad-tea-framework/evals.json",
+        "privateRef": null,
+        "digest": "sha256:e1b8c79cb8bfc0a34aa2af9adfb7f35253f5c88ce6596be900a2576d83c986d7"
+      },
+      "revisionCommitDigest": "sha256:0c256bd087ffa7c78a20b51e7e232098ce7cde8a94eedc444154b6af435365c0",
+      "noKnownDefectStatement": "framework-mobile-scaffold's expected selection is derived from the bmad-tea-framework step files themselves, and npm run test:criteria-fragments fails when a fragment it names has left the index."
+    },
+    "expectedClean": true,
+    "defects": []
+  }
+]

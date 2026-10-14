@@ -249,7 +249,7 @@ function recordWriteCase(harness, label, suiteId) {
 const GROUND_TRUTH = path.join(PROJECT_ROOT, 'test', 'fixtures', 'trace-eval', 'ground-truth.json');
 const REVIEW_GROUND_TRUTH = path.join(PROJECT_ROOT, 'test', 'fixtures', 'test-review-eval', 'ground-truth.json');
 const SUITE_MANIFEST = path.join(PROJECT_ROOT, 'test', 'evals', 'suite-manifest.json');
-const SELECTION_EVALS = path.join(PROJECT_ROOT, 'test', 'evals', 'bmad-testarch-atdd', 'evals.json');
+const SELECTION_EVALS = path.join(PROJECT_ROOT, 'test', 'evals', 'bmad-tea-atdd', 'evals.json');
 const STORED_VERDICT = path.join(PROJECT_ROOT, 'test', 'replay', 'test-review', 'full-recall', 'verdict.json');
 const SCORING_POLICY = path.join(PROJECT_ROOT, 'test', 'probes', 'scoring-policy.json');
 // The fixed caseIds traceEvidence, storedDesign and storedNfrReport bind, not the
@@ -278,7 +278,7 @@ const STORED_NFR_REPORT = path.join(
 // eval-quality's own published schema, read once per kind and cached: scoring
 // any probe at all validates an isolation manifest against it.
 const ISOLATION_MANIFEST_SCHEMA = path.join(PROJECT_ROOT, 'node_modules', 'eval-quality', 'schemas', 'isolation-manifest.schema.json');
-const SELECTION_CONTEXT = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-automate', 'red', 'steps-c', 'step-01-preflight-and-context.md');
+const SELECTION_CONTEXT = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-automate', 'red', 'steps-c', 'step-01-preflight-and-context.md');
 const TEA_MENU = path.join(PROJECT_ROOT, 'skills', 'bmad-tea', 'customize.toml');
 
 /**
@@ -508,7 +508,7 @@ async function selectionHarnessCases() {
       reads: { [SELECTION_EVALS]: NOT_JSON },
     });
     assert(
-      /bmad-testarch-atdd\/evals\.json is not valid JSON/.test(scripted.output),
+      /bmad-tea-atdd\/evals\.json is not valid JSON/.test(scripted.output),
       'the harness reports the scripted eval data rather than the file on disk',
       tail(scripted.output),
     );

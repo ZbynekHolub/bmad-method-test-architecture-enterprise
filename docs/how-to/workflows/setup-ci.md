@@ -5,7 +5,7 @@ description: Use Framework to set up CI
 
 # CI Through Framework
 
-Run [Framework with CI scope](/docs/how-to/workflows/setup-test-framework.md#ci-setup). Use `/bmad-testarch-framework` in Claude Code, Cursor, or Windsurf, `$bmad-testarch-framework` in Codex, or `TF` in a TEA agent chat. Request CI only or both phases explicitly. Existing CI customizations and saved checkpoints remain usable.
+Run [Framework with CI scope](/docs/how-to/workflows/setup-test-framework.md#ci-setup). Use `/bmad-tea-framework` in Claude Code, Cursor, or Windsurf, `$bmad-tea-framework` in Codex, or `TF` in a TEA agent chat. Request CI only or both phases explicitly. Existing CI customizations and saved checkpoints remain usable.
 
 See [Framework CI setup](/docs/how-to/workflows/setup-test-framework.md#ci-setup) for platforms, preflight execution, pipeline generation, and quality gates, and [evaluation plans](/docs/how-to/workflows/setup-test-framework.md#evaluation-plans) for evaluation jobs.
 

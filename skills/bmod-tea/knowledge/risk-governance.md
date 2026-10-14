@@ -122,7 +122,7 @@ export function assessTestFailureRisk(failure: {
 
 > **Illustrative only. The coverage gate is authoritative.** This example teaches a risk-driven
 > decision keyed directly on risk scores. TEA executes
-> the gate decision step of the `bmad-testarch-trace` skill. That gate evaluates
+> the gate decision step of the `bmad-tea-trace` skill. That gate evaluates
 > coverage only when `allow_gate` is true and `collection_status` is `COLLECTED`; otherwise its
 > outcome is `NOT_EVALUATED`. Eligible coverage produces `PASS`, `CONCERNS`, or `FAIL` from P0,
 > P1, and overall percentages. Coverage resting only on recorded live verification cannot produce

@@ -1,0 +1,107 @@
+[
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-001",
+    "probeClass": "gameability",
+    "behaviorId": "B-002",
+    "systemId": "tea-fragment-selection-bmad-tea-test-design",
+    "implementationDigest": "sha256:ffce8ed9e2f0a2611afaf4cd1e6346709b7ded6926023fb328f429245192482c",
+    "artifactDigest": "sha256:8edf833fd14dfd46dbc7a1e8202d9a8a6733acb17d083f227e4e60c7bec035b2",
+    "commitDigest": "sha256:ffce8ed9e2f0a2611afaf4cd1e6346709b7ded6926023fb328f429245192482c",
+    "rationale": "A run that names every fragment in the index satisfies O-001 for test-design-system-level, because every mandated fragment is in the list, and violates O-002, because so is every forbidden one. The containment oracle alone cannot tell that reply from a correct selection, and the exclusion oracle can.",
+    "qualification": {
+      "route": "gameability",
+      "degenerateResponse": "A selection naming every fragment the bmad-tea-test-design index offers, mandated and forbidden alike.",
+      "naiveOracleSatisfiedEvidence": {
+        "storage": "public",
+        "path": "test/evals/bmad-tea-test-design/evals.json",
+        "privateRef": null,
+        "digest": "sha256:8edf833fd14dfd46dbc7a1e8202d9a8a6733acb17d083f227e4e60c7bec035b2"
+      },
+      "disciplinedOracleRejectedEvidence": {
+        "storage": "public",
+        "path": "test/evals/bmad-tea-test-design/evals.json",
+        "privateRef": null,
+        "digest": "sha256:8edf833fd14dfd46dbc7a1e8202d9a8a6733acb17d083f227e4e60c7bec035b2"
+      }
+    },
+    "expectedClean": false,
+    "defects": [],
+    "defectSignature": {
+      "interfaceKind": "cli",
+      "invocation": {
+        "executable": "tea-fragment-selection-runner",
+        "subcommandPath": []
+      },
+      "observableChannel": "stdout",
+      "condition": {
+        "selector": {
+          "inputBinding": {
+            "path": null,
+            "query": null,
+            "header": null,
+            "body": null,
+            "argument": null,
+            "option": {
+              "agent": {
+                "matcher": "any"
+              }
+            },
+            "environment": null,
+            "stdin": {
+              "prompt": {
+                "matcher": "any"
+              }
+            },
+            "arguments": null
+          }
+        },
+        "predicate": {
+          "op": "for-any",
+          "collection": {
+            "pointer": "/interactions/observed/stdout/fragments"
+          },
+          "predicate": {
+            "op": "set-membership",
+            "operands": [
+              {
+                "pointer": "@/"
+              },
+              {
+                "literal": ["maestro-flows.md", "contract-testing.md"]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "schemaVersion": 6,
+    "parentDigest": null,
+    "revisionCount": 0,
+    "probeId": "P-002",
+    "probeClass": "zero-action",
+    "behaviorId": "B-001",
+    "systemId": "tea-fragment-selection-bmad-tea-test-design",
+    "implementationDigest": "sha256:ffce8ed9e2f0a2611afaf4cd1e6346709b7ded6926023fb328f429245192482c",
+    "artifactDigest": "sha256:8edf833fd14dfd46dbc7a1e8202d9a8a6733acb17d083f227e4e60c7bec035b2",
+    "commitDigest": "sha256:ffce8ed9e2f0a2611afaf4cd1e6346709b7ded6926023fb328f429245192482c",
+    "rationale": "test-design-system-level declares the exact set the step files mandate and the exact set they exclude, so a selection naming the first and none of the second is the run this contract exists to confirm.",
+    "qualification": {
+      "route": "clean-control",
+      "baselinePassEvidence": {
+        "storage": "public",
+        "path": "test/evals/bmad-tea-test-design/evals.json",
+        "privateRef": null,
+        "digest": "sha256:8edf833fd14dfd46dbc7a1e8202d9a8a6733acb17d083f227e4e60c7bec035b2"
+      },
+      "revisionCommitDigest": "sha256:ffce8ed9e2f0a2611afaf4cd1e6346709b7ded6926023fb328f429245192482c",
+      "noKnownDefectStatement": "test-design-system-level's expected selection is derived from the bmad-tea-test-design step files themselves, and npm run test:criteria-fragments fails when a fragment it names has left the index."
+    },
+    "expectedClean": true,
+    "defects": []
+  }
+]

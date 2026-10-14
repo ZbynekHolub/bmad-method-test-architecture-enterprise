@@ -26,7 +26,7 @@ const { egressRegistryProblems } = require('../cli/lib/evaluate/registry');
 const Ajv = AjvModule.default ?? AjvModule;
 const { planEntryShapeProblems } = require('./lib/evaluate-plan-shape');
 
-const SKILL_ROOT = path.join(__dirname, '..', 'skills', 'bmad-testarch-evaluate');
+const SKILL_ROOT = path.join(__dirname, '..', 'skills', 'bmad-tea-evaluate');
 const SKILL_MD_PATH = path.join(SKILL_ROOT, 'SKILL.md');
 const CAPTURED_SKILL_PATH = path.join(__dirname, 'fixtures', 'evaluate-ci-repos', 'captured-evaluate-skill.md');
 const REFERENCE = (name) => path.join(SKILL_ROOT, 'references', `${name}.md`);
@@ -3807,7 +3807,7 @@ function checkGapsGuidance(guide, engine, failures) {
   checkIsolationViolationGuidance(guide, failures);
   // Stories 1.61 and 1.46: each dogfood mutation replaces bytes of a guide exactly once, so the exit-table rows M-001, M-002 and
   // M-004 edit and the mapping row M-003 edits stay as they are.
-  const mutationFolder = path.join(__dirname, 'evaluations', 'bmad-testarch-evaluate', 'mutations');
+  const mutationFolder = path.join(__dirname, 'evaluations', 'bmad-tea-evaluate', 'mutations');
   const mutationFiles = fs.readdirSync(mutationFolder).sort();
   if (mutationFiles.length === 0) failures.push('the dogfood evaluation holds no mutation for gaps.md to keep intact');
   for (const name of mutationFiles) {
@@ -4160,7 +4160,7 @@ function checkCiGuidance(guide, failures, assets = ciAssets(), egressProblems = 
     "Name in the `trigger` of every check on the gating tier each event that starts the gated job's workflow.",
     "When that workflow also starts on `workflow_dispatch`, as a nightly `deploy.yml` does, list `manual-dispatch` beside `release`, since the CI skill refuses a gate whose job already ran on an event where the tier's evaluation job is skipped.",
     "The jobs a tier gates are the union of `gates` over the checks the plan places on that tier, so name a job once, on any check of the tier, and a name repeated across the tier's checks is merged.",
-    '`check` accepts a job id and reports any other name under rule `gates`; it cannot tell whether the repository holds that job, which `bmad-testarch-framework` answers when it renders the wait.',
+    '`check` accepts a job id and reports any other name under rule `gates`; it cannot tell whether the repository holds that job, which `bmad-tea-framework` answers when it renders the wait.',
     "The wait holds best when the job lives in the workflow file the CI skill edits, which holds the evaluation jobs too: the job then waits through `needs`, and the step refuses the plan when the job already ran in a run where the tier's evaluation job is skipped, such as a deploy on every `push` beside an evaluation job guarded to tags, or when the evaluation job runs on a run the job did not run on before, such as a `workflow_dispatch` the plan adds to a tag-push release file, while a run the render adds that the evaluation job skips is skipped through the wait and is no conflict.",
     'A job in another workflow file waits through a `workflow_run` trigger, which the step refuses for a pull request tier, for a tier whose evaluation job carries a ref or cron guard, and for a job with its own `needs`, `if:` or ref and event contexts, so hand the CI skill the workflow file that holds the job when you can.',
     'Leave `gates` out when the inspection found no such job or the adopter declined the gate, and say which in the `reason` of the release entries.',
@@ -4217,17 +4217,17 @@ function checkCiGuidance(guide, failures, assets = ciAssets(), egressProblems = 
     requireText(write, marker, 'ci.md write the plan', failures);
   const handoff = headingBody(guide, '## Hand the plan to framework setup with CI scope');
   for (const marker of [
-    'Invoke `bmad-testarch-framework` with explicit CI setup scope and Edit operation',
+    'Invoke `bmad-tea-framework` with explicit CI setup scope and Edit operation',
     'or Create when the inspection found no pipeline file',
-    'the rendering rules belong to `skills/bmad-testarch-framework/ci/steps-c/step-03b-render-evaluation-plans.md`',
-    '`{skill-root}/../bmad-testarch-framework/ci/steps-c/step-03b-render-evaluation-plans.md`',
+    'the rendering rules belong to `skills/bmad-tea-framework/ci/steps-c/step-03b-render-evaluation-plans.md`',
+    '`{skill-root}/../bmad-tea-framework/ci/steps-c/step-03b-render-evaluation-plans.md`',
     'Name in the request the concrete event of this repository for each tier it should render',
     'That step renders each `gates` entry as a wait of the named job on the evaluation job of the tier',
     'its summary reports the edit to the job, a name that matches no job and a conflicting gate',
     'so relay that report to the adopter',
     'When the plan gates a job, invoke it on the workflow file that holds that job.',
     "give the adopter the request and the plan's path and record the hand-off as an open item in the inspection record",
-    'a declined baseline or a missing `bmad-testarch-framework` stays a named open item in the `## CI` section and does not reopen the stage',
+    'a declined baseline or a missing `bmad-tea-framework` stays a named open item in the `## CI` section and does not reopen the stage',
     'Stage 12 is complete when the plan passes `check`',
     'the secrets the live tiers need',
     'every tier that exited non-zero with the stage that owns its repair',
@@ -4317,7 +4317,7 @@ function checkCiGuidance(guide, failures, assets = ciAssets(), egressProblems = 
     'upload of the',
     'runs the `pr` tier first',
   ])
-    if (prose.includes(forbidden)) failures.push(`ci.md restates a rendering rule of bmad-testarch-framework: ${forbidden}`);
+    if (prose.includes(forbidden)) failures.push(`ci.md restates a rendering rule of bmad-tea-framework: ${forbidden}`);
   // Phrases that would turn an AC-critical rule around.
   for (const forbidden of [
     'on `pr` too',
@@ -4496,7 +4496,7 @@ function checkSkillStage12(skillContent, failures) {
   const stage12 = headingBody(skillContent, '### Stage 12: CI').trim();
   if (
     stage12 !==
-    "Inspect the adopter's repository, place each check in a tier, write `<evaluation-folder>/ci/evaluation-ci-plan.json` and hand it to `bmad-testarch-framework` with CI setup scope. Load `references/ci.md`."
+    "Inspect the adopter's repository, place each check in a tier, write `<evaluation-folder>/ci/evaluation-ci-plan.json` and hand it to `bmad-tea-framework` with CI setup scope. Load `references/ci.md`."
   )
     failures.push(`SKILL.md Stage 12 reads ${JSON.stringify(stage12)}`);
 }
@@ -5521,7 +5521,7 @@ async function main() {
         ciCheck,
         (text) =>
           text.replace(
-            'Invoke `bmad-testarch-framework` with explicit CI setup scope and Edit operation',
+            'Invoke `bmad-tea-framework` with explicit CI setup scope and Edit operation',
             'Tell the adopter about the CI skill',
           ),
       ],
@@ -5542,7 +5542,7 @@ async function main() {
         ciCheck,
         (text) =>
           text.replace(
-            '`check` accepts a job id and reports any other name under rule `gates`; it cannot tell whether the repository holds that job, which `bmad-testarch-framework` answers when it renders the wait.',
+            '`check` accepts a job id and reports any other name under rule `gates`; it cannot tell whether the repository holds that job, which `bmad-tea-framework` answers when it renders the wait.',
             '',
           ),
       ],
@@ -6099,8 +6099,8 @@ async function main() {
         'skill stage 12 pending',
         (text) =>
           text.replace(
-            'and hand it to `bmad-testarch-framework` with CI setup scope.',
-            'and hand it to `bmad-testarch-framework` with CI setup scope. Stage 12 is pending.',
+            'and hand it to `bmad-tea-framework` with CI setup scope.',
+            'and hand it to `bmad-tea-framework` with CI setup scope. Stage 12 is pending.',
           ),
       ],
       [

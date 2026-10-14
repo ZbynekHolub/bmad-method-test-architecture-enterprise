@@ -1,6 +1,6 @@
 # atdd-eval fixtures
 
-Fixture corpus for the `bmad-testarch-atdd` behavioral eval.
+Fixture corpus for the `bmad-tea-atdd` behavioral eval.
 
 ```text
 reservations/   quay-locker-service: a small HTTP service with one existing route
@@ -14,7 +14,7 @@ ground-truth.json   the five criteria, each with the failure pattern a scaffold 
 
 ## What this corpus is for
 
-The manifest carried `bmad-testarch-atdd` under `deferred`: fragment selection measured which
+The manifest carried `bmad-tea-atdd` under `deferred`: fragment selection measured which
 knowledge a run loads, and nothing executed the tests a run generated, so nothing showed they
 fail before implementation for the intended reason. `cli/atdd-red-check.js` is that execution,
 and this corpus is what it is measured against.

@@ -5,7 +5,7 @@ description: Use Automate in red mode for acceptance tests before implementation
 
 # ATDD Through Automate
 
-For ATDD, run [Automate in red mode](/docs/how-to/workflows/run-automate.md#red-mode). Use `/bmad-testarch-automate` in Claude Code, Cursor, or Windsurf, `$bmad-testarch-automate` in Codex, or `TA` in a TEA agent chat. Ask for acceptance tests before implementation to select red mode. Existing ATDD customizations and interrupted progress remain usable.
+For ATDD, run [Automate in red mode](/docs/how-to/workflows/run-automate.md#red-mode). Use `/bmad-tea-automate` in Claude Code, Cursor, or Windsurf, `$bmad-tea-automate` in Codex, or `TA` in a TEA agent chat. Ask for acceptance tests before implementation to select red mode. Existing ATDD customizations and interrupted progress remain usable.
 
 See [Automate red mode](/docs/how-to/workflows/run-automate.md#red-mode) for acceptance scaffolds, verification, and the implementation handoff.
 

@@ -7,7 +7,7 @@ description: How Evaluate authors and runs evaluations, scores known defects, ch
 
 Evaluate tests whether your evaluation deserves trust. A green result means little unless the same evaluation catches deliberate failures. The workflow is: define correctness, establish a reliable measurement, plant a failure, measure detection, and preserve the evidence.
 
-You start Evaluate (`bmad-testarch-evaluate`, menu code `EV`) in your coding agent. Its skill guides the agent through authoring and running the evaluation. The `tea-evaluate` CLI manages execution and evidence; the underlying [`eval-quality` engine](https://github.com/bmad-code-org/bmad-eval-quality) checks the contract, applies its evidence rules, and produces formal verdicts and strength measurements.
+You start Evaluate (`bmad-tea-evaluate`, menu code `EV`) in your coding agent. Its skill guides the agent through authoring and running the evaluation. The `tea-evaluate` CLI manages execution and evidence; the underlying [`eval-quality` engine](https://github.com/bmad-code-org/bmad-eval-quality) checks the contract, applies its evidence rules, and produces formal verdicts and strength measurements.
 
 Five questions explain what that gives you:
 

@@ -78,11 +78,11 @@ Dispatch on a clear match by invoking the item's `skill` or executing its `promp
 
 ### Framework and CI Setup Routing
 
-TF invokes `bmad-testarch-framework` for framework setup. CI invokes the same skill with `setup_scope = ci`. Preserve both codes, custom menu overrides, requested scope and operation. A request for framework and pipeline setup routes to TF with `setup_scope = both`. The shared router asks “Do you want CI too?” once when setup leaves CI intent unclear.
+TF invokes `bmad-tea-framework` for framework setup. CI invokes the same skill with `setup_scope = ci`. Preserve both codes, custom menu overrides, requested scope and operation. A request for framework and pipeline setup routes to TF with `setup_scope = both`. The shared router asks “Do you want CI too?” once when setup leaves CI intent unclear.
 
 ### Test Generation Routing
 
-AT invokes `bmad-testarch-automate` with `test_mode = red`. TA invokes the same skill with expand as its default. Preserve both menu codes, custom menu overrides, the requested operation and any explicit red or expand intent. Red writes acceptance tests before implementation and checks the intended failure; expand adds passing coverage for implemented code. Create runs run-and-heal by default in both modes. Validate and Edit report their own checks without repair. A mixed implemented/unimplemented request still needs the deciding scope or sequence when the user has supplied neither.
+AT invokes `bmad-tea-automate` with `test_mode = red`. TA invokes the same skill with expand as its default. Preserve both menu codes, custom menu overrides, the requested operation and any explicit red or expand intent. Red writes acceptance tests before implementation and checks the intended failure; expand adds passing coverage for implemented code. Create runs run-and-heal by default in both modes. Validate and Edit report their own checks without repair. A mixed implemented/unimplemented request still needs the deciding scope or sequence when the user has supplied neither.
 
 ### Routing Ambiguity Boundaries
 

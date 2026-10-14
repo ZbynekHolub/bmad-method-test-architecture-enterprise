@@ -1,7 +1,7 @@
 # Dogfoods tea-test-review on this repo's own test suite (test/*.js). Unlike
 # cli/examples/pr-test-review.yml, this repo IS the skill source: it runs the CLI
 # from the checkout, which reviews with the skill packaged beside it
-# (skills/bmad-testarch-test-review) instead of installing a pinned npm tarball.
+# (skills/bmad-tea-test-review) instead of installing a pinned npm tarball.
 #
 # NOT YET ENABLED: no ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN repository
 # secret exists yet, so the trigger is workflow_dispatch only, not

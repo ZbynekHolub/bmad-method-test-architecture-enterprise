@@ -135,11 +135,11 @@ async function main(argv) {
     if (options.projectSkill) {
       const candidates = ['.claude/skills', '.agents/skills', 'skills', '_bmad/tea/workflows/testarch'];
       options.skillRoot = candidates
-        .map((directory) => path.join(root, directory, 'bmad-testarch-automate'))
+        .map((directory) => path.join(root, directory, 'bmad-tea-automate'))
         .find((candidate) => fs.existsSync(path.join(candidate, 'SKILL.md')));
-      if (!options.skillRoot) throw new Error('project-installed bmad-testarch-automate skill is missing');
+      if (!options.skillRoot) throw new Error('project-installed bmad-tea-automate skill is missing');
     }
-    skillRoot = resolveWorkflowSkill({ projectRoot: root, skillName: 'bmad-testarch-automate', skillRoot: options.skillRoot });
+    skillRoot = resolveWorkflowSkill({ projectRoot: root, skillName: 'bmad-tea-automate', skillRoot: options.skillRoot });
     if (!fs.existsSync(path.join(skillRoot, '..', 'bmod-tea', 'knowledge', 'tea-index.csv')))
       throw new Error('the selected skill has no sibling bmod-tea knowledge base');
     if (options.story) story = artifactPath(root, options.story, '--story');

@@ -42,7 +42,7 @@ const path = require('node:path');
 const { parse } = require('csv-parse/sync');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const REGISTRY_PATH = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-test-review', 'steps-c', 'criteria-registry.md');
+const REGISTRY_PATH = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-test-review', 'steps-c', 'criteria-registry.md');
 const KNOWLEDGE_DIR = path.join(PROJECT_ROOT, 'skills', 'bmod-tea', 'knowledge');
 const INDEX_PATH = path.join(KNOWLEDGE_DIR, 'tea-index.csv');
 

@@ -33,7 +33,7 @@ Remove credentials and private project data.
 
 - [ ] I checked [existing issues](https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise/issues).
 - [ ] I read the [troubleshooting guide](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/reference/troubleshooting/).
-- [ ] I used the documented chat command (`/bmad-testarch-*` or `$bmad-testarch-*`) or CLI invocation.
+- [ ] I used the documented chat command (`/bmad-tea-*` or `$bmad-tea-*`) or CLI invocation.
 
 ## Additional context
 

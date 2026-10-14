@@ -1,5 +1,5 @@
 /**
- * Measure `bmad-testarch-test-design` against a corpus whose risks are known.
+ * Measure `bmad-tea-test-design` against a corpus whose risks are known.
  *
  * WHAT THIS SUITE IS FOR
  *
@@ -165,7 +165,7 @@ const { retainSkillArtifacts, captureProbe, finishSkillAttempt } = require('./li
 const PROJECT_ROOT = path.join(__dirname, '..');
 const FIXTURE_ROOT = path.join(__dirname, 'fixtures', 'test-design-eval');
 const GROUND_TRUTH = path.join(FIXTURE_ROOT, 'ground-truth.json');
-const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-test-design');
+const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-test-design');
 const SUITE_ID = 'test-design';
 
 // A test-design run reads five step files, the epic and several knowledge
@@ -751,7 +751,7 @@ function configToml() {
  * Layout, with the workspace itself as the agent's working directory:
  *
  *   <projectRoot>/   the fixture set, plus a resolved _bmad/config.toml
- *   skill/           the bmad-testarch-test-design workflow, copied verbatim
+ *   skill/           the bmad-tea-test-design workflow, copied verbatim
  *   bmod-tea/        the shared TEA knowledge base the skill reads as {tea-knowledge}
  *
  * The skill sits outside the project root on purpose. Three of its files carry worked
@@ -878,7 +878,7 @@ async function assertGroundTruthAbsent(dir) {
 function buildPrompt(set, { designLevel = 'full' } = {}) {
   const root = projectRootOf(set);
   return [
-    `You are running the TEA workflow \`bmad-testarch-test-design\` against the project in \`${root}/\`.`,
+    `You are running the TEA workflow \`bmad-tea-test-design\` against the project in \`${root}/\`.`,
     '',
     'The workflow is in `skill/`. Read `skill/instructions.md` first, then execute every step file it',
     'names in order, in full, without skipping or reordering. The step files are under `skill/steps-c/`.',

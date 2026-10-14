@@ -5,7 +5,7 @@
  * and autogenerates whole directories (the tutorials, the customization and brownfield how-tos).
  * A page the sidebar misses still builds, and no reader finds it.
  *
- * An Evaluate page is any `docs/` page whose text names `tea-evaluate` or `bmad-testarch-evaluate`, and any page whose own path names Evaluate.
+ * An Evaluate page is any `docs/` page whose text names `tea-evaluate` or `bmad-tea-evaluate`, and any page whose own path names Evaluate.
  * A page whose own path names Evaluate (`how-to/evaluate/`, `tutorials/evaluate-*`, `explanation/*evaluate*`,
  * `reference/tea-evaluate-cli`) is one Evaluate owns, and the overview has to link every one of those.
  *
@@ -27,7 +27,7 @@ const CONFIG_FILE = path.join(PROJECT_ROOT, 'website', 'astro.config.mjs');
 const OVERVIEW_PAGE = 'explanation/tea-overview';
 
 /** What makes a page an Evaluate page. */
-const EVALUATE_NAMES = /\btea-evaluate\b|\bbmad-testarch-evaluate\b/;
+const EVALUATE_NAMES = /\btea-evaluate\b|\bbmad-tea-evaluate\b/;
 
 /** What makes an Evaluate page one that Evaluate owns: its own path says so, and that alone makes it an Evaluate page. */
 const OWNED_PATH = /evaluate/;
@@ -175,7 +175,7 @@ function revertCaseProblems(configText, overviewText, pages) {
   }
   const nameless = [{ slug: 'how-to/evaluate/a-page-that-names-no-command', text: '# A page about checking results\n' }];
   if (!evaluateSlugs(nameless).includes(nameless[0].slug) || !ownedSlugs(nameless).includes(nameless[0].slug)) {
-    failures.push('a page under how-to/evaluate/ that names neither tea-evaluate nor bmad-testarch-evaluate escaped the Evaluate pages');
+    failures.push('a page under how-to/evaluate/ that names neither tea-evaluate nor bmad-tea-evaluate escaped the Evaluate pages');
   }
   const bystander = [{ slug: 'how-to/workflows/a-page-about-something-else', text: '# Something else\n' }];
   if (evaluateSlugs(bystander).length > 0) failures.push('a page that names Evaluate nowhere counted as an Evaluate page');

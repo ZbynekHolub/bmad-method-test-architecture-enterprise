@@ -90,7 +90,7 @@ function suiteRecord(runners, cases = [{ id: 'case-a', promptDigest: DIGEST }], 
     suite: {
       id: 'diagnostic-test',
       evalType: 'behavioral',
-      skills: ['bmad-testarch-atdd'],
+      skills: ['bmad-tea-atdd'],
       contracts: [],
       ciTier: 'deterministic',
       runnerCapabilities: ['read-only'],
@@ -751,7 +751,7 @@ async function main() {
     {
       id: 'child-crash',
       evalType: 'behavioral',
-      skill: 'bmad-testarch-atdd',
+      skill: 'bmad-tea-atdd',
       contracts: [],
       ciTier: 'deterministic',
       runnerCapabilities: ['read-only'],
@@ -773,7 +773,7 @@ async function main() {
     {
       id: 'child-exit-one',
       evalType: 'behavioral',
-      skill: 'bmad-testarch-atdd',
+      skill: 'bmad-tea-atdd',
       contracts: [],
       ciTier: 'deterministic',
       runnerCapabilities: ['read-only'],
@@ -795,7 +795,7 @@ async function main() {
   const childSuite = {
     id: 'child-record',
     evalType: 'behavioral',
-    skill: 'bmad-testarch-atdd',
+    skill: 'bmad-tea-atdd',
     contracts: [],
     ciTier: 'deterministic',
     runnerCapabilities: ['read-only'],
@@ -1278,7 +1278,7 @@ async function main() {
     suite: {
       id: 'premeasurement-failure',
       evalType: 'behavioral',
-      skill: 'bmad-testarch-atdd',
+      skill: 'bmad-tea-atdd',
       contracts: [],
       ciTier: 'deterministic',
       runnerCapabilities: ['read-only'],
@@ -1551,7 +1551,7 @@ async function main() {
   check(
     fragment
       .mustLoadApplicabilityProblems(
-        'bmad-testarch-atdd',
+        'bmad-tea-atdd',
         applicablePlaywrightCase,
         instructionFixture('negative-only-oracle.md'),
         'playwright-utils-mandate.md',
@@ -1562,7 +1562,7 @@ async function main() {
   check(
     fragment
       .mustLoadApplicabilityProblems(
-        'bmad-testarch-atdd',
+        'bmad-tea-atdd',
         { ...applicablePlaywrightCase, config: { test_stack_type: 'frontend', tea_use_playwright_utils: false } },
         instructionFixture('unmet-conditional-oracle.md'),
         'playwright-utils-mandate.md',
@@ -1586,7 +1586,7 @@ async function main() {
         '--env-pass',
         'STUB_FRAGMENTS',
         '--workflow',
-        'bmad-testarch-framework',
+        'bmad-tea-framework',
         '--runs',
         '1',
         '--json',
@@ -1610,7 +1610,7 @@ async function main() {
       );
       check(
         emittedRunner.diagnostics.every(
-          (entry) => entry.caseId.startsWith('bmad-testarch-framework:') && emitted.suite.caseIds.includes(entry.caseId),
+          (entry) => entry.caseId.startsWith('bmad-tea-framework:') && emitted.suite.caseIds.includes(entry.caseId),
         ),
         'workflow-filtered fragment diagnostics use qualified manifest case ids',
       );

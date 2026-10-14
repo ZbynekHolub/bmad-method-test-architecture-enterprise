@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Evaluation plans rendered by `bmad-testarch-ci` (Story 2.3, AD-11, AD-12, risk R2-02).
+ * Evaluation plans rendered by `bmad-tea-ci` (Story 2.3, AD-11, AD-12, risk R2-02).
  *
  * The CI skill's templates are rendered by the agent following step files, so no deterministic renderer exists to call.
  * This test holds everything around the rendering that is deterministic, and the behavioral proof of the rendering is
@@ -50,7 +50,7 @@ const { DEFAULT_TIERS, PLAN_PATH, readPlan } = require('../cli/lib/evaluate/ci-p
 const { validateCorpus, scoreRun, guardHolds, jobBlockOf, sha256Of, withoutNeeds } = require('./eval-ci');
 
 const ROOT = path.join(__dirname, '..');
-const CANONICAL_SKILL = path.join(ROOT, 'skills', 'bmad-testarch-framework');
+const CANONICAL_SKILL = path.join(ROOT, 'skills', 'bmad-tea-framework');
 const SKILL = path.join(CANONICAL_SKILL, 'ci');
 const STEP = 'steps-c/step-03b-render-evaluation-plans.md';
 const PLAN_SCHEMA_FILE = 'cli/lib/evaluate/schemas/evaluation-ci-plan.schema.json';

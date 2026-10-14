@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "mutationId": "M-003",
+  "mutationSource": "references/inspection.md: the ai-feature row of the AD-4 mapping table, the one place that gives a web application's interface kind, names the web interface kind",
+  "targetArtifact": "skills/bmad-tea-evaluate/references/inspection.md",
+  "operator": {
+    "kind": "replace-exact",
+    "find": "| `ai-feature`            | `api`",
+    "replace": "| `ai-feature`            | `web`",
+    "occurrences": 1
+  },
+  "expectedObservableFailure": "Asked to classify a web application with no AI features, Stage 1 names interface web, so the classify-web-app reply carries interface \"web\"."
+}

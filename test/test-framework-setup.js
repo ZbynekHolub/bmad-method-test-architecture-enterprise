@@ -55,7 +55,7 @@ function fixture(t) {
   const prepare = (options = {}) =>
     prepareSetup({
       projectRoot: root,
-      skillRoot: '/packaged/skills/bmad-testarch-framework',
+      skillRoot: '/packaged/skills/bmad-tea-framework',
       config,
       options: { scope: 'both', operation: 'create', ...options },
     });

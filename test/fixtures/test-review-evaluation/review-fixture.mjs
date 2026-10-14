@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Adopter-owned target of the bmad-testarch-test-review evaluation
-// (test/evaluations/bmad-testarch-test-review). It reads one JSON request on
+// Adopter-owned target of the bmad-tea-test-review evaluation
+// (test/evaluations/bmad-tea-test-review). It reads one JSON request on
 // stdin, builds a disposable git repository from a committed fixture under
 // repos/, and runs this checkout's tea-test-review CLI against it with the
 // skill under test. The CLI's stdout (the verdict JSON) and exit code pass
@@ -119,7 +119,7 @@ const cliArgs = [
   '--model',
   'gpt-6.1-sol',
   '--skill-root',
-  join(repoRoot, 'skills', 'bmad-testarch-test-review'),
+  join(repoRoot, 'skills', 'bmad-tea-test-review'),
   '--project-root',
   project,
   '--output',

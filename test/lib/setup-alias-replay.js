@@ -9,27 +9,27 @@ const yaml = require('js-yaml');
 const ROOT = path.join(__dirname, '..', '..');
 const FIXTURES = path.join(ROOT, 'test/fixtures/setup-alias-replay');
 const SOURCE_FILES = [
-  'skills/bmad-testarch-ci/SKILL.md',
-  'skills/bmad-testarch-ci/customize.toml',
-  'skills/bmad-testarch-ci/bmod.toml',
-  'skills/bmad-testarch-ci/workflow.yaml',
-  'skills/bmad-testarch-framework/SKILL.md',
-  'skills/bmad-testarch-framework/customize.toml',
-  'skills/bmad-testarch-framework/resources/setup-routing.md',
-  'skills/bmad-testarch-framework/resources/setup-state.md',
-  'skills/bmad-testarch-framework/resources/setup-phase-completion.md',
-  'skills/bmad-testarch-framework/resources/setup-run-progress.example.md',
-  'skills/bmad-testarch-framework/ci/instructions.md',
-  'skills/bmad-testarch-framework/ci/checklist.md',
-  'skills/bmad-testarch-framework/ci/github-actions-template.yaml',
-  'skills/bmad-testarch-framework/ci/resources/ci-pipeline-progress.example.md',
+  'skills/bmad-tea-ci/SKILL.md',
+  'skills/bmad-tea-ci/customize.toml',
+  'skills/bmad-tea-ci/bmod.toml',
+  'skills/bmad-tea-ci/workflow.yaml',
+  'skills/bmad-tea-framework/SKILL.md',
+  'skills/bmad-tea-framework/customize.toml',
+  'skills/bmad-tea-framework/resources/setup-routing.md',
+  'skills/bmad-tea-framework/resources/setup-state.md',
+  'skills/bmad-tea-framework/resources/setup-phase-completion.md',
+  'skills/bmad-tea-framework/resources/setup-run-progress.example.md',
+  'skills/bmad-tea-framework/ci/instructions.md',
+  'skills/bmad-tea-framework/ci/checklist.md',
+  'skills/bmad-tea-framework/ci/github-actions-template.yaml',
+  'skills/bmad-tea-framework/ci/resources/ci-pipeline-progress.example.md',
   ...[
     'step-01-preflight',
     'step-02-generate-pipeline',
     'step-03-configure-quality-gates',
     'step-03b-render-evaluation-plans',
     'step-04-validate-and-summary',
-  ].map((step) => `skills/bmad-testarch-framework/ci/steps-c/${step}.md`),
+  ].map((step) => `skills/bmad-tea-framework/ci/steps-c/${step}.md`),
   'test/fixtures/setup-alias-replay/outdated-framework/SKILL.md',
   'test/lib/setup-alias-replay.js',
 ].sort();
@@ -46,10 +46,10 @@ function replayProblems(capture, currentSources = sourceDigests()) {
   if (
     capture.command?.slice(0, 2).join(' ') !== 'node cli/skill-runner.js' ||
     capture.command?.slice(-2).join(' ') !== '--timeout-ms 600000' ||
-    !capture.command?.includes('skills/bmad-testarch-ci')
+    !capture.command?.includes('skills/bmad-tea-ci')
   )
     problems.push('capture did not enter the real CI alias runner');
-  if (!capture.prompt?.startsWith('/bmad-testarch-ci ')) problems.push('capture did not request the CI alias');
+  if (!capture.prompt?.startsWith('/bmad-tea-ci ')) problems.push('capture did not request the CI alias');
   const hooks = (capture.hookEvents ?? '').trim().split(/\r?\n/).filter(Boolean);
   if (capture.scenario === 'ci-only') {
     if (JSON.stringify(hooks) !== JSON.stringify(['CI-PREPEND', 'CI-APPEND', 'CI-COMPLETE']))
@@ -61,8 +61,8 @@ function replayProblems(capture, currentSources = sourceDigests()) {
     const route = capture.route ?? {};
     if (
       route.setup_scope !== 'ci' ||
-      route.setup_entry !== 'bmad-testarch-ci' ||
-      route.selected_step !== 'skills/bmad-testarch-framework/ci/steps-c/step-01-preflight.md'
+      route.setup_entry !== 'bmad-tea-ci' ||
+      route.selected_step !== 'skills/bmad-tea-framework/ci/steps-c/step-01-preflight.md'
     )
       problems.push('alias selected a framework route or lost CI scope');
     if (JSON.stringify(route.facts) !== JSON.stringify(['CI-FACT'])) problems.push('CI-only run loaded framework persistent facts');
@@ -85,7 +85,7 @@ function replayProblems(capture, currentSources = sourceDigests()) {
   } else if (capture.scenario === 'outdated-framework') {
     if (hooks.length > 0 || capture.route !== null || capture.journal !== null || capture.pipeline !== null)
       problems.push('incompatible sibling activated or wrote outputs');
-    if (!/older|outdated|upgrade/i.test(capture.stdout ?? '') || !capture.stdout?.includes('--skill bmad-testarch-framework'))
+    if (!/older|outdated|upgrade/i.test(capture.stdout ?? '') || !capture.stdout?.includes('--skill bmad-tea-framework'))
       problems.push('incompatible sibling did not report the canonical upgrade command');
   } else problems.push('unknown alias replay scenario');
   return problems;
@@ -95,11 +95,11 @@ function captureScenario(scenario, { run = spawnSync, agent = 'codex' } = {}) {
   if (!['codex', 'claude'].includes(agent)) throw new Error('Alias capture agent must be codex or claude');
   const capturedSources = sourceDigests();
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'tea-setup-alias-'));
-  for (const name of ['bmad-testarch-ci', 'bmod-tea'])
+  for (const name of ['bmad-tea-ci', 'bmod-tea'])
     fs.cpSync(path.join(ROOT, 'skills', name), path.join(scratch, 'skills', name), { recursive: true });
-  const framework = path.join(scratch, 'skills/bmad-testarch-framework');
+  const framework = path.join(scratch, 'skills/bmad-tea-framework');
   fs.cpSync(
-    scenario === 'outdated-framework' ? path.join(FIXTURES, 'outdated-framework') : path.join(ROOT, 'skills/bmad-testarch-framework'),
+    scenario === 'outdated-framework' ? path.join(FIXTURES, 'outdated-framework') : path.join(ROOT, 'skills/bmad-tea-framework'),
     framework,
     { recursive: true },
   );
@@ -113,7 +113,7 @@ function captureScenario(scenario, { run = spawnSync, agent = 'codex' } = {}) {
     ['ci', 'CI'],
   ]) {
     fs.writeFileSync(
-      path.join(scratch, `_bmad/custom/bmad-testarch-${name}.toml`),
+      path.join(scratch, `_bmad/custom/bmad-tea-${name}.toml`),
       `[workflow]\nactivation_steps_prepend = ["Append the literal line ${marker}-PREPEND to hook-events.txt and activation-order.txt in the project root."]\nactivation_steps_append = ["Append the literal line ${marker}-APPEND to hook-events.txt and activation-order.txt in the project root."]\npersistent_facts = ["When writing route-evidence.json, include ${marker}-FACT in its facts array."]\non_complete = "Append the literal line ${marker}-COMPLETE to hook-events.txt and activation-order.txt in the project root."\n${name === 'ci' ? 'ci_platform = "github-actions"\n' : ''}`,
     );
   }
@@ -136,12 +136,12 @@ function captureScenario(scenario, { run = spawnSync, agent = 'codex' } = {}) {
     if (git.status !== 0) throw new Error(git.stderr);
   }
   const prompt =
-    '/bmad-testarch-ci Create CI only for this existing frontend application with a Node built-in unit/component test runner, using GitHub Actions. The application has no browser suite. Follow the real alias instructions and customization resolution. This disposable project permits pipeline/checkpoint/hook outputs and running its actual test command. Preserve its existing tests and package command. Keep every helper script and temporary file inside this scratch project or a fresh private mkdtemp directory; shared /tmp basenames are forbidden. For observable routing evidence: at the standard greeting append GREET to activation-order.txt; after loading the first selected operation step write route-evidence.json with setup_scope, setup_entry, selected_step (full relative path), and loaded persistent fact markers in facts. Continue the operation normally through completion. If the alias cannot activate, report why and stop without installing anything or writing routing evidence. Do not edit skill files or _bmad inputs, commit, or push.';
+    '/bmad-tea-ci Create CI only for this existing frontend application with a Node built-in unit/component test runner, using GitHub Actions. The application has no browser suite. Follow the real alias instructions and customization resolution. This disposable project permits pipeline/checkpoint/hook outputs and running its actual test command. Preserve its existing tests and package command. Keep every helper script and temporary file inside this scratch project or a fresh private mkdtemp directory; shared /tmp basenames are forbidden. For observable routing evidence: at the standard greeting append GREET to activation-order.txt; after loading the first selected operation step write route-evidence.json with setup_scope, setup_entry, selected_step (full relative path), and loaded persistent fact markers in facts. Continue the operation normally through completion. If the alias cannot activate, report why and stop without installing anything or writing routing evidence. Do not edit skill files or _bmad inputs, commit, or push.';
   const command = [
     'node',
     'cli/skill-runner.js',
     '--skill-root',
-    'skills/bmad-testarch-ci',
+    'skills/bmad-tea-ci',
     '--agent',
     agent,
     '--capability',

@@ -142,7 +142,7 @@ export default [
   // runs both templates from a folder whose install provides it. Every other
   // import is still held to resolve.
   {
-    files: ['skills/bmad-testarch-evaluate/assets/*.mjs'],
+    files: ['skills/bmad-tea-evaluate/assets/*.mjs'],
     rules: {
       'n/no-missing-import': ['error', { allowModules: ['bmad-method-test-architecture-enterprise'] }],
     },
@@ -151,7 +151,7 @@ export default [
   // Evaluator starters become executable files in the adopter's evaluation
   // folder, where their framework dependencies are installed.
   {
-    files: ['skills/bmad-testarch-evaluate/assets/evaluators/*.mjs'],
+    files: ['skills/bmad-tea-evaluate/assets/evaluators/*.mjs'],
     rules: {
       'n/hashbang': 'off',
       'n/no-unpublished-import': 'off',

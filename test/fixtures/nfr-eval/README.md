@@ -1,6 +1,6 @@
 # nfr-eval fixtures
 
-Fixture corpus for the `bmad-testarch-nfr` behavioral eval. Two independent evidence bundles, each a small slice of a fictional platform.
+Fixture corpus for the `bmad-tea-nfr` behavioral eval. Two independent evidence bundles, each a small slice of a fictional platform.
 
 ```text
 gapped/   a billing ledger whose security evidence is complete, whose reliability
@@ -13,7 +13,7 @@ Each bundle is a separate service with its own thresholds. Audit one bundle per 
 
 ## What this corpus is for
 
-The manifest carried `bmad-testarch-nfr` under `deferred` with one sentence of missing evidence: no fixture with known gaps existed, so an unsupported PASS could not be told from a grounded one. These two bundles are that fixture.
+The manifest carried `bmad-tea-nfr` under `deferred` with one sentence of missing evidence: no fixture with known gaps existed, so an unsupported PASS could not be told from a grounded one. These two bundles are that fixture.
 
 The gapped bundle tempts an unsupported PASS twice, and both temptations look like thorough evidence:
 

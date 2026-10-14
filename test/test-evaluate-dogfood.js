@@ -3,7 +3,7 @@
 /**
  * The dogfood suite's coverage gaps, closed (Story 1.46, AD-15), held offline.
  *
- * `test/evaluations/bmad-testarch-evaluate/` is the evaluation Evaluate authored for its own skill. Story 1.16's live run
+ * `test/evaluations/bmad-tea-evaluate/` is the evaluation Evaluate authored for its own skill. Story 1.16's live run
  * recorded `contractVerdict: CONCERNS` for it: four coverage rules unsatisfied at `critical`, B-002 without a seeded probe,
  * and four pieces of drift. This suite replays the committed folder through the real CLI over real eval-quality, with the
  * model's place taken by `test/fixtures/evaluate-dogfood/skill-reader.js`, a deterministic reader of the skill's own guides.
@@ -38,8 +38,8 @@ const { scratchDirectories } = require('./lib/scratch-directories');
 const ROOT = path.resolve(__dirname, '..');
 const CLI = path.join(ROOT, 'cli/evaluate.js');
 const ENGINE = path.join(ROOT, 'node_modules/.bin/eval-quality');
-const EVALUATION = path.join(ROOT, 'test/evaluations/bmad-testarch-evaluate');
-const SKILL = 'skills/bmad-testarch-evaluate';
+const EVALUATION = path.join(ROOT, 'test/evaluations/bmad-tea-evaluate');
+const SKILL = 'skills/bmad-tea-evaluate';
 const READER = path.join(__dirname, 'fixtures/evaluate-dogfood/skill-reader.js');
 const GIT = ['-c', 'user.name=TeA test', '-c', 'user.email=tea-test@example.test', '-c', 'core.hooksPath=/dev/null'];
 const BASE_ENV = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
@@ -96,7 +96,7 @@ function commit(repository) {
 function project(label, { edit = () => {}, trim = false } = {}) {
   const directory = scratch.make(label);
   const repository = path.join(directory, 'repository');
-  const folder = path.join(repository, 'test/evaluations/bmad-testarch-evaluate');
+  const folder = path.join(repository, 'test/evaluations/bmad-tea-evaluate');
   fs.mkdirSync(path.dirname(folder), { recursive: true });
   const derived = new Set(['runs', 'compiled-contract.json', 'sealed-brief.json']);
   fs.cpSync(EVALUATION, folder, { recursive: true, filter: (file) => !derived.has(path.basename(file)) });

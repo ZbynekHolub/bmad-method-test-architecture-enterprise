@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "evaluationId": "bmad-tea-evaluate",
+  "requirements": {
+    "path": "requirements.md",
+    "digest": "sha256:ff1332b0ae606da73f9a7a0edc8baed77e8386884afd1f172f409f5f9cb7354d"
+  },
+  "targetKind": "skill",
+  "interface": "cli",
+  "operationPhases": {
+    "evaluate-skill": {
+      "run-skill": "outcome"
+    }
+  },
+  "registry": [
+    {
+      "interfaceId": "evaluate-skill",
+      "executable": "tea-skill-runner",
+      "target": "cli/skill-runner.js",
+      "subcommandPaths": [
+        []
+      ],
+      "artifacts": {},
+      "environmentKeys": [
+        "HOME",
+        "LOGNAME",
+        "USER"
+      ],
+      "maxElapsedMs": 430000,
+      "infrastructureExitCodes": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "egress": [
+        {
+          "host": "api.anthropic.com",
+          "port": 443,
+          "addresses": [
+            "160.79.104.10",
+            "2607:6bc0::10"
+          ]
+        }
+      ]
+    }
+  ],
+  "launch": {
+    "root": "../../..",
+    "skillRoot": "skills/bmad-tea-evaluate"
+  },
+  "workspace": {
+    "kind": "git",
+    "provision": [
+      "_bmad",
+      "node_modules"
+    ]
+  },
+  "confinement": false,
+  "arms": [
+    "clean",
+    "mutated"
+  ],
+  "heldOutProbes": [
+    "P-003"
+  ],
+  "trials": 5,
+  "tiers": [
+    "pr"
+  ],
+  "strengthFloor": {
+    "defect": 1
+  }
+}

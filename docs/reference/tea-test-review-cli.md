@@ -1,19 +1,19 @@
 ---
 title: 'tea-test-review CLI'
-description: 'Headless CI runner for the bmad-testarch-test-review skill: flags, exit codes, JSON verdict schema, and security model'
+description: 'Headless CI runner for the bmad-tea-test-review skill: flags, exit codes, JSON verdict schema, and security model'
 ---
 
 # tea-test-review CLI
 
-`tea-test-review` is a headless runner for the [Test Review](/docs/how-to/workflows/run-test-review.md) skill (`bmad-testarch-test-review`). It splits a pull request's diff into the test files to review and the rest of the change to read as context, drives the skill non-interactively, parses the resulting `test-review.md` against a strict schema, and emits a JSON verdict with a CI-friendly exit code.
+`tea-test-review` is a headless runner for the [Test Review](/docs/how-to/workflows/run-test-review.md) skill (`bmad-tea-test-review`). It splits a pull request's diff into the test files to review and the rest of the change to read as context, drives the skill non-interactively, parses the resulting `test-review.md` against a strict schema, and emits a JSON verdict with a CI-friendly exit code.
 
 The skill is the source of truth for all review logic (checklist, scoring, report template). The CLI resolves the skill, scopes the review, runs the agent and parses the report, then renders the result and, when asked, publishes it to GitHub. How it's built: [Test Review CLI Architecture](/docs/explanation/test-review-cli-architecture.md).
 
 ## Prerequisites
 
 - Node.js 22.20.0 or later, with the `tea-test-review` bin (`npm install --global bmad-method-test-architecture-enterprise`, or via `npx`).
-- The review skill ships inside the CLI package. `tea-test-review` reviews with the `bmad-testarch-test-review` skill and `bmod-tea` knowledge base from its own install, so the skill and the CLI are always one version and the reviewed repo needs no BMAD files and no TEA module. When the CLI is installed outside the checkout (a global install, or a pinned install step in CI), that copy is out of reach of the pull request under review, so it cannot edit the reviewer that judges it. A CLI installed as a project dependency lives in the checkout's `node_modules`; pin its version in CI. Two flags change the source:
-  - **`--project-skill`** reviews with the copy the project vendored instead, probed at `.claude/skills/bmad-testarch-test-review`, `.agents/skills/bmad-testarch-test-review`, `skills/bmad-testarch-test-review`, and last the classic installer's `_bmad/tea/workflows/testarch/bmad-testarch-test-review`, which a project upgraded from v6 can still hold. The control-plane guard applies to it: a PR diff that edits the vendored skill or its `bmod-tea` knowledge base exits 2.
+- The review skill ships inside the CLI package. `tea-test-review` reviews with the `bmad-tea-test-review` skill and `bmod-tea` knowledge base from its own install, so the skill and the CLI are always one version and the reviewed repo needs no BMAD files and no TEA module. When the CLI is installed outside the checkout (a global install, or a pinned install step in CI), that copy is out of reach of the pull request under review, so it cannot edit the reviewer that judges it. A CLI installed as a project dependency lives in the checkout's `node_modules`; pin its version in CI. Two flags change the source:
+  - **`--project-skill`** reviews with the copy the project vendored instead, probed at `.claude/skills/bmad-tea-test-review`, `.agents/skills/bmad-tea-test-review`, `skills/bmad-tea-test-review`, and last the classic installer's `_bmad/tea/workflows/testarch/bmad-tea-test-review`, which a project upgraded from v6 can still hold. The control-plane guard applies to it: a PR diff that edits the vendored skill or its `bmod-tea` knowledge base exits 2.
     A vendored copy must declare the rubric the CLI scores (`rubric_version: "5.0"` in its `workflow.yaml`). A copy from an older release declares another version or none, and the CLI exits 2 before any agent call naming the path and both versions. Upgrade the vendored skill, or drop `--project-skill` to use the packaged one. The same check applies to `--skill-root`.
   - **`--skill-root <path>`** names an exact skill directory, for example one unpacked from a tarball you vetted. Copy `bmod-tea` beside it: the skill reads its knowledge base from the folder beside it, and the CLI exits 2 before any agent call when `bmod-tea/knowledge/tea-index.csv` is missing.
 - The agent CLI is the caller's to install and log in. When the selected CLI is missing, or its login status command (asked only when the CLI's own help lists it, and not when a credential variable the CLI reads itself is set) reports a logged-out session, the run exits 2 with the install or login command before any agent call, and `--retries` never repeats it. A custom `--agent-cmd` is not the vendor CLI, so only its presence is checked.
@@ -354,7 +354,7 @@ The CLI prints the configuration source on stderr, including the pinned commit a
 Missing base config uses module defaults.
 An invalid or unavailable base ref, an unreadable blob, a config path that is a directory or symbolic link, or malformed base config exits 2; a base-tree read never falls back to the working tree.
 The prompt overrides the skill's `resolve_config.py` activation call and subsequent config reads, so the agent uses the supplied values.
-Skill customization also uses the pinned base versions of `_bmad/custom/bmad-testarch-test-review.toml` and its `.user.toml` layer, merged with trusted skill defaults. The prompt replaces `resolve_customization.py` and checkout customization reads.
+Skill customization also uses the pinned base versions of `_bmad/custom/bmad-tea-test-review.toml` and its `.user.toml` layer, merged with trusted skill defaults. The prompt replaces `resolve_customization.py` and checkout customization reads.
 Persistent-fact `file:` paths and globs are expanded from that base tree in lexical order and supplied as fact contents. Missing matches, paths outside the project, and symlinked policy paths fail closed.
 The snapshot includes the `test_artifacts` and `test_framework` module defaults when configuration omits them.
 Dependency-presence checks continue to read the reviewed checkout's `package.json`.

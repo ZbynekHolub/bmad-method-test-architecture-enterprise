@@ -9,7 +9,7 @@ All eight TEA workflows and the Test Architect agent have covering suites.
 This roadmap records the implementation sequence, the first live measurements, and the remaining runner work.
 [Adopting eval-quality, One Skill at a Time](./eval-quality-adoption-guide.md) turns those examples into a procedure for another module.
 
-`npm run eval:all` runs ten behavioral suites across the eight workflows and the Test Architect agent. `bmad-testarch-evaluate` carries a separate suite Evaluate wrote for itself, which `tea-evaluate` runs and `eval:all` records as skipped.
+`npm run eval:all` runs ten behavioral suites across the eight workflows and the Test Architect agent. `bmad-tea-evaluate` carries a separate suite Evaluate wrote for itself, which `tea-evaluate` runs and `eval:all` records as skipped.
 A machine-checked gate over the manifest proves `eval:all` finds no undeclared skill.
 
 ## Current Baseline
@@ -28,8 +28,8 @@ TEA currently has three layers of self-validation:
 | Full behavioral eval            | `ci`, six projects each with its own written request, service, and thresholds, repeated twice                                                                                                                                                                                  | The generated workflow parses and lints clean under `actionlint` on pinned flags, and requested elements land without emitting a forbidden one                                                                                                                                                                                               |
 | Full behavioral eval            | `nfr`, two evidence bundles each audited in its own staged workspace so one service's measurement never judges against another's target, repeated twice                                                                                                                        | The audit's domain statuses and gate decision are grounded in the supplied evidence bundle                                                                                                                                                                                                                                                   |
 | Full behavioral eval            | `automate`, four hand-authored spec sets standing in for generated coverage, each run against the fixed `voucher-service` fixture and a scratch copy carrying its seeded minimum-spend regression                                                                              | One set catches the regression and attributes the failure to the seeded boundary through a declared message pattern; the other three each stand in for coverage that looks thorough and detects nothing: interior-only assertions, an assertion that cannot fail against real behavior, and a duplicated assertion                           |
-| Full behavioral eval            | `framework`, one case: the clean `bmad-testarch-framework` scaffold fixture installed for real and its own `api-sample.spec.ts` run against a minimal in-memory stub, inside the isolation every gate that executes content runs in extended with a CONNECT-allowlisting proxy | The generated scaffold actually installs and its own smoke test actually passes against a real backend; a seeded backend defect and a seeded installed-fixture defect each then fail that same smoke test for their own distinct, verified reason                                                                                            |
-| Full behavioral eval            | `bmad-teach-me-testing`, one case, two turns, against a real vendor: turn 1 plays a full first session through the real skill with a seeded wrong quiz answer and the `[R]` review it triggers, turn 2 is a brand-new, memoryless process in the same persistent workspace     | Placement matches the fixture's declared level, the seeded wrong answer's correction reappears in the transcript after the review choice, the fresh second process resumes on the right continuation greeting by reading `progress.yaml`, and no session `progress.yaml` claims complete without transcript evidence it was actually quizzed |
+| Full behavioral eval            | `framework`, one case: the clean `bmad-tea-framework` scaffold fixture installed for real and its own `api-sample.spec.ts` run against a minimal in-memory stub, inside the isolation every gate that executes content runs in extended with a CONNECT-allowlisting proxy      | The generated scaffold actually installs and its own smoke test actually passes against a real backend; a seeded backend defect and a seeded installed-fixture defect each then fail that same smoke test for their own distinct, verified reason                                                                                            |
+| Full behavioral eval            | `bmad-tea-teach-me-testing`, one case, two turns, against a real vendor: turn 1 plays a full first session through the real skill with a seeded wrong quiz answer and the `[R]` review it triggers, turn 2 is a brand-new, memoryless process in the same persistent workspace | Placement matches the fixture's declared level, the seeded wrong answer's correction reappears in the transcript after the review choice, the fresh second process resumes on the right continuation greeting by reading `progress.yaml`, and no session `progress.yaml` claims complete without transcript evidence it was actually quizzed |
 
 The single live entrypoint is:
 
@@ -39,7 +39,7 @@ npm run eval:all -- --agent codex
 
 It runs 48 fragment selections, 38 routing intents, 4 complete test designs, 3 complete reviews, 4 complete audits, 12 complete pipelines, 4 complete traces, and 2 generations for one runner.
 `automate` and `framework` both run inside the same `eval:all` invocation too, at zero calls: `automate`'s four cases and `framework`'s install-and-smoke run all execute for real every time but spend no vendor call, which is why the count above carries no term for either.
-`bmad-teach-me-testing` adds 2 calls, one per turn, at its single declared repetition.
+`bmad-tea-teach-me-testing` adds 2 calls, one per turn, at its single declared repetition.
 The default total is 117 calls.
 The focused harnesses remain available for debugging.
 
@@ -56,8 +56,8 @@ TEA also uses the package's scoring pipeline (`runPreflight`, `runScore`, `seal`
 
 Fragment selection is a routing measurement.
 A passing routing suite does not establish that the workflow produced a correct final artifact.
-TEA closed this gap for `bmad-tea` (routing), Automate red and expand modes, Framework setup and CI scope, `bmad-testarch-nfr`, `bmad-testarch-test-design`, `bmad-testarch-test-review`, `bmad-testarch-trace`, and `bmad-teach-me-testing` (a transcript-based suite), each with a full behavioral eval in `test/evals/suite-manifest.json`.
-`bmad-testarch-evaluate` is covered by an `evaluate-authored` entry whose evaluation folder Evaluate authored and ran on itself.
+TEA closed this gap for `bmad-tea` (routing), Automate red and expand modes, Framework setup and CI scope, `bmad-tea-nfr`, `bmad-tea-test-design`, `bmad-tea-test-review`, `bmad-tea-trace`, and `bmad-tea-teach-me-testing` (a transcript-based suite), each with a full behavioral eval in `test/evals/suite-manifest.json`.
+`bmad-tea-evaluate` is covered by an `evaluate-authored` entry whose evaluation folder Evaluate authored and ran on itself.
 
 Each behavioral eval needs both positive cases and clean or negative controls.
 Recall alone rewards a system that reports everything.
@@ -130,7 +130,7 @@ Use this order so the first additions have strong oracles and create reusable in
 2. `atdd` and `automate`: executable fail-before and pass-after checks against qualified seeded regressions.
 3. `framework` and `ci`: generated project and pipeline fixtures that can be installed, parsed, linted, and smoke-tested.
 4. `test-design`: deterministic artifact checks plus semantic oracles for risk grounding and coverage choices.
-5. `bmad-tea` and `bmad-teach-me-testing`: transcript-based, multi-turn behavior with more semantic scoring.
+5. `bmad-tea` and `bmad-tea-teach-me-testing`: transcript-based, multi-turn behavior with more semantic scoring.
 6. `test-review`: expand the existing corpus continuously as real misses and false positives are qualified.
 
 A case qualifies when the seeded defect or expected behavior is observable from the exact evidence given to the agent, the ground truth was written independently of the generated output, and the oracle can distinguish a real catch from a fluent guess.

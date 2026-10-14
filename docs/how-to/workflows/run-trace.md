@@ -38,8 +38,8 @@ The skill resolves the best available coverage oracle automatically: formal requ
 
 ### 1. Run the Trace Skill
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-trace`
-- **Codex:** `$bmad-testarch-trace`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-trace`
+- **Codex:** `$bmad-tea-trace`
 - **Inside a `/bmad-tea` chat:** `TR`
 
 Full invocation rules: [Invoking a TEA Skill](/docs/reference/commands.md#invoking-a-tea-skill).
@@ -298,7 +298,7 @@ TEA still writes the trace summary for these runs, with no `gate_status` or `gat
 Invoke the skill again with the same command as step 1:
 
 ```text
-/bmad-testarch-trace
+/bmad-tea-trace
 ```
 
 Select "Phase 2: Quality Gate Decision"

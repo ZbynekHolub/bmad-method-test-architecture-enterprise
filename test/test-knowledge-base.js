@@ -354,7 +354,7 @@ function runTests() {
   // failure as an unindexed one, so it is asserted the same way.
   console.log(`${colors.yellow}Test Suite 6: Teaching Menu Coverage${colors.reset}\n`);
 
-  const menuPath = path.join(skillsRoot, 'bmad-teach-me-testing', 'steps-c', 'step-04-session-07.md');
+  const menuPath = path.join(skillsRoot, 'bmad-tea-teach-me-testing', 'steps-c', 'step-04-session-07.md');
   if (fs.existsSync(menuPath)) {
     const menu = fs.readFileSync(menuPath, 'utf8');
     const listed = [...menu.matchAll(/^- ([a-z0-9-]+\.md) -/gm)].map((match) => match[1]);

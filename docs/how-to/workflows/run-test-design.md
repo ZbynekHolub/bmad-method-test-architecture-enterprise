@@ -34,8 +34,8 @@ Use TEA's `test-design` skill to plan tests, rank risks, and define NFR evidence
 
 ### 1. Run the Test Design Skill
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-test-design`
-- **Codex:** `$bmad-testarch-test-design`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-test-design`
+- **Codex:** `$bmad-tea-test-design`
 - **Inside a `/bmad-tea` chat:** `TD`
 
 Full invocation rules: [Invoking a TEA Skill](/docs/reference/commands.md#invoking-a-tea-skill).

@@ -147,7 +147,7 @@ function main() {
       {
         name: 'the skill invocation put back into step 1',
         run: () =>
-          introProblems(edited(page, 'This step needs no coding agent.', 'Start it in your coding agent with `/bmad-testarch-evaluate`.')),
+          introProblems(edited(page, 'This step needs no coding agent.', 'Start it in your coding agent with `/bmad-tea-evaluate`.')),
       },
       {
         name: 'the no-agent sentence dropped',
@@ -167,7 +167,7 @@ function main() {
       {
         name: 'a bash block that invokes the skill',
         run: () => {
-          const extra = `${page}\n## Extra\n\n\`\`\`bash\n/bmad-testarch-evaluate\n\`\`\`\n`;
+          const extra = `${page}\n## Extra\n\n\`\`\`bash\n/bmad-tea-evaluate\n\`\`\`\n`;
           return [...pageProblems(tutorialSteps(extra)), ...introProblems(extra)];
         },
       },

@@ -1,14 +1,14 @@
 /**
  * atdd eval harness.
  *
- * `bmad-testarch-atdd` reads a story's acceptance criteria and writes red-phase
+ * `bmad-tea-atdd` reads a story's acceptance criteria and writes red-phase
  * test scaffolds under `test.skip()`. This measures the one thing that was never
  * measured: whether an activated scaffold actually fails, and fails because the
  * behavior is missing rather than because the scaffold is broken.
  *
  * WHY THIS SUITE EXISTS
  *
- * The manifest carried `bmad-testarch-atdd` under `deferred`: fragment selection
+ * The manifest carried `bmad-tea-atdd` under `deferred`: fragment selection
  * covers which knowledge a run loads, and nothing executes the tests a run
  * generates, so nothing shows they fail before implementation for the intended
  * reason, map to the supplied criteria, or leave production code alone. This
@@ -156,7 +156,7 @@ const {
 const PROJECT_ROOT = path.join(__dirname, '..');
 const FIXTURE_ROOT = path.join(__dirname, 'fixtures', 'atdd-eval');
 const GROUND_TRUTH = path.join(FIXTURE_ROOT, 'ground-truth.json');
-const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-automate');
+const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-automate');
 const RED_CHECK_PATH = path.join(PROJECT_ROOT, 'cli', 'atdd-red-check.js');
 const SUITE_ID = 'atdd';
 const CASE_ID = 'reservations';
@@ -558,7 +558,7 @@ function configToml(projectRoot) {
  * Layout, with the workspace itself as the agent's working directory:
  *
  *   <projectRoot>/   the fixture service and story, plus a resolved config and an empty tests/
- *   skill/           the canonical bmad-testarch-automate workflow, including its red/ phase
+ *   skill/           the canonical bmad-tea-automate workflow, including its red/ phase
  *   bmod-tea/        the shared TEA knowledge base the skill reads as {tea-knowledge}
  *
  * @param {object} groundTruth

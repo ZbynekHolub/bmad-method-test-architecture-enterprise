@@ -7,7 +7,7 @@ description: How the tea-test-review CLI wraps an interactive skill into a requi
 
 A TEA skill expects a human: it asks which mode to run and what inputs to use. A CI gate can't. No human, no blocking questions, must end in an exit code.
 
-`tea-test-review` is that bridge for `bmad-testarch-test-review`. This page covers how it's built, so the same shape can wrap another skill. Flags, exit codes, verdict schema: [tea-test-review CLI reference](/docs/reference/tea-test-review-cli.md).
+`tea-test-review` is that bridge for `bmad-tea-test-review`. This page covers how it's built, so the same shape can wrap another skill. Flags, exit codes, verdict schema: [tea-test-review CLI reference](/docs/reference/tea-test-review-cli.md).
 
 **Governing rule: the skill is the source of truth.** Checklist, scoring, report template all live in the skill. The CLI only resolves the skill, scopes the review, runs the agent, parses the result. Skill wins any dispute.
 

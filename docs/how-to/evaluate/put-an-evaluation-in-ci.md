@@ -13,8 +13,8 @@ Use this guide when your evaluation has a scored run and a reviewed, accepted ba
 
 Start or resume Evaluate:
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-testarch-evaluate`
-- **Codex:** `$bmad-testarch-evaluate`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-evaluate`
+- **Codex:** `$bmad-tea-evaluate`
 - **Inside a `/bmad-tea` chat:** `EV`
 
 ```text
@@ -100,7 +100,7 @@ After an intentional change, run and score fresh evidence, inspect `compare`, an
 
 ## 5. Apply and Verify the Pipeline
 
-Ask your coding agent to run `bmad-testarch-framework` with **CI scope**, in Edit mode for an existing pipeline or Create mode for a new one. Name the plan and the workflow containing the publish or deploy job you want gated.
+Ask your coding agent to run `bmad-tea-framework` with **CI scope**, in Edit mode for an existing pipeline or Create mode for a new one. Name the plan and the workflow containing the publish or deploy job you want gated.
 
 Review the generated diff. It should:
 

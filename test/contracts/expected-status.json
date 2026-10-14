@@ -24,28 +24,28 @@
     "ci.contract.json": {
       "status": "compiles"
     },
-    "fragment-selection/bmad-testarch-atdd.contract.json": {
+    "fragment-selection/bmad-tea-atdd.contract.json": {
       "status": "compiles"
     },
-    "fragment-selection/bmad-testarch-automate.contract.json": {
+    "fragment-selection/bmad-tea-automate.contract.json": {
       "status": "compiles"
     },
-    "fragment-selection/bmad-testarch-ci.contract.json": {
+    "fragment-selection/bmad-tea-ci.contract.json": {
       "status": "compiles"
     },
-    "fragment-selection/bmad-testarch-framework.contract.json": {
+    "fragment-selection/bmad-tea-framework.contract.json": {
       "status": "compiles"
     },
-    "fragment-selection/bmad-testarch-nfr.contract.json": {
+    "fragment-selection/bmad-tea-nfr.contract.json": {
       "status": "compiles"
     },
-    "fragment-selection/bmad-testarch-test-design.contract.json": {
+    "fragment-selection/bmad-tea-test-design.contract.json": {
       "status": "compiles"
     },
-    "fragment-selection/bmad-testarch-test-review.contract.json": {
+    "fragment-selection/bmad-tea-test-review.contract.json": {
       "status": "compiles"
     },
-    "fragment-selection/bmad-testarch-trace.contract.json": {
+    "fragment-selection/bmad-tea-trace.contract.json": {
       "status": "compiles"
     },
     "nfr.contract.json": {

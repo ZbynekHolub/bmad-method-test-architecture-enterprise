@@ -30,7 +30,7 @@ Full invocation rules: [Invoking a TEA Skill](/docs/reference/commands.md#invoki
 
 ## Enterprise-Specific TEA Skills
 
-### NFR Evidence Audit (`/bmad-testarch-nfr`)
+### NFR Evidence Audit (`/bmad-tea-nfr`)
 
 Audit implementation evidence against your security, performance, and compliance thresholds.
 
@@ -56,7 +56,7 @@ Evidence:
 
 **Output:** NFR evidence audit with PASS/CONCERNS/FAIL for each category.
 
-### Trace with Audit Evidence (`/bmad-testarch-trace`)
+### Trace with Audit Evidence (`/bmad-tea-trace`)
 
 **Purpose:** Requirements traceability with an audit trail.
 Auditors, certification bodies, and regulators all ask for requirements-to-test mapping in a form they can read.
@@ -76,7 +76,7 @@ The `run_key` names the scope, such as `epic-4` or `release-v1-2-0`, so each aud
 Phase 2 adds the gate decision to the same report: an evidence summary, the decision criteria, the rationale, and a sign-off section for approvers.
 When the collection is gate-eligible, it also writes the machine-readable decision to `trace/gate-decision-{run_key}.json` for CI.
 
-### Test Design with Compliance Focus (`/bmad-testarch-test-design`)
+### Test Design with Compliance Focus (`/bmad-tea-test-design`)
 
 **Purpose:** Risk assessment with compliance and security focus.
 Security architecture has to line up, compliance requirements have to be testable, and performance requirements are contractual.
@@ -99,7 +99,7 @@ System-level mode produces two documents in `test-design/`: `test-design-archite
 ## Enterprise TEA Lifecycle
 
 The BMad Method module provides `research`, `prd`, and `architecture`.
-The `/bmad-testarch-*` commands are TEA skills.
+The `/bmad-tea-*` commands are TEA skills.
 
 ### Phase 1: Discovery (Optional but Recommended)
 
@@ -111,48 +111,48 @@ Run the BMM `research` workflow on industry compliance (SOC 2, HIPAA, GDPR), sec
 Define NFRs early.** Run the BMM `prd` workflow and include security requirements (authentication, encryption), performance SLAs (response time, throughput), reliability targets (uptime, RTO, RPO), and compliance mandates (data retention, audit logs).
 
 **2.
-Plan NFR evidence.** Run `/bmad-testarch-test-design` at system-level scope, focused on NFR thresholds, planned validation, and required evidence.
+Plan NFR evidence.** Run `/bmad-tea-test-design` at system-level scope, focused on NFR thresholds, planned validation, and required evidence.
 It produces `test-design/test-design-architecture.md` and `test-design/test-design-qa.md` with thresholds and unknowns documented, planned evidence sources defined, and NFR coverage planned.
 
 **3.
-Baseline (brownfield only).** Run `/bmad-testarch-trace` Phase 1 to establish baseline coverage before new work.
+Baseline (brownfield only).** Run `/bmad-tea-trace` Phase 1 to establish baseline coverage before new work.
 
 ### Phase 3: Solutioning (Required)
 
 **1.
-Architecture with testability review.** Run the BMM `architecture` workflow, then `/bmad-testarch-test-design` at system-level scope, focused on security architecture testability, performance testing strategy, and compliance requirement mapping.
+Architecture with testability review.** Run the BMM `architecture` workflow, then `/bmad-tea-test-design` at system-level scope, focused on security architecture testability, performance testing strategy, and compliance requirement mapping.
 
 **2.
-Test infrastructure.** Run `/bmad-testarch-framework`.
+Test infrastructure.** Run `/bmad-tea-framework`.
 Tell it you need separate test environments (dev, staging, prod-mirror), secure test data handling for PHI and PII, and audit logging in tests.
 To set up CI in the same run, ask for the framework and CI together and give it the step 3 requirements.
 
 **3.
-CI/CD with compliance.** Run `/bmad-testarch-framework` and ask for CI.
+CI/CD with compliance.** Run `/bmad-tea-framework` and ask for CI.
 Tell it you need secrets management (Vault, AWS Secrets Manager), test isolation, artifact retention for the compliance audit trail, and access controls over who can run production tests.
 
 ### Phase 4: Implementation (Required)
 
 Per epic:
 
-1. `/bmad-testarch-test-design` at epic level, focused on compliance, security, and performance for this epic
-2. `/bmad-testarch-automate` in red mode (optional) to generate tests including security and compliance scenarios
+1. `/bmad-tea-test-design` at epic level, focused on compliance, security, and performance for this epic
+2. `/bmad-tea-automate` in red mode (optional) to generate tests including security and compliance scenarios
 3. A developer implements the story
-4. `/bmad-testarch-automate` to expand coverage, including compliance edge cases
-5. `/bmad-testarch-test-review` to audit quality (target above 80 per epic, rising to above 85 at release)
-6. `/bmad-testarch-trace` Phase 1 to refresh coverage and verify compliance requirements are tested
+4. `/bmad-tea-automate` to expand coverage, including compliance edge cases
+5. `/bmad-tea-test-review` to audit quality (target above 80 per epic, rising to above 85 at release)
+6. `/bmad-tea-trace` Phase 1 to refresh coverage and verify compliance requirements are tested
 
 ### Release Gate (Required)
 
 **1.
-Final NFR evidence audit.** Run `/bmad-testarch-nfr` across all categories that have evidence, using the latest performance tests and security scans.
+Final NFR evidence audit.** Run `/bmad-tea-nfr` across all categories that have evidence, using the latest performance tests and security scans.
 
 **2.
-Final quality audit.** Run `/bmad-testarch-test-review` over the full suite, answering `tests/` for scope.
+Final quality audit.** Run `/bmad-tea-test-review` over the full suite, answering `tests/` for scope.
 Enterprise quality target: above 85.
 
 **3.
-Gate decision.** Run `/bmad-testarch-trace` Phase 2.
+Gate decision.** Run `/bmad-tea-trace` Phase 2.
 It reads the Phase 1 matrix from `trace/`, the test-design documents from `test-design/`, the NFR evidence audit from `nfr/`, and actual test execution results.
 The quality audit from step 2 goes into the release record beside the gate decision; trace does not read it.
 Without execution results, Phase 2 is skipped.
@@ -284,7 +284,7 @@ Confirm retention periods with your compliance team for each artifact type.
 Security failures block everything else in enterprise, so make security requirements Priority 1:
 
 1. Document all security requirements
-2. Generate security tests with `/bmad-testarch-automate` in red mode
+2. Generate security tests with `/bmad-tea-automate` in red mode
 3. Run the security test suite
 4. Pass the security audit before moving forward
 

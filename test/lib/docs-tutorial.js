@@ -231,7 +231,7 @@ function quotedFileProblems(markdown) {
 const NO_AGENT_SENTENCE = 'This tutorial needs no coding agent';
 const OPTIONAL_HEADING = /^## Optional: .+$/m;
 const HOW_TO_LINK = '/docs/how-to/evaluate/evaluate-a-skill-or-agent.md';
-const SKILL_INVOCATION = /\/bmad-testarch-evaluate|\$bmad-testarch-evaluate|\/bmad-tea\b/;
+const SKILL_INVOCATION = /\/bmad-tea-evaluate|\$bmad-tea-evaluate|\/bmad-tea\b/;
 
 /**
  * The problems of how the page frames intake. The tested shell path runs the fixture, so the page must say that no coding

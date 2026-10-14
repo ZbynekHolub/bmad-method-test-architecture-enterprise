@@ -315,9 +315,9 @@ async function runTests() {
   // Suite 7), and Suite 13 reads registryRowSeverities and findingReport
   // (declared by Suite 12) — none of that is guaranteed once each suite's own
   // assertions run inside its own `if (suiteEnabled(n))` block.
-  const skillRoot = path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+  const skillRoot = path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
   const futureWaiveDate = localDateString(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-  const registrySkillRoot = path.join(repoRoot, 'skills', 'bmad-testarch-test-review');
+  const registrySkillRoot = path.join(repoRoot, 'skills', 'bmad-tea-test-review');
   const registryRowSeverities = loadRegistryRowSeverities(registrySkillRoot);
 
   /** A minimal, valid report with N Critical / M High finding blocks citing the given rows. */
@@ -1178,7 +1178,7 @@ async function runTests() {
       // template can never drift apart without a red test: every element the
       // parser demands must be reachable from test-review-template.md alone,
       // without depending on the CLI prompt's prose contract.
-      const skillRootSource = path.join(repoRoot, 'skills', 'bmad-testarch-test-review');
+      const skillRootSource = path.join(repoRoot, 'skills', 'bmad-tea-test-review');
       const templateShapedReport = fs
         .readFileSync(path.join(skillRootSource, 'test-review-template.md'), 'utf8')
         .replace(/^stepsCompleted: \[]$/m, "stepsCompleted: ['step-01-load-context', 'step-04-generate-report']")
@@ -1963,7 +1963,7 @@ async function runTests() {
       try {
         const bmadRoot = resolveSkill(fixtureProject);
         assert(
-          bmadRoot.endsWith(path.join('_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review')),
+          bmadRoot.endsWith(path.join('_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review')),
           'resolves _bmad/tea/workflows skill root',
           bmadRoot,
         );
@@ -1975,14 +1975,14 @@ async function runTests() {
       // the fresh install wins, and the classic copy is the last resort.
       const upgraded = fs.mkdtempSync(path.join(tmpRoot, 'upgraded-'));
       for (const relative of [
-        path.join('_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review'),
-        path.join('.claude', 'skills', 'bmad-testarch-test-review'),
+        path.join('_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review'),
+        path.join('.claude', 'skills', 'bmad-tea-test-review'),
       ]) {
         fs.mkdirSync(path.join(upgraded, relative), { recursive: true });
         fs.writeFileSync(path.join(upgraded, relative, 'SKILL.md'), '# skill\n');
       }
       assert(
-        resolveSkill(upgraded).endsWith(path.join('.claude', 'skills', 'bmad-testarch-test-review')),
+        resolveSkill(upgraded).endsWith(path.join('.claude', 'skills', 'bmad-tea-test-review')),
         'a classic-installer copy never shadows the skill a v7 install added',
         resolveSkill(upgraded),
       );
@@ -1990,7 +1990,7 @@ async function runTests() {
       try {
         const claudeRoot = resolveSkill(path.join(fixturesRoot, 'project-claude'));
         assert(
-          claudeRoot.endsWith(path.join('.claude', 'skills', 'bmad-testarch-test-review')),
+          claudeRoot.endsWith(path.join('.claude', 'skills', 'bmad-tea-test-review')),
           'resolves .claude/skills skill root',
           claudeRoot,
         );
@@ -2094,7 +2094,7 @@ async function runTests() {
       // Read from the step itself, so the skill's outputFile and the prompt that
       // overrides it cannot drift together while a hardcoded string still matches.
       const stepOneFrontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(
-        fs.readFileSync(path.join(__dirname, '..', 'skills', 'bmad-testarch-test-review', 'steps-c', 'step-01-load-context.md'), 'utf8'),
+        fs.readFileSync(path.join(__dirname, '..', 'skills', 'bmad-tea-test-review', 'steps-c', 'step-01-load-context.md'), 'utf8'),
       );
       const stepOneOutputFile = stepOneFrontmatter ? require('yaml').parse(stepOneFrontmatter[1])?.outputFile : undefined;
       assert(
@@ -2714,7 +2714,7 @@ async function runTests() {
         '--agent-arg',
         '--headless',
         '--workflow',
-        'bmad-testarch-ci',
+        'bmad-tea-ci',
         '--runs',
         '1',
       ]);
@@ -2722,7 +2722,7 @@ async function runTests() {
         parsedFragmentRunner.agents[0] === 'custom' &&
           parsedFragmentRunner.agentCmd === 'runner' &&
           parsedFragmentRunner.agentArgs[0] === '--headless' &&
-          parsedFragmentRunner.workflows[0] === 'bmad-testarch-ci' &&
+          parsedFragmentRunner.workflows[0] === 'bmad-tea-ci' &&
           parsedFragmentRunner.runs === 1,
         'fragment-selection eval parses the portable runner contract',
         JSON.stringify(parsedFragmentRunner),
@@ -2789,7 +2789,7 @@ async function runTests() {
       const versionFailRunner = path.join(tmpRoot, 'version-fail-runner');
       fs.writeFileSync(versionFailRunner, '#!/bin/sh\nif [ "$1" = "--version" ]; then exit 9; fi\nexit 0\n', { mode: 0o755 });
       for (const [script, extraArgs] of [
-        ['eval-fragment-selection.js', ['--workflow', 'bmad-testarch-ci', '--runs', '1']],
+        ['eval-fragment-selection.js', ['--workflow', 'bmad-tea-ci', '--runs', '1']],
         ['eval-test-review.js', ['--preflight-only']],
       ]) {
         const rejectedProbe = spawnSync(
@@ -2961,8 +2961,8 @@ async function runTests() {
     console.log(`${colors.yellow}Test Suite 7: CLI end-to-end${colors.reset}\n`);
     if (suiteEnabled(7)) {
       const noKnowledge = fs.mkdtempSync(path.join(tmpRoot, 'no-knowledge-'));
-      fs.mkdirSync(path.join(noKnowledge, 'bmad-testarch-test-review'));
-      fs.writeFileSync(path.join(noKnowledge, 'bmad-testarch-test-review', 'SKILL.md'), '# skill\n');
+      fs.mkdirSync(path.join(noKnowledge, 'bmad-tea-test-review'));
+      fs.writeFileSync(path.join(noKnowledge, 'bmad-tea-test-review', 'SKILL.md'), '# skill\n');
       const missingKnowledge = runCli([
         '--agent',
         'none',
@@ -2971,7 +2971,7 @@ async function runTests() {
         '--project-root',
         fixtureProject,
         '--skill-root',
-        path.join(noKnowledge, 'bmad-testarch-test-review'),
+        path.join(noKnowledge, 'bmad-tea-test-review'),
       ]);
       assert(
         missingKnowledge.status === 2 &&
@@ -4154,7 +4154,7 @@ async function runTests() {
 
       // ---- --skill-root: explicit trusted skill source ----
 
-      const explicitSkillRoot = path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+      const explicitSkillRoot = path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
       const explicitRoot = runCli([
         '--agent',
         'none',
@@ -4189,7 +4189,7 @@ async function runTests() {
 
       // ---- a skill from another rubric is refused before any agent call ----
 
-      const oldSkillRoot = path.join(tmpRoot, 'old-rubric', 'bmad-testarch-test-review');
+      const oldSkillRoot = path.join(tmpRoot, 'old-rubric', 'bmad-tea-test-review');
       fs.mkdirSync(path.join(oldSkillRoot, 'steps-c'), { recursive: true });
       fs.mkdirSync(path.join(oldSkillRoot, '..', 'bmod-tea', 'knowledge'), { recursive: true });
       fs.copyFileSync(
@@ -4198,7 +4198,7 @@ async function runTests() {
       );
       fs.copyFileSync(path.join(explicitSkillRoot, 'SKILL.md'), path.join(oldSkillRoot, 'SKILL.md'));
       fs.copyFileSync(
-        path.join(repoRoot, 'skills', 'bmad-testarch-test-review', 'steps-c', 'criteria-registry.md'),
+        path.join(repoRoot, 'skills', 'bmad-tea-test-review', 'steps-c', 'criteria-registry.md'),
         path.join(oldSkillRoot, 'steps-c', 'criteria-registry.md'),
       );
       const agentMarker = path.join(tmpRoot, 'old-rubric-agent-ran');
@@ -4208,7 +4208,7 @@ async function runTests() {
       });
       for (const [label, workflow] of [
         ['rubric 4.0', 'rubric_version: "4.0"\n'],
-        ['no rubric version', 'name: bmad-testarch-test-review\n'],
+        ['no rubric version', 'name: bmad-tea-test-review\n'],
       ]) {
         fs.writeFileSync(path.join(oldSkillRoot, 'workflow.yaml'), workflow);
         for (const agentArgs of [
@@ -4229,10 +4229,7 @@ async function runTests() {
 
       // Positive control: the same agent runs under a skill that declares rubric 5.0, so the
       // markers above prove the preflight stopped it and not that the agent could never start.
-      fs.copyFileSync(
-        path.join(repoRoot, 'skills', 'bmad-testarch-test-review', 'workflow.yaml'),
-        path.join(oldSkillRoot, 'workflow.yaml'),
-      );
+      fs.copyFileSync(path.join(repoRoot, 'skills', 'bmad-tea-test-review', 'workflow.yaml'), path.join(oldSkillRoot, 'workflow.yaml'));
       runCli([
         '--agent-cmd',
         markerAgent,
@@ -4549,10 +4546,10 @@ async function runTests() {
       git(['config', 'user.email', 'tea-tests@example.com'], gitRepo);
       git(['config', 'user.name', 'TEA Tests'], gitRepo);
       git(['config', 'commit.gpgsign', 'false'], gitRepo);
-      const gitSkillDir = path.join(gitRepo, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+      const gitSkillDir = path.join(gitRepo, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
       fs.mkdirSync(gitSkillDir, { recursive: true });
       fs.copyFileSync(
-        path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review', 'SKILL.md'),
+        path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review', 'SKILL.md'),
         path.join(gitSkillDir, 'SKILL.md'),
       );
       // The real criteria-registry.md, so registryRowSeverities is populated for these
@@ -4560,10 +4557,10 @@ async function runTests() {
       // exercised end-to-end too.
       fs.mkdirSync(path.join(gitSkillDir, 'steps-c'), { recursive: true });
       fs.copyFileSync(
-        path.join(repoRoot, 'skills', 'bmad-testarch-test-review', 'steps-c', 'criteria-registry.md'),
+        path.join(repoRoot, 'skills', 'bmad-tea-test-review', 'steps-c', 'criteria-registry.md'),
         path.join(gitSkillDir, 'steps-c', 'criteria-registry.md'),
       );
-      fs.copyFileSync(path.join(repoRoot, 'skills', 'bmad-testarch-test-review', 'workflow.yaml'), path.join(gitSkillDir, 'workflow.yaml'));
+      fs.copyFileSync(path.join(repoRoot, 'skills', 'bmad-tea-test-review', 'workflow.yaml'), path.join(gitSkillDir, 'workflow.yaml'));
       // The knowledge base the skill reads sits beside it, as `npx skills add` installs bmod-tea.
       const gitKnowledgeDir = path.join(gitSkillDir, '..', 'bmod-tea', 'knowledge');
       fs.mkdirSync(gitKnowledgeDir, { recursive: true });
@@ -4913,7 +4910,7 @@ async function runTests() {
         `status=${gitPoisonInsideRoot.status} stderr=${gitPoisonInsideRoot.stderr}`,
       );
 
-      const outsideSkillRoot = path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+      const outsideSkillRoot = path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
       const gitPoisonOutsideRoot = runCli(
         [
           '--base',
@@ -4972,15 +4969,15 @@ async function runTests() {
       git(['config', 'user.name', 'TEA Tests'], linkedRepo);
       git(['config', 'commit.gpgsign', 'false'], linkedRepo);
       const canonicalSkills = path.join(linkedRepo, '.agents', 'skills');
-      fs.mkdirSync(path.join(canonicalSkills, 'bmad-testarch-test-review'), { recursive: true });
-      fs.copyFileSync(path.join(gitSkillDir, 'SKILL.md'), path.join(canonicalSkills, 'bmad-testarch-test-review', 'SKILL.md'));
+      fs.mkdirSync(path.join(canonicalSkills, 'bmad-tea-test-review'), { recursive: true });
+      fs.copyFileSync(path.join(gitSkillDir, 'SKILL.md'), path.join(canonicalSkills, 'bmad-tea-test-review', 'SKILL.md'));
       fs.mkdirSync(path.join(canonicalSkills, 'bmod-tea', 'knowledge'), { recursive: true });
       fs.copyFileSync(
         path.join(repoRoot, 'skills', 'bmod-tea', 'knowledge', 'tea-index.csv'),
         path.join(canonicalSkills, 'bmod-tea', 'knowledge', 'tea-index.csv'),
       );
       fs.mkdirSync(path.join(linkedRepo, '.claude', 'skills'), { recursive: true });
-      for (const name of ['bmad-testarch-test-review', 'bmod-tea']) {
+      for (const name of ['bmad-tea-test-review', 'bmod-tea']) {
         fs.symlinkSync(path.join('..', '..', '.agents', 'skills', name), path.join(linkedRepo, '.claude', 'skills', name));
       }
       fs.mkdirSync(path.join(linkedRepo, 'tests'));
@@ -4988,7 +4985,7 @@ async function runTests() {
       git(['add', '.'], linkedRepo);
       git(['commit', '-m', 'initial'], linkedRepo);
       for (const [branch, target] of [
-        ['poison-linked-skill', path.join('.agents', 'skills', 'bmad-testarch-test-review', 'SKILL.md')],
+        ['poison-linked-skill', path.join('.agents', 'skills', 'bmad-tea-test-review', 'SKILL.md')],
         ['poison-linked-knowledge', path.join('.agents', 'skills', 'bmod-tea', 'knowledge', 'tea-index.csv')],
       ]) {
         git(['checkout', '-b', branch, 'main'], linkedRepo);
@@ -5291,8 +5288,8 @@ async function runTests() {
       git(['config', 'commit.gpgsign', 'false'], configRepo);
       const configPath = path.join(configRepo, '_bmad', 'config.toml');
       const rootUserPath = path.join(configRepo, '_bmad', 'config.user.toml');
-      const workflowPath = path.join(configRepo, '_bmad', 'custom', 'bmad-testarch-test-review.toml');
-      const workflowUserPath = path.join(configRepo, '_bmad', 'custom', 'bmad-testarch-test-review.user.toml');
+      const workflowPath = path.join(configRepo, '_bmad', 'custom', 'bmad-tea-test-review.toml');
+      const workflowUserPath = path.join(configRepo, '_bmad', 'custom', 'bmad-tea-test-review.user.toml');
       const teamPath = path.join(configRepo, '_bmad', 'custom', 'config.toml');
       const userPath = path.join(configRepo, '_bmad', 'custom', 'config.user.toml');
       const configTest = path.join(configRepo, 'tests', 'config.spec.ts');
@@ -5471,11 +5468,11 @@ async function runTests() {
       const chmodTestable = process.platform !== 'win32' && !isRoot;
 
       const isoRoot = path.join(tmpRoot, 'isolation-project');
-      const isoSkillDir = path.join(isoRoot, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+      const isoSkillDir = path.join(isoRoot, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
       fs.mkdirSync(isoSkillDir, { recursive: true });
       installKnowledgeBeside(isoSkillDir);
       fs.copyFileSync(
-        path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review', 'SKILL.md'),
+        path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review', 'SKILL.md'),
         path.join(isoSkillDir, 'SKILL.md'),
       );
 
@@ -5539,7 +5536,7 @@ async function runTests() {
         // stays locked so the agent cannot add top-level entries. Copying the
         // artifacts back has to work anyway, or a clean review reports exit 3.
         const isoRootLevel = path.join(tmpRoot, 'isolation-project-root-level');
-        const isoRootLevelSkill = path.join(isoRootLevel, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+        const isoRootLevelSkill = path.join(isoRootLevel, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
         fs.mkdirSync(isoRootLevelSkill, { recursive: true });
         installKnowledgeBeside(isoRootLevelSkill);
         fs.copyFileSync(path.join(isoSkillDir, 'SKILL.md'), path.join(isoRootLevelSkill, 'SKILL.md'));
@@ -5585,7 +5582,7 @@ async function runTests() {
         // group-write bit and make a deliberately read-only file writable. The
         // restore works from a mode snapshot, so both survive an isolated run.
         const isoModes = path.join(tmpRoot, 'isolation-modes');
-        const isoModesSkill = path.join(isoModes, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+        const isoModesSkill = path.join(isoModes, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
         fs.mkdirSync(isoModesSkill, { recursive: true });
         installKnowledgeBeside(isoModesSkill);
         fs.copyFileSync(path.join(isoSkillDir, 'SKILL.md'), path.join(isoModesSkill, 'SKILL.md'));
@@ -5628,7 +5625,7 @@ async function runTests() {
         // conflict writes a real report that parseReport rejects, so this
         // exercises that cleanup path specifically.
         const isoParseFail = path.join(tmpRoot, 'isolation-parse-fail');
-        const isoParseFailSkill = path.join(isoParseFail, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+        const isoParseFailSkill = path.join(isoParseFail, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
         fs.mkdirSync(isoParseFailSkill, { recursive: true });
         installKnowledgeBeside(isoParseFailSkill);
         fs.copyFileSync(path.join(isoSkillDir, 'SKILL.md'), path.join(isoParseFailSkill, 'SKILL.md'));
@@ -5703,11 +5700,11 @@ async function runTests() {
       );
 
       const controlRoot = path.join(tmpRoot, 'isolation-control');
-      const controlSkillDir = path.join(controlRoot, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+      const controlSkillDir = path.join(controlRoot, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
       fs.mkdirSync(controlSkillDir, { recursive: true });
       installKnowledgeBeside(controlSkillDir);
       fs.copyFileSync(
-        path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review', 'SKILL.md'),
+        path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review', 'SKILL.md'),
         path.join(controlSkillDir, 'SKILL.md'),
       );
       const controlRun = runCli(
@@ -6890,8 +6887,8 @@ async function runTests() {
     // ============================================================
     console.log(`${colors.yellow}Test Suite 14: packaged skill, retries, agent presence, --pr${colors.reset}\n`);
     if (suiteEnabled(14)) {
-      const packagedSkill = path.join(repoRoot, 'skills', 'bmad-testarch-test-review');
-      const vendoredSkill = path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+      const packagedSkill = path.join(repoRoot, 'skills', 'bmad-tea-test-review');
+      const vendoredSkill = path.join(fixtureProject, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
       const emptyProject = path.join(fixturesRoot, 'project-empty');
 
       // ---- the skill resolves from the CLI's own package ----
@@ -6948,7 +6945,7 @@ async function runTests() {
       git(['config', 'user.email', 'tea-tests@example.com'], repo);
       git(['config', 'user.name', 'TEA Tests'], repo);
       git(['config', 'commit.gpgsign', 'false'], repo);
-      const repoSkill = path.join(repo, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-testarch-test-review');
+      const repoSkill = path.join(repo, '_bmad', 'tea', 'workflows', 'testarch', 'bmad-tea-test-review');
       fs.mkdirSync(repoSkill, { recursive: true });
       fs.copyFileSync(path.join(vendoredSkill, 'SKILL.md'), path.join(repoSkill, 'SKILL.md'));
       installKnowledgeBeside(repoSkill);

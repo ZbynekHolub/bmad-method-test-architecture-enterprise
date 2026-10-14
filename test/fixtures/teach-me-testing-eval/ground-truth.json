@@ -1,7 +1,7 @@
 {
   "$comment": [
     "The single scripted two-turn session test/eval-teach-me-testing.js drives against a real vendor.",
-    "Turn 1 runs the whole first-session path through the real bmad-teach-me-testing skill, playing both",
+    "Turn 1 runs the whole first-session path through the real bmad-tea-teach-me-testing skill, playing both",
     "the facilitator and the learner: role, experience level, learning goals, session selection, a",
     "deliberately wrong answer to session-01's own Q1, the below-70% [R]/[C] review branch, and exit.",
     "Turn 2 is a fresh, memoryless process that proves progress persistence is real rather than assumed --",
@@ -57,22 +57,22 @@
   "freshStartMarker": "Starting fresh",
   "corpusCitations": {
     "correctionPhrase": {
-      "file": "skills/bmad-teach-me-testing/steps-c/step-04-session-01.md"
+      "file": "skills/bmad-tea-teach-me-testing/steps-c/step-04-session-01.md"
     },
     "reviewMarker": {
-      "file": "skills/bmad-teach-me-testing/steps-c/step-04-session-01.md"
+      "file": "skills/bmad-tea-teach-me-testing/steps-c/step-04-session-01.md"
     },
     "quizQuestionEvidence": {
-      "file": "skills/bmad-teach-me-testing/steps-c/step-04-session-01.md"
+      "file": "skills/bmad-tea-teach-me-testing/steps-c/step-04-session-01.md"
     },
     "continuationMarker": {
-      "file": "skills/bmad-teach-me-testing/steps-c/step-01-init.md"
+      "file": "skills/bmad-tea-teach-me-testing/steps-c/step-01-init.md"
     },
     "freshStartMarker": {
-      "file": "skills/bmad-teach-me-testing/steps-c/step-01-init.md"
+      "file": "skills/bmad-tea-teach-me-testing/steps-c/step-01-init.md"
     },
     "quizAnswers": {
-      "file": "skills/bmad-teach-me-testing/data/quiz-questions.yaml"
+      "file": "skills/bmad-tea-teach-me-testing/data/quiz-questions.yaml"
     }
   }
 }

@@ -95,8 +95,8 @@ function run(argv) {
   )
     throw new WorkflowError('usage', 'requirement inputs cannot also be implementation evidence');
   const protection = protectSources(projectRoot, [...inputs, ...options.implementation, ...options.evidence]);
-  const skillRoot = resolveWorkflowSkill({ projectRoot, skillName: 'bmad-testarch-nfr', skillRoot: options.skillRoot });
-  const resolvedConfig = resolveTeaConfig({ projectRoot, skillRoot, skillName: 'bmad-testarch-nfr' });
+  const skillRoot = resolveWorkflowSkill({ projectRoot, skillName: 'bmad-tea-nfr', skillRoot: options.skillRoot });
+  const resolvedConfig = resolveTeaConfig({ projectRoot, skillRoot, skillName: 'bmad-tea-nfr' });
   const artifactRoot = options.outputDir ?? resolvedConfig.configSnapshot.modules.tea.test_artifacts;
   if (typeof artifactRoot !== 'string' || !artifactRoot.trim())
     throw new WorkflowError('environment-configuration', '--output-dir or TEA test_artifacts must be a nonempty string');

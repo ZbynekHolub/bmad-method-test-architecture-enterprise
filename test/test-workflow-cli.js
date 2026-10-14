@@ -5,10 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const { spawnSync } = require('node:child_process');
-const { runWithEvidence, WorkflowError, integer, projectPath, readInput } = require('../cli/lib/workflow-cli');
+const { runWithEvidence, WorkflowError, integer, projectPath, readInput, resolveWorkflowSkill } = require('../cli/lib/workflow-cli');
 const { resolveTeaConfig } = require('../cli/lib/resolve-tea-config');
 const cli = path.join(__dirname, '..', 'cli', 'test-design.js');
-const skillRoot = path.join(__dirname, '..', 'skills', 'bmad-testarch-test-design');
+const skillRoot = path.join(__dirname, '..', 'skills', 'bmad-tea-test-design');
 /** Create a disposable consuming project with two concrete input documents. */
 function project(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tea-workflow-cli-test-'));
@@ -95,10 +95,51 @@ test('configuration reads overrides for the selected skill and keeps review defa
   const root = project(t);
   const custom = path.join(root, '_bmad', 'custom');
   fs.mkdirSync(custom, { recursive: true });
-  fs.writeFileSync(path.join(custom, 'bmad-testarch-test-design.toml'), '[workflow]\npersistent_facts=["design policy"]\n');
-  fs.writeFileSync(path.join(custom, 'bmad-testarch-test-review.toml'), '[workflow]\npersistent_facts=["review policy"]\n');
-  const resolved = resolveTeaConfig({ projectRoot: root, skillRoot, skillName: 'bmad-testarch-test-design' });
+  fs.writeFileSync(path.join(custom, 'bmad-tea-test-design.toml'), '[workflow]\npersistent_facts=["design policy"]\n');
+  fs.writeFileSync(path.join(custom, 'bmad-tea-test-review.toml'), '[workflow]\npersistent_facts=["review policy"]\n');
+  const resolved = resolveTeaConfig({ projectRoot: root, skillRoot, skillName: 'bmad-tea-test-design' });
   assert.deepEqual(resolved.workflowCustomization.persistent_facts, ['design policy']);
+});
+test('configuration reads legacy customization and names both files on conflict', (t) => {
+  const root = project(t);
+  const custom = path.join(root, '_bmad', 'custom');
+  fs.mkdirSync(custom, { recursive: true });
+  const oldFile = path.join(custom, 'bmad-testarch-test-design.toml');
+  const newFile = path.join(custom, 'bmad-tea-test-design.toml');
+  fs.writeFileSync(oldFile, '[workflow]\npersistent_facts=["design policy"]\n');
+  assert.deepEqual(
+    resolveTeaConfig({ projectRoot: root, skillRoot, skillName: 'bmad-tea-test-design' }).workflowCustomization.persistent_facts,
+    ['design policy'],
+  );
+  fs.writeFileSync(newFile, '[workflow]\npersistent_facts=["another policy"]\n');
+  assert.throws(
+    () => resolveTeaConfig({ projectRoot: root, skillRoot, skillName: 'bmad-tea-test-design' }),
+    (error) => error.message.includes(oldFile) && error.message.includes(newFile),
+  );
+});
+test('legacy teaching and CI customization names resolve under new namespaces', (t) => {
+  const root = project(t);
+  const custom = path.join(root, '_bmad', 'custom');
+  fs.mkdirSync(custom, { recursive: true });
+  fs.writeFileSync(path.join(custom, 'bmad-teach-me-testing.toml'), '[workflow]\non_complete="teach hook"\n');
+  fs.writeFileSync(path.join(custom, 'bmad-testarch-ci.toml'), '[workflow]\nci_platform="github-actions"\n');
+  const teach = resolveTeaConfig({
+    projectRoot: root,
+    skillRoot: path.join(__dirname, '..', 'skills', 'bmad-tea-teach-me-testing'),
+    skillName: 'bmad-tea-teach-me-testing',
+  });
+  const ci = resolveTeaConfig({ projectRoot: root, skillRoot: path.join(root, 'missing-ci-skill'), skillName: 'bmad-tea-ci' });
+  assert.equal(teach.workflowCustomization.on_complete, 'teach hook');
+  assert.equal(ci.workflowCustomization.ci_platform, 'github-actions');
+});
+test('missing renamed skill names the current installation command', (t) => {
+  const root = project(t);
+  assert.throws(
+    () => resolveWorkflowSkill({ projectRoot: root, skillName: 'bmad-tea-test-design', skillRoot: 'missing-skill' }),
+    (error) =>
+      error.message.includes('bmad-tea-test-design') &&
+      error.message.includes('npx skills add bmad-code-org/bmad-method-test-architecture-enterprise'),
+  );
 });
 test('helper keeps raw output and arbitrary validation result', (t) => {
   const root = project(t);

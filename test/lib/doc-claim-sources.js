@@ -179,7 +179,7 @@ const { MANIFEST: fragmentManifest } = require('../../tools/validate-criteria-fr
 exports.THIRTY_FIVE_ROWS_MAPPED = registryRows.length === 35 && Object.keys(fragmentManifest).length === registryRows.length;
 
 /** docs/how-to/workflows/run-automate.md, red mode, "TEA currently emits these scaffolds with `test.skip()`." */
-const atddStepsRoot = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-automate', 'red', 'steps-c');
+const atddStepsRoot = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-automate', 'red', 'steps-c');
 const atddStepFiles = fs.existsSync(atddStepsRoot) ? fs.readdirSync(atddStepsRoot).filter((name) => name.endsWith('.md')) : [];
 if (atddStepFiles.length === 0) refuse(`${atddStepsRoot} has no step files`);
 exports.ATDD_EMITS_TEST_SKIP = atddStepFiles.some((name) => fs.readFileSync(path.join(atddStepsRoot, name), 'utf8').includes('test.skip('));
@@ -272,7 +272,7 @@ exports.ELEVEN_WIRED_ONE_FUTURE = SETUP_KEYS.length - FUTURE_KEYS.length === 11 
 /**
  * The folder rule configuration.md's "Output Layout" section states: every
  * testarch workflow writes under `{test_artifacts}/<workflow>/`, where
- * `<workflow>` is the skill directory name without its `bmad-testarch-` prefix.
+ * `<workflow>` is the skill directory name without its `bmad-tea-` prefix.
  *
  * A workflow's declared output paths are every `{test_artifacts}/...` string in
  * its root or nested phase `workflow.yaml` files (any depth, so
@@ -403,7 +403,7 @@ function declaredOutputPaths(skillDir) {
  * can point it at a staged fixture skill as well as a real one.
  */
 function misplacedOutputs(skillDir) {
-  const folder = path.basename(skillDir).replace(/^bmad-testarch-/, '');
+  const folder = path.basename(skillDir).replace(/^bmad-tea-/, '');
   // The framework skill owns both setup phases. Existing checkpoints keep their phase folders.
   const outputFolders = folder === 'framework' ? ['framework', 'ci'] : folder === 'automate' ? ['automate', 'atdd'] : [folder];
   return [
@@ -417,22 +417,16 @@ exports.declaredOutputPaths = declaredOutputPaths;
 exports.flatBodyTargets = flatBodyTargets;
 exports.misplacedOutputs = misplacedOutputs;
 
-// Evaluate is the one `bmad-testarch-*` skill that writes nowhere under
+// Evaluate is the one `bmad-tea-*` skill that writes nowhere under
 // `{test_artifacts}`: its evaluation folders live under its own
 // `evaluations_folder` customization (`{workflow.evaluations_folder}`), so the
 // folder rule does not govern it.
 const testarchRoot = path.join(PROJECT_ROOT, 'skills');
 const layoutSkillDirs = fs
   .readdirSync(testarchRoot)
-  .filter(
-    (name) =>
-      name.startsWith('bmad-testarch-') &&
-      name !== 'bmad-testarch-evaluate' &&
-      name !== 'bmad-testarch-ci' &&
-      name !== 'bmad-testarch-atdd',
-  )
+  .filter((name) => name.startsWith('bmad-tea-') && name !== 'bmad-tea-evaluate' && name !== 'bmad-tea-ci' && name !== 'bmad-tea-atdd')
   .map((name) => path.join(testarchRoot, name));
-if (layoutSkillDirs.length === 0) refuse(`${testarchRoot} has no bmad-testarch-* skill directories`);
+if (layoutSkillDirs.length === 0) refuse(`${testarchRoot} has no bmad-tea-* skill directories`);
 
 /**
  * configuration.md, "Outputs use fixed folders under {test_artifacts}": every

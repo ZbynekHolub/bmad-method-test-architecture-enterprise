@@ -6,7 +6,7 @@ Each setup answer is `modules.tea.<key>` in `_bmad/config.toml`. `bmad setup tea
 
 - `test_stack_type = "auto"` detects the project type from manifest files. Mobile: `.maestro/` or `maestro/` flows, `app.json` with expo or react-native, `Podfile`, `android/app/build.gradle`, `*.xcodeproj`, `pubspec.yaml`. Frontend: `package.json` with react, vue or angular, `playwright.config.*`, `vite.config.*`. Backend: `pyproject.toml`, `pom.xml`, `go.mod`, `*.csproj`, `Gemfile`, `Cargo.toml`. Full-stack: both frontend and backend indicators. Mobile is checked first, because a React Native project also has `package.json` with react.
 - `test_framework = "auto"` detects the framework the same way.
-- The CI platform is detected by `bmad-testarch-framework` from `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`, `azure-pipelines.yml`, `.harness/` or `.circleci/config.yml`. To override detection, set `ci_platform` in `_bmad/custom/bmad-testarch-framework.toml`.
+- The CI platform is detected by `bmad-tea-framework` from `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`, `azure-pipelines.yml`, `.harness/` or `.circleci/config.yml`. To override detection, set `ci_platform` in `_bmad/custom/bmad-tea-framework.toml`.
 
 ## Execution mode
 
@@ -14,7 +14,7 @@ Each setup answer is `modules.tea.<key>` in `_bmad/config.toml`. `bmad setup tea
 
 ## Playwright Utils (`tea_use_playwright_utils = "true"`)
 
-`npm install -D @seontechnologies/playwright-utils`, with `@playwright/test` 1.54.1 or later; `ajv` 8+ or `zod` 3+ for schema validation. `bmad-testarch-framework` installs it. Once installed, TEA generates against these utilities by default and flags a hand-rolled equivalent that has no stated reason. Docs: <https://seontechnologies.github.io/playwright-utils/>
+`npm install -D @seontechnologies/playwright-utils`, with `@playwright/test` 1.54.1 or later; `ajv` 8+ or `zod` 3+ for schema validation. `bmad-tea-framework` installs it. Once installed, TEA generates against these utilities by default and flags a hand-rolled equivalent that has no stated reason. Docs: <https://seontechnologies.github.io/playwright-utils/>
 
 ## Pact.js Utils (`tea_use_pactjs_utils = "true"`)
 

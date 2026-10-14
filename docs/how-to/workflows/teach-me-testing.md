@@ -41,8 +41,8 @@ The completion summary records your scores and the topics covered.
 
 ### Starting Fresh
 
-- **Claude Code / Cursor / Windsurf:** `/bmad-teach-me-testing`
-- **Codex:** `$bmad-teach-me-testing`
+- **Claude Code / Cursor / Windsurf:** `/bmad-tea-teach-me-testing`
+- **Codex:** `$bmad-tea-teach-me-testing`
 - **Inside a `/bmad-tea` chat:** `TMT`
 
 Full invocation rules: [Invoking a TEA Skill](/docs/reference/commands.md#invoking-a-tea-skill).

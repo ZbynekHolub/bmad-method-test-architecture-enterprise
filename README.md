@@ -46,37 +46,52 @@ To install a tagged release, replace `<version>` with the release number:
 npx skills add https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise/tree/v<version>/skills
 ```
 
+### Upgrading to 3.0
+
+The eight direct workflow commands now share the `bmad-tea-*` prefix. Replace `bmad-testarch-automate`, `-evaluate`, `-framework`, `-nfr`, `-test-design`, `-test-review`, and `-trace` with the same suffix under `bmad-tea-`. Replace `bmad-teach-me-testing` with `bmad-tea-teach-me-testing`. The 3.0 package does not publish the old slash commands. The `bmad-tea` agent, `bmod-tea` module, menu codes, and `tea-*` CLI executables keep their names.
+
+After installing 3.0, move project customizations to the new names:
+
+```bash
+npx --package=bmad-method-test-architecture-enterprise@3 tea-migrate-customizations --project-root . --check
+npx --package=bmad-method-test-architecture-enterprise@3 tea-migrate-customizations --project-root .
+```
+
+This includes old CI and ATDD customization files. The command preserves each value and reports both file paths when an old and new setting conflict. Resolve any reported conflict, then rerun the command. See the [configuration reference](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/reference/configuration/) for details.
+
+An existing host may retain the old skill folders after installing 3.0. Check the host's project and global skills folders, back up any edits in the old folders, and move those eight folders out of skill discovery. The [troubleshooting guide](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/reference/troubleshooting/#old-slash-commands-still-appear-after-30) lists the exact folders and a safe cleanup sequence. Restart the host so its command list refreshes.
+
 <a id="start-with-one-workflow"></a>
 
 ## Start with one skill
 
 Eight commands start the eight workflows: Framework includes CI setup; Automate includes red and expand modes.
 
-In Claude Code, Cursor, and Windsurf, type `/bmad-testarch-test-design` in chat.
-In Codex, type `$bmad-testarch-test-design`.
+In Claude Code, Cursor, and Windsurf, type `/bmad-tea-test-design` in chat.
+In Codex, type `$bmad-tea-test-design`.
 You can also load `/bmad-tea` or `$bmad-tea` and choose a menu code.
 Each skill can run directly in a fresh session.
 
 | Skill                                                                                                                           | Command                      | Menu | Use it to                                            |
 | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ---- | ---------------------------------------------------- |
-| [Automate](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/run-automate/)             | `/bmad-testarch-automate`    | TA   | Generate red acceptance scaffolds or expand coverage |
-| [Test Review](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/run-test-review/)       | `/bmad-testarch-test-review` | RV   | Audit test quality and score findings                |
-| [Test Design](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/run-test-design/)       | `/bmad-testarch-test-design` | TD   | Plan risks, coverage, and NFR evidence               |
-| [Framework](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/setup-test-framework/)    | `/bmad-testarch-framework`   | TF   | Set up a test framework, CI, or both                 |
-| [NFR](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/run-nfr-assess/)                | `/bmad-testarch-nfr`         | NR   | Audit implemented NFR evidence                       |
-| [Trace](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/run-trace/)                   | `/bmad-testarch-trace`       | TR   | Map requirements to tests and decide a release gate  |
-| [Teach Me Testing](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/teach-me-testing/) | `/bmad-teach-me-testing`     | TMT  | Learn testing through seven sessions                 |
+| [Automate](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/run-automate/)             | `/bmad-tea-automate`         | TA   | Generate red acceptance scaffolds or expand coverage |
+| [Test Review](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/run-test-review/)       | `/bmad-tea-test-review`      | RV   | Audit test quality and score findings                |
+| [Test Design](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/run-test-design/)       | `/bmad-tea-test-design`      | TD   | Plan risks, coverage, and NFR evidence               |
+| [Framework](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/setup-test-framework/)    | `/bmad-tea-framework`        | TF   | Set up a test framework, CI, or both                 |
+| [NFR](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/run-nfr-assess/)                | `/bmad-tea-nfr`              | NR   | Audit implemented NFR evidence                       |
+| [Trace](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/run-trace/)                   | `/bmad-tea-trace`            | TR   | Map requirements to tests and decide a release gate  |
+| [Teach Me Testing](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/how-to/workflows/teach-me-testing/) | `/bmad-tea-teach-me-testing` | TMT  | Learn testing through seven sessions                 |
 
 Evaluate:
 
-- [Evaluate](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/tutorials/evaluate-your-first-skill/): `/bmad-testarch-evaluate`, menu `EV`. Build and run a behavioral evaluation.
+- [Evaluate](https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/tutorials/evaluate-your-first-skill/): `/bmad-tea-evaluate`, menu `EV`. Build and run a behavioral evaluation.
 
-Framework and CI setup share one skill, `bmad-testarch-framework`.
+Framework and CI setup share one skill, `bmad-tea-framework`.
 Ask for framework only, CI only, or both; TEA infers the scope from your prompt and asks "Do you want CI too?" once when CI scope is unclear in an interactive session. An unattended request with unclear scope runs framework setup only and states that CI was excluded.
-Request CI setup through `/bmad-testarch-framework` or the agent's `CI` menu code. Existing CI customizations remain usable.
+Request CI setup through `/bmad-tea-framework` or the agent's `CI` menu code. Migrated CI customizations remain usable.
 Create, Resume, Validate, and Edit remain available for the selected setup scope.
 
-Automation uses `red` mode before implementation and `expand` mode for existing code. Request red mode through `/bmad-testarch-automate` or the agent's `AT` menu code; the direct command defaults to expand. Existing customization files and saved progress remain usable. Create runs execute the generated tests and repair test issues for up to three rounds. Red confirms the intended missing behavior; expand aims for passing coverage and reports product defects.
+Automation uses `red` mode before implementation and `expand` mode for existing code. Request red mode through `/bmad-tea-automate` or the agent's `AT` menu code; the direct command defaults to expand. Migrated customization files and saved progress remain usable. Create runs execute the generated tests and repair test issues for up to three rounds. Red confirms the intended missing behavior; expand aims for passing coverage and reports product defects.
 
 For Codex, replace the leading `/` in the table with `$`.
 The agent menu also accepts `GATE` to route you through test review, NFR evidence audit, and trace Phase 2.

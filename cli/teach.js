@@ -106,13 +106,13 @@ function run(argv = process.argv) {
   const inputFile = options.messageFile ? readInput(root, options.messageFile, '--message-file') : null;
   const message = inputFile ? new TextDecoder('utf-8', { fatal: true }).decode(fs.readFileSync(inputFile)) : options.message;
   if (!message.trim()) throw new WorkflowError('usage', 'learner message must be nonempty');
-  const skillRoot = resolveWorkflowSkill({ projectRoot: root, skillName: 'bmad-teach-me-testing', skillRoot: options.skillRoot });
+  const skillRoot = resolveWorkflowSkill({ projectRoot: root, skillName: 'bmad-tea-teach-me-testing', skillRoot: options.skillRoot });
   const consumedInputs = new Set();
   const inputPatterns = new Map();
   const config = resolveTeaConfig({
     projectRoot: root,
     skillRoot,
-    skillName: 'bmad-teach-me-testing',
+    skillName: 'bmad-tea-teach-me-testing',
     inputPaths: consumedInputs,
     inputPatterns,
   });
@@ -149,8 +149,8 @@ function run(argv = process.argv) {
       '_bmad/custom/config.user.toml',
       'package.json',
       'package-lock.json',
-      '_bmad/custom/bmad-teach-me-testing.toml',
-      '_bmad/custom/bmad-teach-me-testing.user.toml',
+      '_bmad/custom/bmad-tea-teach-me-testing.toml',
+      '_bmad/custom/bmad-tea-teach-me-testing.user.toml',
     ].map((file) => path.join(root, file)),
   ].filter(Boolean);
   const guard = () => {

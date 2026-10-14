@@ -63,8 +63,8 @@ function ciStagingProblems(workspace, set) {
   const rootOf = (name) => new RegExp('`\\{' + name + '\\}`: `([^`]+)`').exec(prompt)?.[1];
   const canonicalRoot = rootOf('skill-root');
   const problems = [];
-  if (!prompt.includes('Read `bmad-testarch-framework/SKILL.md` completely')) problems.push('CI prompt bypasses its canonical skill');
-  if (canonicalRoot !== 'bmad-testarch-framework') problems.push('CI entry cannot resolve its canonical skill');
+  if (!prompt.includes('Read `bmad-tea-framework/SKILL.md` completely')) problems.push('CI prompt bypasses its canonical skill');
+  if (canonicalRoot !== 'bmad-tea-framework') problems.push('CI entry cannot resolve its canonical skill');
   const compareTree = (sourceDir, stagedRoot) => {
     if (typeof stagedRoot !== 'string') {
       problems.push(`${path.basename(sourceDir)}: the CI prompt resolves no skill directory`);
@@ -86,7 +86,7 @@ function ciStagingProblems(workspace, set) {
     };
     walk(sourceDir);
   };
-  compareTree(path.join(__dirname, '..', 'skills', 'bmad-testarch-framework'), canonicalRoot);
+  compareTree(path.join(__dirname, '..', 'skills', 'bmad-tea-framework'), canonicalRoot);
   return problems;
 }
 
@@ -1361,7 +1361,7 @@ async function main() {
   // The leg cache is keyed by how a suite's legs are staged, so a leg staged
   // from its fixture set is never answered by one run in an empty directory.
   const cacheOptions = { cache: path.join('cache-root'), agent: 'claude' };
-  const emptyStaging = cacheDirectoryFor(cacheOptions, 'fragment-selection/bmad-testarch-ci');
+  const emptyStaging = cacheDirectoryFor(cacheOptions, 'fragment-selection/bmad-tea-ci');
   if (stagingOf('ci') === 'fixture-set-v1') problems.push('CI canonical setup reused the pre-merge staging cache');
   for (const suiteId of ['trace', 'nfr', 'ci', 'test-design', 'test-review']) {
     const directory = cacheDirectoryFor(cacheOptions, suiteId);
@@ -1388,7 +1388,7 @@ async function main() {
           );
           continue;
         }
-        for (const expected of [set.projectRoot, suiteId === 'ci' ? 'bmad-testarch-framework' : 'skill']) {
+        for (const expected of [set.projectRoot, suiteId === 'ci' ? 'bmad-tea-framework' : 'skill']) {
           if (!fs.existsSync(path.join(staged.cwd, expected))) {
             problems.push(`${suiteId} ${set.id}: the staged workspace holds no ${expected}/, so the leg's agent would find nothing to run`);
           }
@@ -1397,11 +1397,11 @@ async function main() {
           problems.push(...ciStagingProblems(staged, set).map((failure) => `${suiteId} ${set.id}: ${failure}`));
           if (set === groundTruth.fixtureSets[0]) {
             for (const asset of [
-              'bmad-testarch-framework/SKILL.md',
-              'bmad-testarch-framework/resources/setup-routing.md',
-              'bmad-testarch-framework/resources/setup-state.md',
-              'bmad-testarch-framework/ci/steps-c/step-01-preflight.md',
-              'bmad-testarch-framework/ci/github-actions-template.yaml',
+              'bmad-tea-framework/SKILL.md',
+              'bmad-tea-framework/resources/setup-routing.md',
+              'bmad-tea-framework/resources/setup-state.md',
+              'bmad-tea-framework/ci/steps-c/step-01-preflight.md',
+              'bmad-tea-framework/ci/github-actions-template.yaml',
             ]) {
               const file = path.join(staged.cwd, asset);
               if (!fs.existsSync(file)) continue; // The positive check already names this failure.
@@ -1414,12 +1414,12 @@ async function main() {
                 fs.writeFileSync(file, original);
               }
             }
-            const canonicalEntry = path.join(staged.cwd, 'bmad-testarch-framework', 'SKILL.md');
+            const canonicalEntry = path.join(staged.cwd, 'bmad-tea-framework', 'SKILL.md');
             if (fs.existsSync(canonicalEntry)) {
               const original = fs.readFileSync(canonicalEntry);
               try {
                 fs.writeFileSync(canonicalEntry, Buffer.concat([original, Buffer.from('\n# mutated staged entry\n')]));
-                if (!ciStagingProblems(staged, set).includes('staged CI asset differs from its source: bmad-testarch-framework/SKILL.md'))
+                if (!ciStagingProblems(staged, set).includes('staged CI asset differs from its source: bmad-tea-framework/SKILL.md'))
                   problems.push('CI staging accepted a modified canonical SKILL.md');
               } finally {
                 fs.writeFileSync(canonicalEntry, original);

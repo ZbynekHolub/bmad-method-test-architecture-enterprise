@@ -216,7 +216,7 @@ function generateLlmsTxt(docsDir, outputDir) {
     '',
     '## Evaluate',
     '',
-    'Invoke `/bmad-testarch-evaluate` or `$bmad-testarch-evaluate`; use `EV` inside a TEA agent chat.',
+    'Invoke `/bmad-tea-evaluate` or `$bmad-tea-evaluate`; use `EV` inside a TEA agent chat.',
     '',
     `- **[Evaluate Your First Skill](${SITE_URL}/tutorials/evaluate-your-first-skill)**: Tutorial: one skill from requirements to a scored run and an accepted baseline`,
     `- **[Evaluate a Skill or Agent](${SITE_URL}/how-to/evaluate/evaluate-a-skill-or-agent)**: First how-to guide of the Evaluate group`,

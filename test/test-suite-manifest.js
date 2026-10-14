@@ -56,22 +56,22 @@ function deferredEntry(skill) {
 
 check('flags a skill with neither a behavioral suite nor a deferred entry', () => {
   const manifest = { deferred: [], suites: [behavioralSuite('bmad-tea')] };
-  const unaccounted = unaccountedSkills(manifest, ['bmad-tea', 'bmad-testarch-framework']);
-  assert.deepStrictEqual(unaccounted, ['bmad-testarch-framework']);
+  const unaccounted = unaccountedSkills(manifest, ['bmad-tea', 'bmad-tea-framework']);
+  assert.deepStrictEqual(unaccounted, ['bmad-tea-framework']);
 });
 
 check('reports nothing when the deferred array is empty and every skill has a behavioral suite', () => {
   const manifest = {
     deferred: [],
-    suites: [behavioralSuite('bmad-tea'), behavioralSuite('bmad-testarch-framework'), behavioralSuite('bmad-teach-me-testing')],
+    suites: [behavioralSuite('bmad-tea'), behavioralSuite('bmad-tea-framework'), behavioralSuite('bmad-tea-teach-me-testing')],
   };
-  const unaccounted = unaccountedSkills(manifest, ['bmad-tea', 'bmad-testarch-framework', 'bmad-teach-me-testing']);
+  const unaccounted = unaccountedSkills(manifest, ['bmad-tea', 'bmad-tea-framework', 'bmad-tea-teach-me-testing']);
   assert.deepStrictEqual(unaccounted, []);
 });
 
 check('a deferred entry accounts for a skill with no behavioral suite', () => {
-  const manifest = { deferred: [deferredEntry('bmad-testarch-framework')], suites: [behavioralSuite('bmad-tea')] };
-  const unaccounted = unaccountedSkills(manifest, ['bmad-tea', 'bmad-testarch-framework']);
+  const manifest = { deferred: [deferredEntry('bmad-tea-framework')], suites: [behavioralSuite('bmad-tea')] };
+  const unaccounted = unaccountedSkills(manifest, ['bmad-tea', 'bmad-tea-framework']);
   assert.deepStrictEqual(unaccounted, []);
 });
 

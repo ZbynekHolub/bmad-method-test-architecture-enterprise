@@ -60,7 +60,7 @@
  *   node test/eval-fragment-selection.js --validate-only
  *   node test/eval-fragment-selection.js --preflight-only --agent codex
  *   node test/eval-fragment-selection.js --agent claude --runs 3
- *   node test/eval-fragment-selection.js --agent codex --workflow bmad-testarch-automate
+ *   node test/eval-fragment-selection.js --agent codex --workflow bmad-tea-automate
  *   node test/eval-fragment-selection.js --agent custom --agent-cmd my-runner --agent-arg --headless
  *   node test/eval-fragment-selection.js --agent claude --json results/fragment-selection.json
  *
@@ -430,9 +430,9 @@ function mustLoadApplicabilityProblems(suiteDir, item, selectionContext, fragmen
     if (!hasPositiveRepoFact(item, '@seontechnologies/playwright-utils')) {
       problems.push(`${fragment} requires @seontechnologies/playwright-utils in package.json`);
     }
-    const runnerApplies = suiteDir === 'bmad-testarch-framework' || hasPositiveRepoFact(item, '@playwright/test');
+    const runnerApplies = suiteDir === 'bmad-tea-framework' || hasPositiveRepoFact(item, '@playwright/test');
     if (!runnerApplies) problems.push(`${fragment} requires the Playwright runner`);
-    if (!['frontend', 'fullstack'].includes(stack) && suiteDir === 'bmad-testarch-atdd') {
+    if (!['frontend', 'fullstack'].includes(stack) && suiteDir === 'bmad-tea-atdd') {
       problems.push(`${fragment} requires an ATDD frontend or fullstack run`);
     }
   }
@@ -468,8 +468,8 @@ function mustLoadApplicabilityProblems(suiteDir, item, selectionContext, fragmen
 function workflowRootForSuite(suiteDir) {
   const canonicalSkill =
     {
-      'bmad-testarch-atdd': 'bmad-testarch-automate',
-      'bmad-testarch-ci': 'bmad-testarch-framework',
+      'bmad-tea-atdd': 'bmad-tea-automate',
+      'bmad-tea-ci': 'bmad-tea-framework',
     }[suiteDir] ?? suiteDir;
   return path.join(WORKFLOW_ROOT, canonicalSkill);
 }

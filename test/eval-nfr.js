@@ -1,7 +1,7 @@
 /**
  * nfr eval harness.
  *
- * `bmad-testarch-nfr` reads an evidence bundle, reads the thresholds a project
+ * `bmad-tea-nfr` reads an evidence bundle, reads the thresholds a project
  * states for itself, and assigns PASS, CONCERNS, or FAIL to four domains. This
  * measures whether it grounds each of those statuses in the evidence it was
  * handed, against a corpus whose true answers were written from the fixture
@@ -9,7 +9,7 @@
  *
  * WHY THIS SUITE EXISTS
  *
- * The manifest carried `bmad-testarch-nfr` under `deferred` with one sentence of
+ * The manifest carried `bmad-tea-nfr` under `deferred` with one sentence of
  * missing evidence: no fixture with known gaps existed, so an unsupported PASS
  * could not be told from a grounded one. That is the sentence this corpus
  * answers. The headline metric counts unsupported PASS results and its ceiling
@@ -213,7 +213,7 @@ const { readBytes, readJson, readText, writeText } = require('./lib/file-system-
 const PROJECT_ROOT = path.join(__dirname, '..');
 const FIXTURE_ROOT = path.join(__dirname, 'fixtures', 'nfr-eval');
 const GROUND_TRUTH = path.join(FIXTURE_ROOT, 'ground-truth.json');
-const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-testarch-nfr');
+const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-nfr');
 const SUITE_ID = 'nfr';
 
 // A complete NFR run reads six step files, the whole evidence bundle, and writes
@@ -1073,7 +1073,7 @@ function configToml(set) {
  * Layout, with the workspace itself as the agent's working directory:
  *
  *   <projectRoot>/   the bundle, plus a resolved _bmad/config.toml
- *   skill/           the bmad-testarch-nfr workflow, copied verbatim
+ *   skill/           the bmad-tea-nfr workflow, copied verbatim
  *   bmod-tea/        the shared TEA knowledge base the skill reads as {tea-knowledge}
  *
  * The project root is the set's own, so the prompt that names it says which
@@ -1197,7 +1197,7 @@ async function assertGroundTruthAbsent(dir) {
 function buildPrompt(set, { customCategories = [] } = {}) {
   const root = set.projectRoot;
   return [
-    `You are running the TEA workflow \`bmad-testarch-nfr\` against the project in \`${root}/\`.`,
+    `You are running the TEA workflow \`bmad-tea-nfr\` against the project in \`${root}/\`.`,
     '',
     'The workflow is in `skill/`. Read `skill/instructions.md` first, then execute every step file it',
     'names in order, in full, without skipping or reordering. The step files are under `skill/steps-c/`.',

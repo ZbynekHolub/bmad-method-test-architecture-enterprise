@@ -2,7 +2,7 @@
 
 /**
  * The in-memory reservation backend Story 6.9's smoke test runs the installed
- * `bmad-testarch-framework` scaffold's `tests/e2e/api-sample.spec.ts` against.
+ * `bmad-tea-framework` scaffold's `tests/e2e/api-sample.spec.ts` against.
  *
  * Three routes, matching what that spec calls through the scaffold's own
  * `apiRequest` fixture:

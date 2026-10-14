@@ -35,11 +35,11 @@ fs.writeFileSync(path.join(scratch, 'story.md'), '# Story\n\nAC-1: promised beha
 fs.mkdirSync(path.join(scratch, '_bmad/custom'), { recursive: true });
 fs.writeFileSync(path.join(scratch, 'policy.md'), 'STRICT_POLICY_RULE\n');
 fs.writeFileSync(
-  path.join(scratch, '_bmad/custom/bmad-testarch-automate.toml'),
+  path.join(scratch, '_bmad/custom/bmad-tea-automate.toml'),
   '[workflow]\npersistent_facts = ["EXPAND ONLY", "file:{project-root}/policy.md"]\non_complete = "expand hook"\n',
 );
 fs.writeFileSync(
-  path.join(scratch, '_bmad/custom/bmad-testarch-atdd.toml'),
+  path.join(scratch, '_bmad/custom/bmad-tea-atdd.toml'),
   '[workflow]\npersistent_facts = ["RED ONLY"]\non_complete = "red hook"\n',
 );
 try {
