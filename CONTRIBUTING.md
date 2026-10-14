@@ -112,26 +112,26 @@ Include a changelog entry and account for compatibility when choosing the releas
 ## Publishing
 
 The [Publish workflow](./.github/workflows/publish.yaml) runs the quality gate before publishing.
-Pushes to `main` affecting skills or package metadata publish a `next` prerelease.
-Stable `latest` releases are triggered manually from `main`.
+Stable releases are triggered manually from `main`. Each release points both npm `latest` and `next` at the same version.
 
 Maintainers can dispatch it with:
 
 ```bash
-npm run release:next
 npm run release:patch
 npm run release:minor
 npm run release:major
 ```
 
 These scripts dispatch GitHub Actions; they require an authenticated `gh` CLI with repository access.
-The Actions UI also exposes the channel and version-bump inputs.
+The Actions UI also exposes the version-bump input.
+If the tags ever diverge, `npm run release:sync-tags` points `next` at the current `latest` without publishing a new version. This repair runs in the same trusted workflow.
 
 Publishing requires npm Trusted Publishing configured for this repository's `.github/workflows/publish.yaml`.
 The publisher must name the canonical repository and workflow in npm, and the workflow needs `id-token: write`. A fork does not match that trusted publisher. See [npm's trusted publishing setup](https://docs.npmjs.com/trusted-publishers/).
+Enable **Allow npm dist-tag** on that trusted publisher so the workflow can point `next` at the stable release. The release job installs a current npm CLI with OIDC dist-tag support.
 Stable releases also need `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY`, with the GitHub App allowed to push the release commit and tag.
 The workflow requests an OIDC token for npm, synchronizes metadata, and publishes with provenance.
-For a stable release, it also stamps the changelog, pushes the version commit and tag, and creates a GitHub Release.
+For a stable release, it also stamps the changelog, pushes the version commit and tag, and creates a GitHub Release. The release briefly creates and removes a temporary npm tag to check tag-management permission before the version bump, then waits for npm to finish processing the published version before aligning both tags.
 
 After publishing, check the version and dist-tags:
 
@@ -144,9 +144,9 @@ Verify the tagged skill install and the npm tools before announcing the release.
 
 ### Release sequence
 
-Use `next` to validate merged changes, then cut a stable `latest` release. Choose `patch` for compatible fixes, `minor` for compatible features, and `major` for breaking changes.
+Cut a stable release when merged changes are ready. Choose `patch` for compatible fixes, `minor` for compatible features, and `major` for breaking changes.
 
-Before dispatching, verify `npm test`, current docs, an Unreleased changelog entry, synchronized metadata, and a clean `main` checkout. Confirm the npm publisher and release GitHub App credentials are configured.
+Before dispatching, verify `npm test`, current docs, an Unreleased changelog entry, synchronized metadata, and a clean `main` checkout. Confirm the npm publisher allows `npm publish` and `npm dist-tag`, and the release GitHub App credentials are configured.
 
 After dispatching, verify the npm version and dist-tags, the GitHub Release and tag, a tagged skill install, `bmad setup tea`, and the installed CLI commands.
 
