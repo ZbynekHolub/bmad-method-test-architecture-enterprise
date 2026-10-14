@@ -283,7 +283,7 @@ It exits before any model call, and it is what `eval:all --preflight-only` passe
 
 ## Repository counts
 
-`npm test` chains 172 checks; `npm run test:ci-coverage` derives the count from `package.json`.
+`npm test` chains 173 checks; `npm run test:ci-coverage` derives the count from `package.json`.
 The fragment-selection corpus contains 24 cases.
 A preflight run checks 12 suites, including 10 that probe the selected agent executable, version, and credentials.
 The remaining suites check corpus and execution tooling.
@@ -327,6 +327,13 @@ npm run eval:ci -- --agent codex
 npm run eval:test-design -- --agent codex
 npm run eval:atdd -- --agent codex
 npm run eval:teach-me-testing -- --agent codex
+```
+
+`npm run` prepends `node_modules/.bin` to `PATH`. A transitive package can supply an older vendor CLI there. Resolve the installed CLI before starting the npm script, then pass its absolute path when the run needs that version:
+
+```bash
+codex_path=$(command -v codex)
+npm run eval:test-design -- --agent codex --agent-cmd "$codex_path"
 ```
 
 Fragment selection accepts a workflow ID. These examples run one repetition; use `--runs 2` for stability measurement:

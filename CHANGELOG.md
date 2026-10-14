@@ -9,15 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `tea-test-design` accepts epic or system requirement documents, invokes the packaged skill with a selected headless agent, verifies fresh reports and a completed checkpoint, and publishes the plan. Each attempt retains its prompt, raw streams and vendor/model record; `--agent none` saves a prompt-only invocation.
 - `tea-automate` CLI for the merged red/expand skill, with Create, Resume, Validate, Edit, default run-and-heal, JSON outcomes, and retained agent/runner evidence.
 - Real Codex generation captures and an independent fixed-versus-mutated voucher-suite scorer, complementing the deterministic AUTOMATE fixture evaluator.
 
 ### Changed
 
+- Test Design live evaluation prints each case start and a minute-by-minute heartbeat while an agent call runs.
 - Built-in Codex CLI adapters now use `gpt-6.1-sol` as their current default model, including Automate and Test Review. Explicit `--model` overrides still take precedence.
 
 ### Fixed
 
+- Test Design risk guidance requires bare numeric probability, impact, and score cells after a live run put explanations inside those cells and failed CLI publication and evaluation shape checks.
+- Test Design evaluation recognizes observed descriptions of erased or discarded offline edits and build-based disablement, and reports the actual CLI selected by `--agent-cmd` in preflight and result provenance.
+- Test Design rejects required sections that appear only inside fenced examples and rejects unscored risk registers with noncanonical IDs before publishing a plan.
+- Test Design prefers normalized exact heading matches over substring matches when validating sections to select canonical headings over lookalike headings; evaluation artifact retention cleans incomplete attempt directories on failure.
+- Test Design accepts standalone `and` and `&` as equivalent section-heading connectors while still requiring populated content; retains the original rejected Codex report and a separate later-parser replay.
+- Test Design verifies populated mode-specific full-plan sections, score placement within the declared risk band, and a P0/P1/P2/P3 priority on every coverage row before publication.
+- Test Design clean-only evaluations retain null recall, coverage and priority rates when the selected corpus declares zero expectations. Result records verify explicit zero contribution metadata; lost observations and positive-expectation missing measurements still fail.
+- Test Design preserves canonical risk IDs, score-band ranges and test levels; recognizes exact empty-band absence markers and observed E2E qualifiers; accepts residual acceptance tables only when every referenced ID belongs to the scored register, preserves existing published reports on replacement failures, rejects input hardlink collisions, and cleans evaluation workspaces even when evidence retention fails. Priority guidance requires a source-backed recovery path before treating a workaround as business recovery.
+- Test design consolidates related failure mechanisms, uses stated existing controls as regression constraints, preserves canonical table headers, and explains priorities through documented consequences and workarounds. Its parser recognizes the observed `Description and source evidence` header, preserving supported risk descriptions in the evaluation projection. Headless workflow configuration selects the requested skill's customization namespace while preserving the existing test-review default.
 - Headless Automate generation now tells test-writing subagents to use literal Playwright registrations that the CLI can verify, after a live evaluation found dynamic registrations in two of three trials.
 - Automate reconciles native Playwright evidence across nested configs, RegExp selectors, CommonJS and ESM source locations, namespace registrations, and merged fixture aliases. Real native full and filtered runs verify complete generated scope for each supported form.
 - Reconcile Automate generated test leaves, files, configured projects, and repetitions with native execution identities; require complete mode progress, preserve disabled healing counters, and protect existing directory inputs and aliases from result publication.

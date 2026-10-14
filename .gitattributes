@@ -20,6 +20,8 @@
 # Asserted by test/test-test-review-cli.js, Suite 1.
 test/fixtures/test-review-cli/reports/fenced-recommendation-crlf.md text eol=crlf
 
+# Native Test Design captures retain their original bytes and intentional Markdown line breaks.
+test/results/codex-test-design/raw/** -text whitespace=-blank-at-eol,-blank-at-eof
 # Raw live generation captures preserve their exact payload bytes and whitespace.
 test/results/automate-codex-2026-10-09/before/** -text whitespace=-blank-at-eol,-blank-at-eof
 test/results/automate-codex-2026-10-09/after/** -text whitespace=-blank-at-eol,-blank-at-eof

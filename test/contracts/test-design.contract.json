@@ -3,7 +3,7 @@
   "parentDigest": null,
   "revisionCount": 0,
   "contractId": "tea-test-design-behavioral",
-  "sourceSpecDigest": "sha256:4255dbe3d9d6784450901245b686b183d511142d65fef39e9054d0db4f4943f0",
+  "sourceSpecDigest": "sha256:54e64f67fae99ea67eaa339eefcdd65f25c4848484646174dc1fc93bb8f2b1ea",
   "behaviors": [
     {
       "id": "B-001",
@@ -414,7 +414,7 @@
                 "pointer": "/interactions/design-seeded-offline-order-capture/stdout/design"
               }
             ],
-            "pattern": "^[\\s\\S]*(?:[Cc][Oo][Nn][Ff][Ll][Ii][Cc][Tt]|[Oo][Vv][Ee][Rr][Ww][Rr][Ii][Tt][Ee]|[Oo][Vv][Ee][Rr][Ww][Rr][Ii][Tt]|[Cc][Ll][Oo][Bb][Bb][Ee][Rr]|[Ll][Aa][Ss][Tt]\\s+[Ww][Rr][Ii][Tt][Ee]|[Ll][Aa][Ss][Tt]-[Ww][Rr][Ii][Tt][Ee]|[Ll][Oo][Ss][Tt]\\s+[Uu][Pp][Dd][Aa][Tt][Ee])[\\s\\S]*$"
+            "pattern": "^[\\s\\S]*(?:[Cc][Oo][Nn][Ff][Ll][Ii][Cc][Tt]|[Oo][Vv][Ee][Rr][Ww][Rr][Ii][Tt][Ee]|[Oo][Vv][Ee][Rr][Ww][Rr][Ii][Tt]|[Cc][Ll][Oo][Bb][Bb][Ee][Rr]|[Ee][Rr][Aa][Ss][Ee]|[Dd][Ii][Ss][Cc][Aa][Rr][Dd]|[Ll][Aa][Ss][Tt]\\s+[Ww][Rr][Ii][Tt][Ee]|[Ll][Aa][Ss][Tt]-[Ww][Rr][Ii][Tt][Ee]|[Ll][Oo][Ss][Tt]\\s+[Uu][Pp][Dd][Aa][Tt][Ee])[\\s\\S]*$"
           },
           {
             "op": "regex",
@@ -519,7 +519,7 @@
                 "pointer": "/interactions/design-seeded-offline-order-capture/stdout/design"
               }
             ],
-            "pattern": "^[\\s\\S]*(?:[Ff][Ee][Aa][Tt][Uu][Rr][Ee]\\s+[Ff][Ll][Aa][Gg]|[Kk][Ii][Ll][Ll]\\s+[Ss][Ww][Ii][Tt][Cc][Hh]|[Kk][Ii][Ll][Ll]-[Ss][Ww][Ii][Tt][Cc][Hh]|[Tt][Oo][Gg][Gg][Ll][Ee]|[Dd][Ii][Ss][Aa][Bb][Ll][Ee]|[Dd][Ii][Ss][Aa][Bb][Ll][Ee][Dd])[\\s\\S]*$"
+            "pattern": "^[\\s\\S]*(?:[Ff][Ee][Aa][Tt][Uu][Rr][Ee]\\s+[Ff][Ll][Aa][Gg]|[Nn][Oo]\\s+[Ff][Ll][Aa][Gg]|[Kk][Ii][Ll][Ll]\\s+[Ss][Ww][Ii][Tt][Cc][Hh]|[Kk][Ii][Ll][Ll]-[Ss][Ww][Ii][Tt][Cc][Hh]|[Tt][Oo][Gg][Gg][Ll][Ee]|[Dd][Ii][Ss][Aa][Bb][Ll][Ee]|[Dd][Ii][Ss][Aa][Bb][Ll][Ee][Dd]|[Dd][Ii][Ss][Aa][Bb][Ll][Ii][Nn][Gg])[\\s\\S]*$"
           },
           {
             "op": "regex",
@@ -528,7 +528,7 @@
                 "pointer": "/interactions/design-seeded-offline-order-capture/stdout/design"
               }
             ],
-            "pattern": "^[\\s\\S]*(?:[Rr][Oo][Ll][Ll][Oo][Uu][Tt]|[Rr][Ee][Ll][Ee][Aa][Ss][Ee]|[Rr][Oo][Ll][Ll][Bb][Aa][Cc][Kk]|[Rr][Oo][Ll][Ll]\\s+[Bb][Aa][Cc][Kk]|[Dd][Ee][Pp][Ll][Oo][Yy]|[Ss][Tt][Aa][Gg][Ee][Dd]|[Ss][Tt][Oo][Rr][Ee]\\s+[Rr][Ee][Vv][Ii][Ee][Ww]|[Rr][Ee][Vv][Ee][Rr][Tt])[\\s\\S]*$"
+            "pattern": "^[\\s\\S]*(?:[Rr][Oo][Ll][Ll][Oo][Uu][Tt]|[Rr][Ee][Ll][Ee][Aa][Ss][Ee]|[Rr][Oo][Ll][Ll][Bb][Aa][Cc][Kk]|[Rr][Oo][Ll][Ll]\\s+[Bb][Aa][Cc][Kk]|[Dd][Ee][Pp][Ll][Oo][Yy]|[Ss][Tt][Aa][Gg][Ee][Dd]|[Ss][Tt][Oo][Rr][Ee]\\s+[Rr][Ee][Vv][Ii][Ee][Ww]|[Ss][Tt][Oo][Rr][Ee]\\s+[Bb][Uu][Ii][Ll][Dd]|[Nn][Ee][Ww]\\s+[Bb][Uu][Ii][Ll][Dd]|[Rr][Ee][Vv][Ee][Rr][Tt])[\\s\\S]*$"
           }
         ]
       }

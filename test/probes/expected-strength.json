@@ -3796,7 +3796,7 @@
   },
   "test-design": {
     "contractId": "tea-test-design-behavioral",
-    "corpusDigest": "sha256:4356cda41b959358ef403e2fecf2f7d6c3246b3e60ff26af06779c1a3b1ab99e",
+    "corpusDigest": "sha256:c3f2cd3974ac3999564e3cf7fd76e87c15c71ad90f45abfc344592a0a201d3b1",
     "probeCount": 16,
     "strength": {
       "defect": {
