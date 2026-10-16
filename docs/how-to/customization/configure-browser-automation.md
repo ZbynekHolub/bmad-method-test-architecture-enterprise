@@ -141,8 +141,6 @@ An explicit request in your prompt wins ("use the CLI to explore this page").
 Otherwise TEA takes the CLI for stateless work (snapshots, locator verification, evidence capture) and MCP for stateful flows (multi-tab, file uploads, repeated edits, self-healing).
 If only one tool is installed it uses that one; with neither it behaves as `none`.
 
-Full selection rules: [TEA Overview: Browser Automation](/docs/explanation/tea-overview.md#browser-automation-playwright-cli--mcp).
-
 <a id="which-workflows-benefit"></a>
 
 ## Which Skills Benefit
@@ -168,13 +166,11 @@ Even in `auto` mode, you can override per-request:
 
 The old boolean flag `tea_use_mcp_enhancements` has been replaced:
 
-| Old Setting                       | New Equivalent                   |
-| --------------------------------- | -------------------------------- |
-| `tea_use_mcp_enhancements: true`  | `tea_browser_automation: "auto"` |
-| `tea_use_mcp_enhancements: false` | `tea_browser_automation: "none"` |
+- Old `true`: set `tea_browser_automation = "mcp"` to keep MCP-only behavior, or `"auto"` to opt into CLI and MCP selection (recommended).
+- Old `false`: set `tea_browser_automation = "none"`.
 
 Nothing migrates the old flag automatically.
-Answer the browser automation question in `bmad setup tea` with the equivalent value.
+Answer the browser automation question in `bmad setup tea` with the value you chose.
 
 ## Troubleshooting
 
@@ -187,15 +183,17 @@ playwright-cli --version
 # Install if missing
 npm install -g @playwright/cli@latest
 
-# Install skills
+# Install skills: Claude Code layout
 playwright-cli install --skills
+# Install skills: Codex layout
+playwright-cli install --skills=agents
 ```
 
 ### MCP Not Working
 
-1. Check MCP servers are configured in your IDE
-2. Restart your IDE after configuration changes
-3. Verify: `npx @playwright/mcp@latest --version`
+1. Check MCP servers are configured in your assistant
+2. Restart the assistant after configuration changes
+3. Confirm the assistant sees them: `claude mcp list` in Claude Code or `codex mcp list` in Codex should list `playwright` and `playwright-test`; other assistants show them in their MCP settings panel
 
 ### Auto Mode Not Selecting Expected Tool
 
@@ -225,6 +223,6 @@ playwright-cli close-all
 
 ## Related
 
-- [TEA Overview: Browser Automation](/docs/explanation/tea-overview.md#browser-automation-playwright-cli--mcp)
+- [TEA Overview: Optional Integrations](/docs/explanation/tea-overview.md#optional-integrations)
 - [Integrate Playwright Utils](/docs/how-to/customization/integrate-playwright-utils.md)
 - [TEA Configuration Reference](/docs/reference/configuration.md)

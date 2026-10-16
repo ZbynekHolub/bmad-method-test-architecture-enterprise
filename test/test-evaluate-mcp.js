@@ -1315,7 +1315,10 @@ async function checkServerThatCannotStart() {
  * section and in the run section's sentence on a step that crashes, and it no longer holds Story 1.10's limit.
  */
 function checkReferenceRecordsEndedSession() {
-  const reference = fs.readFileSync(path.join(PROJECT_ROOT, 'docs', 'reference', 'tea-evaluate-cli.md'), 'utf8');
+  // The tool-server passages sit on the reference's manifest page, the crash sentence in the CLI reference's `run` section.
+  const reference = ['tea-evaluate-manifest.md', 'tea-evaluate-cli.md']
+    .map((page) => fs.readFileSync(path.join(PROJECT_ROOT, 'docs', 'reference', page), 'utf8'))
+    .join('\n');
   const lines = reference.split('\n');
   const passage = lines.find((line) => line.startsWith('A server whose process ends the session after the handshake')) ?? '';
   const outside = lines.find((line) => line.startsWith("The exit code follows a command's convention")) ?? '';
@@ -1348,12 +1351,21 @@ function checkReferenceRecordsEndedSession() {
       crash.includes('exit 12'),
     `the run section's crash sentence does not cover a tool server beside a command: ${JSON.stringify(crash)}`,
   );
+  const everyPage = [
+    'tea-evaluate-cli.md',
+    'tea-evaluate-manifest.md',
+    'tea-evaluate-confinement.md',
+    'tea-evaluate-evaluators.md',
+    'tea-evaluate-evidence.md',
+  ]
+    .map((page) => fs.readFileSync(path.join(PROJECT_ROOT, 'docs', 'reference', page), 'utf8'))
+    .join('\n');
   for (const limit of [
     'never caught on an `mcp` interface',
     'has no field for a session that ended mid-call',
     'a tool server that crashes during a call is a target that could not run',
   ]) {
-    check(!reference.includes(limit), `the reference still holds Story 1.10's limit: ${JSON.stringify(limit)}`);
+    check(!everyPage.includes(limit), `the reference still holds Story 1.10's limit: ${JSON.stringify(limit)}`);
   }
 }
 

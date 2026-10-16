@@ -45,15 +45,19 @@ For a global install, add `--global`. Move unmanaged old folders out after backu
 
 **Symptom**: `npx skills add` hangs, times out, or cannot fetch the repository.
 
-**Cause**: Network connectivity, an npm registry timeout, or a firewall that blocks GitHub.
+**Cause**: The npm registry is unreachable or slow, or a firewall blocks GitHub.
+Check each before changing anything.
 
 ```bash
-ping registry.npmjs.org
-npm cache clean --force                              # retry on a clean cache
-npm config set registry https://registry.npmjs.org/  # if a proxy rewrote the registry
+npm config get registry                        # a corporate mirror here is intentional
+npm ping                                       # HTTPS check against that registry
+curl -sS -o /dev/null -w '%{http_code}\n' --max-time 15 https://github.com   # prints 200 when GitHub answers, or the connection error
 ```
 
-If GitHub itself is blocked, see [Install TEA Behind a Corporate Firewall](/how-to/install-behind-firewall/).
+- `npm ping` fails: the registry or proxy is the problem. Ask your administrator.
+- `curl` prints a connection error or a status other than 200: GitHub is blocked. See [Install TEA Behind a Corporate Firewall](/how-to/install-behind-firewall/).
+- The error names the npm cache (`EACCES`, `integrity checksum failed`): run `npm cache verify`, then retry. Run `npm cache clean --force` only if that fails.
+- The registry is a leftover from an old proxy and your organization allows the public one: note the value, then run `npm config set registry https://registry.npmjs.org/`. Restore it with the same command and the noted value.
 
 ### TEA Says It Is Not Set Up
 
@@ -84,9 +88,9 @@ Skills find the knowledge base at `../bmod-tea/knowledge` from their own folder,
 
 ```bash
 ls .claude/skills/ | grep '^bmad-tea-'   # eight workflow folders must be present
-# bmad-tea-automate   bmad-tea-framework   bmad-tea-nfr
-# bmad-tea-evaluate   bmad-tea-test-design bmad-tea-test-review
-# bmad-tea-trace
+# bmad-tea-automate      bmad-tea-evaluate   bmad-tea-framework
+# bmad-tea-nfr           bmad-tea-teach-me-testing
+# bmad-tea-test-design   bmad-tea-test-review   bmad-tea-trace
 ```
 
 Try invoking the skill by its full skill name:

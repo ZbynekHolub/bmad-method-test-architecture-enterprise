@@ -31,7 +31,7 @@ TEA runs in solutioning, implementation, and release gates; the Enterprise track
 
 ## TEA Skill Catalog
 
-Eight workflows have eight direct capability commands, plus the TEA agent and its module record. The documentation sidebar lists these skills in this order:
+Eight workflows have eight direct capability commands, plus the TEA agent and its module record. The table follows the sidebar order, with Evaluate last:
 
 | Skill                                                          | Primary Outputs                                                                                                      | Browser Automation (CLI/MCP)                                      |
 | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -42,16 +42,9 @@ Eight workflows have eight direct capability commands, plus the TEA agent and it
 | [NFR](/docs/how-to/workflows/run-nfr-assess.md)                | NFR evidence audit against thresholds, domain statuses, and actions                                                  | Optional evidence capture                                         |
 | [Trace](/docs/how-to/workflows/run-trace.md)                   | Phase 1 coverage matrix and recommendations; Phase 2 gate decision (PASS/CONCERNS/FAIL)                              | Consumes recorded live verification                               |
 | [Teach Me Testing](/docs/how-to/workflows/teach-me-testing.md) | Seven learning sessions, quizzes, notes, and saved learner progress                                                  | No browser automation required                                    |
+| [Evaluate](/docs/tutorials/evaluate-your-first-skill.md)       | Scored behavioral evaluation, named gaps, and a CI plan handed to Framework with CI scope                            | No browser automation required                                    |
 
 <a id="additional-skills"></a>
-
-### Evaluate
-
-[Trace](/docs/how-to/workflows/run-trace.md) appears in the Skills list above.
-
-| Skill                                                    | Primary Outputs                                                                           |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| [Evaluate](/docs/tutorials/evaluate-your-first-skill.md) | Scored behavioral evaluation, named gaps, and a CI plan handed to Framework with CI scope |
 
 Automation uses one skill with two modes: red before implementation and expand after implementation. Request red mode through Automate for acceptance tests before implementation. Automate and `TA` default to expand when no task mode is given. Create runs execute and repair tests for up to three rounds while keeping real product defects visible.
 
@@ -99,13 +92,12 @@ graph TB
         TestDesignSys["<b>TEA: test-design (system-level + NFR planning)</b>"]
         Framework["<b>TEA: framework setup (framework, CI, or both)</b>"]
         GateCheck["<b>Architect: implementation-readiness</b>"]
-        Architecture --> EpicsStories
         Architecture --> TestDesignSys
-        TestDesignSys --> Framework
+        TestDesignSys --> EpicsStories
         EpicsStories --> Framework
         Framework --> GateCheck
-        Phase3Note["<b>Epics created AFTER architecture,</b><br/><b>then system-level test design and test infrastructure setup</b>"]
-        EpicsStories -.-> Phase3Note
+        Phase3Note["<b>System-level test design follows architecture;</b><br/><b>its handoff feeds epic and story creation, then test infrastructure setup</b>"]
+        TestDesignSys -.-> Phase3Note
     end
 
     subgraph Phase4["<b>Phase 4: IMPLEMENTATION: Per Epic Cycle</b>"]
@@ -122,9 +114,11 @@ graph TB
         TestDesign --> CreateStory
         CreateStory --> ATDD
         ATDD --> DevImpl
+        CreateStory -.->|skip red| DevImpl
         DevImpl --> Automate
         Automate --> TestReview1
         TestReview1 --> Trace1
+        Automate -.->|skip review| Trace1
         Trace1 -.->|next story| CreateStory
         TestDesignNote["<b>Test design: 'How do I test THIS epic?'</b><br/>Creates test-design/test-design-epic-N.md per epic"]
         TestDesign -.-> TestDesignNote
@@ -138,6 +132,7 @@ graph TB
 
         NFR --> TestReview2
         TestReview2 --> TraceGate
+        NFR -.->|skip review| TraceGate
         TraceGate --> GateDecision
         GateDecision -->|PASS| Pass["<b>PASS ✅</b>"]
         GateDecision -->|CONCERNS| Concerns["<b>CONCERNS ⚠️</b>"]
@@ -157,12 +152,15 @@ graph TB
     style Fail fill:#f44336,stroke:#b71c1c,stroke-width:3px,color:#000
 ```
 
+Solid arrows show the recommended order. Few are hard prerequisites: system-level `test-design` needs the PRD and architecture, and `automate` red mode needs a story with acceptance criteria and a configured framework. `trace` reads an NFR audit when one exists and never needs `test-review`.
+
 TEA's Phase 2 work is the Brownfield baseline: run `trace` Phase 1 during planning to record existing coverage.
 Greenfield projects start TEA in Phase 3.
 The Phase 3 skills run once per project, the Phase 4 skills run per epic and per story, and the gate skills run per epic or per release.
 `teach-me-testing` sits outside the lifecycle entirely and runs once per learner.
+Evaluate sits outside it too: `bmad-tea-evaluate` needs only the target and the requirements you confirm, so it runs at any point.
 
-Phase 3 order matters: run `test-design` first so NFR evidence needs can influence infrastructure, then `framework` once architecture and test design have established the stack. Request both setup phases to agree the stack, framework, and test commands, then it can generate the scaffold and pipeline in parallel before validating them together. A CI-only request with no framework offers the framework phase first.
+In Phase 3, run `test-design` before `framework` so you can carry its NFR evidence needs into the framework request; `framework` itself needs only the project's stack. Request both setup phases to agree the stack, framework, and test commands, then it can generate the scaffold and pipeline in parallel before validating them together. A CI-only request with no framework offers the framework phase first.
 
 ### `test-design` is dual-mode
 
@@ -194,96 +192,24 @@ Codex users run `$bmad-tea-test-design` with the same scope-setting prompt.
 
 ## Why TEA Is Different from Other BMM Agents
 
-TEA spans Phase 3, Phase 4, and the release gate.
+TEA spans the brownfield baseline in Phase 2, Phases 3 and 4, and the release gate.
 Its skills share testing, fixture, and CI patterns through the [Knowledge Base System](/docs/explanation/knowledge-base-system.md).
 
-## Library Integrations
+## Optional Integrations
 
-TEA uses a library automatically when its config flag is `true` and its package is installed.
-The `library-integration-mandate` knowledge fragment defines this rule, and each library has a fragment listing the calls it supplies.
-Set the flag to `false` to generate code using the underlying framework.
+TEA works without any of these.
+Each one changes what TEA generates or checks once enabled, and its setup guide owns the install commands and configuration.
+The `library-integration-mandate` knowledge fragment defines the shared rule: a library is used when its flag is `true` and its package is installed, and `false` generates code on the underlying framework.
 
-The fragment also lists the changes required to add an integration to generation, aggregation, review, and documentation.
+| Integration                                 | What it enables                                                                                                                                            | Setting                                                          | Setup                                                                                                                                                                                               |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Playwright Utils                            | Shared Playwright fixtures for API requests, authentication, network handling, and polling in Framework, Automate, and Test Review                         | `tea_use_playwright_utils`                                       | [Integrate Playwright Utils](/docs/how-to/customization/integrate-playwright-utils.md)                                                                                                              |
+| Pact.js Utils                               | Provider-state, verifier, and request-filter helpers in contract tests from Framework, Automate, Test Design, and Test Review                              | `tea_use_pactjs_utils` (needs a real consumer-provider boundary) | [Integrate Pact.js Utils](/docs/how-to/customization/integrate-pactjs-utils.md#install-and-verify)                                                                                                  |
+| Browser automation (Playwright CLI and MCP) | Live page discovery in Test Design, selector verification in Automate, and trace, screenshot, and network evidence in Test Review                          | `tea_browser_automation` (`auto`, `cli`, `mcp`, `none`)          | [Configure Browser Automation](/docs/how-to/customization/configure-browser-automation.md)                                                                                                          |
+| Pact MCP (SmartBear)                        | Broker-aware provider-state discovery, review support, and can-i-deploy checks in contract skills; complements `pactjs-utils`, which runs inside test code | `tea_pact_mcp` (`mcp` or `none`)                                 | [Pact MCP](/docs/how-to/customization/integrate-pactjs-utils.md#pact-mcp-tea_pact_mcp) and [Configure Browser Automation](/docs/how-to/customization/configure-browser-automation.md#cli-shortcuts) |
 
-### Playwright Utils (`@seontechnologies/playwright-utils`)
-
-Shared Playwright fixtures for API requests, authentication, network handling, and polling.
-
-- Install: `npm install -D @seontechnologies/playwright-utils`
-  > `bmad setup tea` asks whether to enable Playwright Utils. Run it again, or edit `tea_use_playwright_utils` under `[modules.tea]` in `_bmad/config.toml`, to change the answer.
-- Impacts: `framework` (framework and CI), `automate` (red and expand), and `test-review`
-- Utilities: api-request, auth-session, network-recorder, intercept-network-call, recurse, log, file-utils, burn-in, network-error-monitor, fixtures-composition
-
-### Pact.js Utils (`@seontechnologies/pactjs-utils`)
-
-Contract testing utilities that reduce raw Pact.js boilerplate and standardize provider verification.
-
-- Install: `npm install -D @seontechnologies/pactjs-utils @pact-foundation/pact`
-- Config: `tea_use_pactjs_utils: true` (the default).
-  TEA requires a real consumer-provider boundary before scaffolding contract tests.
-  The flag selects the utilities used in those tests.
-  Set `false` to have TEA write raw `@pact-foundation/pact`.
-- Impacts: `framework` (framework and CI phases), `automate` (red and expand modes), `test-design`, and `test-review`
-- Utilities: createProviderState, toJsonMap, setJsonBody, setJsonContent, buildVerifierOptions, buildMessageVerifierOptions, createRequestFilter, noOpRequestFilter, handlePactBrokerUrlAndSelectors, getProviderVersionTags
-- Supports the local monorepo flow (`pactUrls`) and the remote broker flow (`PACT_BROKER_BASE_URL`, `PACT_BROKER_TOKEN`)
-
-### Browser Automation (Playwright CLI + MCP)
-
-Auto mode chooses CLI or MCP per action.
-You can set a specific mode.
-
-- **Playwright CLI** (`@playwright/cli`): token-efficient shell commands.
-  The agent opens a page, takes a snapshot, and gets back concise element references.
-  Best for stateless work: page discovery, selector verification, screenshot capture.
-- **Playwright MCP**: stateful automation over MCP servers with full accessibility trees.
-  Best for multi-step wizards, self-healing mode, and deep DOM introspection.
-
-**Configuration** (`[modules.tea]` in `_bmad/config.toml`):
-
-```toml
-tea_browser_automation = "auto" # auto | cli | mcp | none
-```
-
-| Mode   | What happens                                                                                                                          |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `auto` | TEA picks per action: CLI for quick lookups, MCP for complex flows. Falls back gracefully if only one is installed. **(Recommended)** |
-| `cli`  | CLI only. MCP ignored even if configured.                                                                                             |
-| `mcp`  | MCP only. CLI ignored even if installed. Same as the old `tea_use_mcp_enhancements: true`.                                            |
-| `none` | No browser interaction. TEA generates from docs and code analysis only.                                                               |
-
-**Setup:**
-
-- CLI: `npm install -g @playwright/cli@latest` (global, one-time) then `playwright-cli install --skills` from the project root
-- MCP: configure MCP servers in your IDE (see [Configure Browser Automation](/docs/how-to/customization/configure-browser-automation.md))
-
-**Which skills benefit:** `test-design` (exploratory mode: snapshot pages to discover actual UI elements), `automate` in red and expand modes (verify selectors against the live DOM before generating tests), `test-review` (capture traces, screenshots, and network logs as evidence).
-
-**To disable:** set `tea_browser_automation: "none"`, or skip both CLI and MCP installation.
-
-### Pact MCP (SmartBear MCP for PactFlow/Pact Broker)
-
-Optional design-time broker interaction for contract testing skills.
-
-**Configuration** (`[modules.tea]` in `_bmad/config.toml`):
-
-```toml
-tea_pact_mcp = "mcp" # none | mcp (default "mcp")
-```
-
-| Mode   | What happens                                                                                                                                                                                                            |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mcp`  | Default. TEA uses SmartBear MCP tools for provider-state discovery, test review support, can-i-deploy, and matrix checks when they are reachable, and degrades to provider source or an OpenAPI spec when they are not. |
-| `none` | Skips broker calls and the reachability probe.                                                                                                                                                                          |
-
-**Setup:**
-
-- Install: `npm install -g @smartbear/mcp` (or use `npx -y @smartbear/mcp@latest`)
-- Claude Code (global): `claude mcp add-json -s user smartbear '{"type":"stdio","command":"npx","args":["-y","@smartbear/mcp@latest"],"env":{"PACT_BROKER_BASE_URL":"...","PACT_BROKER_TOKEN":"..."}}'`
-- Required broker env vars: `PACT_BROKER_BASE_URL` and token/basic-auth credentials
-
-**Which skills benefit:** `test-design` (fetch provider states and broker metadata), `automate` (assist pact test generation with broker context), `test-review` (review pact tests against broker-informed practices), `framework` CI phase (reference can-i-deploy and matrix checks).
-
-Pact MCP complements `pactjs-utils`: MCP helps at planning and review time, `pactjs-utils` runs inside test code.
+`bmad setup tea` asks about each setting; run it again, or edit `[modules.tea]` in `_bmad/config.toml`, to change an answer.
+See [Configuration](/docs/reference/configuration.md) for every setting.
 
 ## Related
 
@@ -298,5 +224,5 @@ Pact MCP complements `pactjs-utils`: MCP helps at planning and review time, `pac
 - [Evaluate Your First Skill](/docs/tutorials/evaluate-your-first-skill.md): tutorial: score one skill from requirements to an accepted baseline
 - [How Evaluate Works](/docs/explanation/how-evaluate-works.md): the stack, the rules, and the reasons behind an evaluation
 - [Why Evaluate Confines the Target](/docs/explanation/why-evaluate-confines-the-target.md): why the target of an evaluation runs under file-system confinement
-- [tea-evaluate CLI](/docs/reference/tea-evaluate-cli.md): every `tea-evaluate` command, option, and exit code
-- Evaluate how-to guides: [Evaluate a Skill or Agent](/docs/how-to/evaluate/evaluate-a-skill-or-agent.md), [Evaluate an MCP Tool Server](/docs/how-to/evaluate/evaluate-an-mcp-tool-server.md), [Evaluate an HTTP API](/docs/how-to/evaluate/evaluate-an-http-api.md), [Choose an Evaluator and Calibrate a Judge](/docs/how-to/evaluate/choose-an-evaluator-and-calibrate-a-judge.md), [Read the Gaps and Fix Them](/docs/how-to/evaluate/read-the-gaps-and-fix-them.md), [Compare Runs and Accept a Baseline](/docs/how-to/evaluate/compare-runs-and-accept-a-baseline.md), [Measure Repeatability and Compare a Configuration](/docs/how-to/evaluate/measure-repeatability-and-compare-a-configuration.md), [Put an Evaluation in CI](/docs/how-to/evaluate/put-an-evaluation-in-ci.md), [Bring an Existing Suite](/docs/how-to/evaluate/bring-an-existing-suite.md)
+- [tea-evaluate CLI](/docs/reference/tea-evaluate-cli.md): every `tea-evaluate` command, option, and exit code; companions: [tea-evaluate Manifest](/docs/reference/tea-evaluate-manifest.md), [tea-evaluate Confinement](/docs/reference/tea-evaluate-confinement.md), [tea-evaluate Evaluators](/docs/reference/tea-evaluate-evaluators.md) and [tea-evaluate Evidence](/docs/reference/tea-evaluate-evidence.md)
+- Evaluate how-to guides: [Evaluate a Skill or Agent](/docs/how-to/evaluate/evaluate-a-skill-or-agent.md), [Evaluate an MCP Tool Server](/docs/how-to/evaluate/evaluate-an-mcp-tool-server.md), [Evaluate an HTTP API](/docs/how-to/evaluate/evaluate-an-http-api.md), [Choose an Evaluator and Calibrate a Judge](/docs/how-to/evaluate/choose-an-evaluator-and-calibrate-a-judge.md), [Read the Gaps and Fix Them](/docs/how-to/evaluate/read-the-gaps-and-fix-them.md), [Compare Runs and Accept a Baseline](/docs/how-to/evaluate/compare-runs-and-accept-a-baseline.md), [Put an Evaluation in CI](/docs/how-to/evaluate/put-an-evaluation-in-ci.md); optional advanced paths: [Measure Repeatability and Compare a Configuration](/docs/how-to/evaluate/measure-repeatability-and-compare-a-configuration.md), [Bring an Existing Suite](/docs/how-to/evaluate/bring-an-existing-suite.md)

@@ -9,6 +9,8 @@
  * A page whose own path names Evaluate (`how-to/evaluate/`, `tutorials/evaluate-*`, `explanation/*evaluate*`,
  * `reference/tea-evaluate-cli`) is one Evaluate owns, and the overview has to link every one of those.
  *
+ * Every `reference/tea-*-cli` page, Evaluate or not, has exactly one explicit sidebar entry; the Evaluate rules above cannot see a headless CLI page they do not name.
+ *
  * Each rule has revert cases that mutate a copy of the config text or of the overview text:
  * remove what covers one page and the check names that page.
  *
@@ -71,6 +73,29 @@ function withoutComments(configText) {
     .join('\n');
 }
 
+/**
+ * The Evaluate how-to guides in reading order: the main flow from a first evaluation to CI, then the optional advanced paths.
+ */
+const EVALUATE_HOW_TO_ORDER = [
+  'how-to/evaluate/evaluate-a-skill-or-agent',
+  'how-to/evaluate/evaluate-an-mcp-tool-server',
+  'how-to/evaluate/evaluate-an-http-api',
+  'how-to/evaluate/choose-an-evaluator-and-calibrate-a-judge',
+  'how-to/evaluate/read-the-gaps-and-fix-them',
+  'how-to/evaluate/compare-runs-and-accept-a-baseline',
+  'how-to/evaluate/put-an-evaluation-in-ci',
+  'how-to/evaluate/measure-repeatability-and-compare-a-configuration',
+  'how-to/evaluate/bring-an-existing-suite',
+];
+
+/** One problem when the sidebar lists the Evaluate how-to guides out of reading order or misses one of the ordered set. */
+function orderProblems(configText) {
+  const listed = explicitSlugs(configText).filter((slug) => slug.startsWith('how-to/evaluate/'));
+  return JSON.stringify(listed) === JSON.stringify(EVALUATE_HOW_TO_ORDER)
+    ? []
+    : [`the sidebar lists the Evaluate how-to guides as ${listed.join(', ')}; expected ${EVALUATE_HOW_TO_ORDER.join(', ')}`];
+}
+
 /** The explicit `slug:` entries, in the order the config lists them. */
 function explicitSlugs(configText) {
   return [...withoutComments(configText).matchAll(/\bslug:\s*(['"])([^'"]+)\1/g)].map((match) => match[2]);
@@ -97,6 +122,19 @@ function sidebarProblems(configText, slugs, allSlugs) {
     if (!allSlugs.includes(slug)) problems.push(`the sidebar lists ${slug}, which is no page under docs/`);
   }
   return problems;
+}
+
+/** The reference page of each headless CLI: `reference/tea-<name>-cli`. */
+const CLI_PAGE = /^reference\/tea-[a-z-]+-cli$/;
+
+/** One problem per CLI reference page that does not have exactly one explicit sidebar entry. */
+function cliSidebarProblems(configText, allSlugs) {
+  const listed = explicitSlugs(configText);
+  return allSlugs
+    .filter((slug) => CLI_PAGE.test(slug))
+    .map((slug) => [slug, listed.filter((entry) => entry === slug).length])
+    .filter(([, count]) => count !== 1)
+    .map(([slug, count]) => `${slug} is a CLI reference page with ${count} sidebar entries, expected exactly 1`);
 }
 
 /** The slugs a page's Markdown links resolve to, for links that stay inside `docs/`. */
@@ -173,6 +211,16 @@ function revertCaseProblems(configText, overviewText, pages) {
       failures.push(`the overview check passed with its link to ${slug} removed`);
     }
   }
+  for (const slug of allSlugs.filter((candidate) => CLI_PAGE.test(candidate))) {
+    const removed = withoutCoverage(configText, slug);
+    if (removed === configText || !cliSidebarProblems(removed, allSlugs).some((problem) => problem.startsWith(`${slug} `))) {
+      failures.push(`the CLI sidebar check passed with the entry for ${slug} removed`);
+    }
+    const doubled = configText.replace(new RegExp(`^.*\\bslug:\\s*(['"])${literal(slug)}\\1.*$`, 'm'), '$&\n$&');
+    if (doubled === configText || !cliSidebarProblems(doubled, allSlugs).some((problem) => problem.startsWith(`${slug} `))) {
+      failures.push(`the CLI sidebar check passed with a second entry for ${slug}`);
+    }
+  }
   const nameless = [{ slug: 'how-to/evaluate/a-page-that-names-no-command', text: '# A page about checking results\n' }];
   if (!evaluateSlugs(nameless).includes(nameless[0].slug) || !ownedSlugs(nameless).includes(nameless[0].slug)) {
     failures.push('a page under how-to/evaluate/ that names neither tea-evaluate nor bmad-tea-evaluate escaped the Evaluate pages');
@@ -187,6 +235,14 @@ function revertCaseProblems(configText, overviewText, pages) {
   if (!sidebarProblems(deadEntry, [], allSlugs).some((problem) => problem.includes('explanation/no-such-page'))) {
     failures.push('a sidebar entry that names no page passed the sidebar check');
   }
+  const ciLine = /^.*\bslug:\s*'how-to\/evaluate\/put-an-evaluation-in-ci'.*\n/m;
+  const ciEntry = configText.match(ciLine)?.[0];
+  const ciLast =
+    ciEntry === undefined
+      ? configText
+      : configText.replace(ciEntry, '').replace(/^(.*\bslug:\s*'how-to\/evaluate\/bring-an-existing-suite'.*\n)/m, `$1${ciEntry}`);
+  if (ciLast === configText || orderProblems(ciLast).length === 0)
+    failures.push('the order check passed with CI moved after the advanced paths');
   const unlinkedNewPage = [...owned, 'how-to/evaluate/a-page-nobody-listed'];
   if (!overviewProblems(overviewText, unlinkedNewPage).some((problem) => problem.endsWith(' how-to/evaluate/a-page-nobody-listed'))) {
     failures.push('a new owned Evaluate page the overview does not link passed the overview check');
@@ -203,6 +259,10 @@ function main() {
   const failures = [];
   try {
     assert.ok(overview, `${OVERVIEW_PAGE} is no page under docs/`);
+    assert.ok(
+      pages.some(({ slug }) => slug === 'reference/tea-nfr-cli') && pages.some(({ slug }) => slug === 'reference/tea-test-design-cli'),
+      'the scan misses the nfr or test-design CLI page',
+    );
     assert.ok(slugs.includes('reference/tea-evaluate-cli'), 'the scan misses reference/tea-evaluate-cli');
     assert.ok(owned.includes('reference/tea-evaluate-cli'), 'the owned pages miss reference/tea-evaluate-cli');
     assert.ok(
@@ -215,20 +275,15 @@ function main() {
   if (overview) {
     failures.push(...revertCaseProblems(configText, overview.text, pages), ...overviewProblems(overview.text, owned));
   }
-  failures.push(
-    ...sidebarProblems(
-      configText,
-      slugs,
-      pages.map(({ slug }) => slug),
-    ),
-  );
+  const allSlugs = pages.map(({ slug }) => slug);
+  failures.push(...cliSidebarProblems(configText, allSlugs), ...sidebarProblems(configText, slugs, allSlugs), ...orderProblems(configText));
   if (failures.length > 0) {
     console.error(`docs-evaluate-sidebar: ${failures.length} problem(s)`);
     for (const failure of failures) console.error(`  - ${failure}`);
     process.exit(1);
   }
   console.log(
-    `docs-evaluate-sidebar: ${slugs.length} Evaluate pages sit in the sidebar, the overview links ${owned.length} of them, and each rule fails on its revert case`,
+    `docs-evaluate-sidebar: ${slugs.length} Evaluate pages sit in the sidebar with the how-to guides in reading order, the overview links ${owned.length} of them, and each rule fails on its revert case`,
   );
 }
 
@@ -240,6 +295,7 @@ module.exports = {
   explicitSlugs,
   autogeneratedDirectories,
   sidebarProblems,
+  cliSidebarProblems,
   overviewProblems,
   linkedSlugs,
   readPages,

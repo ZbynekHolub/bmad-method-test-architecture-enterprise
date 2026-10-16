@@ -48,7 +48,7 @@ const LLM_WARN_CHARS = LLM_MAX_CHARS - LLM_MIN_HEADROOM_CHARS;
 const LLM_EXCLUDE_PATTERNS = [
   // The site's not-found page, which is navigation chrome and carries no content.
   '404.md',
-  // TEA's test and evaluation design serves contributors.
+  // TEA's test and evaluation design serves contributors; llms.txt links it under "Contributing".
   'explanation/how-tea-is-tested',
   // The command-line references: every flag, rule and exit code of one command,
   // which an agent looks up one command at a time when it runs that command, so
@@ -58,6 +58,12 @@ const LLM_EXCLUDE_PATTERNS = [
   // them 499,446.
   'reference/tea-evaluate-cli',
   'reference/tea-test-review-cli',
+  // The tea-evaluate CLI reference's companion pages: the manifest, the confinement, the evaluators and the
+  // evidence that page links, split out of it with the same lookup use, so llms.txt links each one beside it.
+  'reference/tea-evaluate-manifest',
+  'reference/tea-evaluate-confinement',
+  'reference/tea-evaluate-evaluators',
+  'reference/tea-evaluate-evidence',
   // Evaluate's tutorial and its two explanation pages: a fixture walkthrough and
   // the reasons behind the runtime's rules, about 72k characters together. An
   // agent that runs an evaluation follows the how-to guides, which stay in the
@@ -76,11 +82,22 @@ const LLM_EXCLUDE_PATTERNS = [
   'reference/configuration',
   'reference/knowledge-base',
   'reference/live-verification-results',
-  // The experiment-reader guide: a reference for the offline repeatability and configuration-comparison
-  // reader, with two full example declarations (about 17k characters). An agent opens it when a task names
-  // an experiment, and llms.txt links it under "Evaluate". With it in, the bundle left less than the 50k
-  // characters the headroom check requires.
+  // The execution-target matrix: one row per test technology with the depth TEA supports it at (about 11k
+  // characters). An agent reads the row of the technology a task names, and llms.txt links the page under
+  // "Reference lookups". With it in, the bundle left less than the 50k characters the headroom check
+  // requires once the Evaluate how-to guides carried commands a reader can paste as they stand.
+  'reference/execution-targets',
+  // The CI recipes for the headless test review, split out of the tea-test-review CLI reference (which
+  // is excluded above for the same lookup use): an agent opens them when a task names a CI system, and
+  // llms.txt links the guide under "Skills".
+  'how-to/workflows/run-test-review-in-ci',
+  // The offline experiment reader, which maintainers run from a TEA checkout and Evaluate never calls:
+  // its task-flow guide (about 12k characters) and its reference with both example declarations, every
+  // field and the full decision order (about 38k). An agent opens them when a task names an experiment,
+  // and llms.txt links the guide under "Evaluate" and the reference under "Reference lookups". With the
+  // guide alone in, the bundle left less than the 50k characters the headroom check requires.
   'how-to/evaluate/measure-repeatability-and-compare-a-configuration',
+  'reference/configuration-experiment-reader',
   // Note: Files/dirs starting with _ (like _STYLE_GUIDE.md, _archive/) are excluded in shouldExcludeFromLlm()
 ];
 
@@ -195,7 +212,24 @@ function buildAstroSite() {
 function generateLlmsTxt(docsDir, outputDir) {
   console.log('  → Generating llms.txt...');
 
-  const content = [
+  const content = buildLlmsTxt();
+  const problems = llmsTxtLinkProblems(content, docsDir);
+  if (problems.length > 0) {
+    console.error(`    ERROR: ${problems.join('; ')}`);
+    process.exit(1);
+  }
+
+  const outputPath = path.join(outputDir, 'llms.txt');
+  fs.writeFileSync(outputPath, content, 'utf-8');
+  console.log(`    Generated llms.txt (${content.length.toLocaleString()} chars)`);
+}
+
+/**
+ * The llms.txt text. Pure, so a test can check its links without running the build.
+ * @returns {string}
+ */
+function buildLlmsTxt() {
+  return [
     '# Test Architect (TEA) Documentation',
     '',
     '> Risk-based test strategy, automation guidance, and release gate decisions for quality-driven development.',
@@ -213,6 +247,7 @@ function generateLlmsTxt(docsDir, outputDir) {
     '',
     `- **[Automate (TA)](${SITE_URL}/how-to/workflows/run-automate)**: Generate red acceptance scaffolds or expand coverage`,
     `- **[Test Review (RV)](${SITE_URL}/how-to/workflows/run-test-review)**: Audit test quality and score findings`,
+    `- **[Run Test Review in CI](${SITE_URL}/how-to/workflows/run-test-review-in-ci)**: Gate pull requests on a headless Test Review with GitHub Actions, GitLab or another CI`,
     `- **[Test Design (TD)](${SITE_URL}/how-to/workflows/run-test-design)**: Plan risks, coverage, and NFR evidence`,
     `- **[Framework (TF)](${SITE_URL}/how-to/workflows/setup-test-framework)**: Set up a test framework, CI, or both`,
     `- **[NFR (NR)](${SITE_URL}/how-to/workflows/run-nfr-assess)**: Audit implemented NFR evidence`,
@@ -232,13 +267,23 @@ function generateLlmsTxt(docsDir, outputDir) {
     '## Command-line references',
     '',
     `- **[tea-evaluate CLI](${SITE_URL}/reference/tea-evaluate-cli)**: Check, digest, preflight, run, score, compare and run the CI tiers of an evaluation folder: flags, rules and exit codes`,
+    `- **[tea-evaluate Manifest](${SITE_URL}/reference/tea-evaluate-manifest)**: The evaluation.json fields, partition plans, registry, workspace, interaction plan and probe routes`,
+    `- **[tea-evaluate Confinement](${SITE_URL}/reference/tea-evaluate-confinement)**: What a confined target can read, write and reach on macOS and Linux, the audit and egress`,
+    `- **[tea-evaluate Evaluators](${SITE_URL}/reference/tea-evaluate-evaluators)**: The evaluation layer, the rubric judge, calibration labels and sealed-brief agent qualification`,
+    `- **[tea-evaluate Evidence](${SITE_URL}/reference/tea-evaluate-evidence)**: The run directory, record path forms and the run-wide strength aggregate`,
     `- **[tea-test-review CLI](${SITE_URL}/reference/tea-test-review-cli)**: Headless test review in CI: flags, exit codes and the JSON verdict`,
     '',
     '## Reference lookups',
     '',
     `- **[Configuration](${SITE_URL}/reference/configuration)**: Every configuration key with its default and the skills it changes`,
     `- **[Knowledge Base](${SITE_URL}/reference/knowledge-base)**: The knowledge fragments by category and the tea-index.csv manifest that selects them`,
+    `- **[Execution Targets](${SITE_URL}/reference/execution-targets)**: Which test technologies TEA supports, at what depth, and what you supply for the rest`,
     `- **[Live Verification Results](${SITE_URL}/reference/live-verification-results)**: The JSON file trace reads when a requirement was verified by running the system: schema, coverage rules and limits`,
+    `- **[Configuration Experiment Reader](${SITE_URL}/reference/configuration-experiment-reader)**: Commands, declaration and evidence fields, verification rules and decision order of the offline repeatability and configuration-comparison reader`,
+    '',
+    '## Contributing',
+    '',
+    `- **[How TEA Is Tested](${SITE_URL}/explanation/how-tea-is-tested)**: How TEA proves its own behavior with deterministic checks, live evaluations, seeded defects and recorded baselines`,
     '',
     '---',
     '',
@@ -249,21 +294,33 @@ function generateLlmsTxt(docsDir, outputDir) {
     `- [Prompts Bundle](${SITE_URL}/downloads/tea-prompts.zip): Agent prompts and skills`,
     '',
   ].join('\n');
+}
 
-  // A page link is `${SITE_URL}/<path>` for docs/<path>.md; the site root, llms-full.txt and the downloads are files the build writes.
-  const dead = [...content.matchAll(/\]\(([^)]+)\)/g)]
+/**
+ * What is wrong with llms.txt's page links: a link to a page no document under `docsDir` serves, and a page the
+ * bundle leaves out under `patterns` (the not-found page aside) that llms.txt does not link, so no agent can reach it.
+ * A page link is `${SITE_URL}/<path>` for docs/<path>.md; the site root, llms-full.txt and the downloads are files
+ * the build writes.
+ * @param {string} content - The llms.txt text.
+ * @param {string} docsDir - The docs root.
+ * @param {string[]} [patterns] - The bundle's exclusion patterns.
+ * @returns {string[]}
+ */
+function llmsTxtLinkProblems(content, docsDir, patterns = LLM_EXCLUDE_PATTERNS) {
+  const linked = [...content.matchAll(/\]\(([^)]+)\)/g)]
     .map((match) => match[1])
     .filter((url) => url.startsWith(`${SITE_URL}/`))
     .map((url) => url.slice(SITE_URL.length + 1))
-    .filter((page) => page !== '' && !page.includes('.') && !fs.existsSync(path.join(docsDir, `${page}.md`)));
-  if (dead.length > 0) {
-    console.error(`    ERROR: llms.txt links pages no document under docs/ serves: ${dead.join(', ')}`);
-    process.exit(1);
+    .filter((page) => page !== '' && !page.includes('.'));
+  const problems = linked
+    .filter((page) => !fs.existsSync(path.join(docsDir, `${page}.md`)))
+    .map((page) => `llms.txt links ${page}, which no document under docs/ serves`);
+  for (const file of getAllMarkdownFiles(docsDir)) {
+    const page = file.replace(/\.md$/, '');
+    if (page === '404' || !patterns.some((pattern) => file.includes(pattern))) continue;
+    if (!linked.includes(page)) problems.push(`${page} is left out of llms-full.txt and llms.txt does not link it`);
   }
-
-  const outputPath = path.join(outputDir, 'llms.txt');
-  fs.writeFileSync(outputPath, content, 'utf-8');
-  console.log(`    Generated llms.txt (${content.length.toLocaleString()} chars)`);
+  return problems;
 }
 
 /**
@@ -703,4 +760,13 @@ function checkDocLinks() {
   }
 }
 
-module.exports = { LLM_MAX_CHARS, LLM_MIN_HEADROOM_CHARS, LLM_WARN_CHARS, LLM_EXCLUDE_PATTERNS, buildLlmsFullText, llmSizeStatus };
+module.exports = {
+  LLM_MAX_CHARS,
+  LLM_MIN_HEADROOM_CHARS,
+  LLM_WARN_CHARS,
+  LLM_EXCLUDE_PATTERNS,
+  buildLlmsFullText,
+  buildLlmsTxt,
+  llmsTxtLinkProblems,
+  llmSizeStatus,
+};

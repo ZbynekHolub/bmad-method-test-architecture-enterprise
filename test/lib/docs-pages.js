@@ -3,9 +3,10 @@
 /**
  * The docs pages the Evaluate suites hold their sentences against.
  *
- * The user reference keeps what an adopter configures and acts on; the explanation page on confinement keeps how the
- * runtime builds the confinement and protects the evidence. A suite that pins a sentence reads the page that holds it,
- * so removing the sentence from that page fails the suite.
+ * The user reference keeps what an adopter configures and acts on: the CLI reference holds the commands, their exits and
+ * the platform checklist, and its companion pages hold the manifest, the confinement, the evaluators and the evidence.
+ * The explanation page on confinement keeps how the runtime builds the confinement and protects the evidence. A suite that
+ * pins a sentence reads the page that holds it, so removing the sentence from that page fails the suite.
  */
 
 const fs = require('node:fs');
@@ -15,6 +16,27 @@ const DOCS_DIRECTORY = path.join(__dirname, '..', '..', 'docs');
 
 /** The user reference of the `tea-evaluate` command line. */
 const REFERENCE_PAGE = 'reference/tea-evaluate-cli.md';
+
+/** The companion reference page on the evaluation folder's manifest: the `evaluation.json` fields, the registry, the workspace and the probe routes. */
+const REFERENCE_MANIFEST_PAGE = 'reference/tea-evaluate-manifest.md';
+
+/** The companion reference page on what a confined target can read, write and reach. */
+const REFERENCE_CONFINEMENT_PAGE = 'reference/tea-evaluate-confinement.md';
+
+/** The companion reference page on the evaluation layer, the rubric judge and evaluator qualification. */
+const REFERENCE_EVALUATORS_PAGE = 'reference/tea-evaluate-evaluators.md';
+
+/** The companion reference page on the run directory, the path forms in the records and the strength aggregate. */
+const REFERENCE_EVIDENCE_PAGE = 'reference/tea-evaluate-evidence.md';
+
+/** The CLI reference and its companion pages, in the order the CLI reference lists them. */
+const REFERENCE_PAGES = [
+  REFERENCE_PAGE,
+  REFERENCE_MANIFEST_PAGE,
+  REFERENCE_CONFINEMENT_PAGE,
+  REFERENCE_EVALUATORS_PAGE,
+  REFERENCE_EVIDENCE_PAGE,
+];
 
 /** The explanation page on why the target is confined and how the runtime keeps the evidence honest. */
 const CONFINEMENT_PAGE = 'explanation/why-evaluate-confines-the-target.md';
@@ -27,6 +49,15 @@ const CONFINEMENT_PAGE = 'explanation/why-evaluate-confines-the-target.md';
  */
 function readDocsPage(page) {
   return fs.readFileSync(path.join(DOCS_DIRECTORY, page), 'utf8');
+}
+
+/**
+ * The text of the CLI reference and its companion pages, one after the other, for a check whose sentences span them.
+ *
+ * @returns {string} the pages' text joined by a blank line
+ */
+function readReferencePages() {
+  return REFERENCE_PAGES.map((page) => readDocsPage(page)).join('\n\n');
 }
 
 /**
@@ -52,4 +83,33 @@ function sectionOf(text, heading) {
   return start === -1 ? null : lines.slice(start + 1).join('\n');
 }
 
-module.exports = { CONFINEMENT_PAGE, DOCS_DIRECTORY, REFERENCE_PAGE, readDocsPage, sectionOf };
+/**
+ * Whether a line closes a fenced block opened by `fence` at `indent`, by the CommonMark rule: after the opener's
+ * indentation, at most three spaces, the opener's character repeated at least as many times, then only whitespace.
+ * A marker line with text after it (```` ```bash ````) is block content and closes nothing.
+ *
+ * @param {string} line the candidate line
+ * @param {string} fence the opening run of backticks or tildes
+ * @param {string} [indent] the whitespace before the opening fence
+ * @returns {boolean}
+ */
+function closesFence(line, fence, indent = '') {
+  const rest = line.startsWith(indent) ? line.slice(indent.length) : line.trimStart();
+  const match = /^ {0,3}(`{3,}|~{3,})[ \t]*$/.exec(rest);
+  return match !== null && match[1][0] === fence[0] && match[1].length >= fence.length;
+}
+
+module.exports = {
+  CONFINEMENT_PAGE,
+  closesFence,
+  DOCS_DIRECTORY,
+  REFERENCE_CONFINEMENT_PAGE,
+  REFERENCE_EVALUATORS_PAGE,
+  REFERENCE_EVIDENCE_PAGE,
+  REFERENCE_MANIFEST_PAGE,
+  REFERENCE_PAGE,
+  REFERENCE_PAGES,
+  readDocsPage,
+  readReferencePages,
+  sectionOf,
+};

@@ -95,6 +95,40 @@ check('MOBILE_ROW_IDS and PLAYWRIGHT_UTILS_ROW_IDS match an independent read of 
   assert.deepStrictEqual(source.PLAYWRIGHT_UTILS_ROW_IDS, playwrightUtilsIds);
 });
 
+check('TEST_DESIGN_SYSTEM_OUTPUTS is the system-level output file names of an independent read of test-design workflow.yaml', () => {
+  // Line-based, independent of the yaml parser the module uses: each `path:`
+  // line is paired with the `mode:` line that follows it in the same entry.
+  const lines = fs.readFileSync(path.join(__dirname, '..', 'skills', 'bmad-tea-test-design', 'workflow.yaml'), 'utf8').split('\n');
+  const systemPaths = [];
+  let pending = null;
+  for (const line of lines) {
+    const pathMatch = line.match(/^\s+path:\s*"([^"]+)"/);
+    if (pathMatch) pending = pathMatch[1];
+    const modeMatch = line.match(/^\s+mode:\s*([\w-]+)/);
+    if (modeMatch && pending !== null) {
+      if (modeMatch[1] === 'system-level') systemPaths.push(pending.split('/').pop());
+      pending = null;
+    }
+  }
+  assert.ok(systemPaths.length > 0, 'fixture setup: expected at least one system-level output in test-design workflow.yaml');
+  assert.deepStrictEqual(source.TEST_DESIGN_SYSTEM_OUTPUTS, systemPaths);
+});
+
+check('traceGateIsCoverageOnly holds for the gate step and refuses an eligibility that reads execution results', () => {
+  const step = fs.readFileSync(path.join(__dirname, '..', 'skills', 'bmad-tea-trace', 'steps-c', 'step-05-gate-decision.md'), 'utf8');
+  const eligibility = "const gateEligible = allowGate && collectionStatus === 'COLLECTED';";
+  assert.ok(step.includes(eligibility), 'fixture setup: expected the eligibility line in step-05-gate-decision.md');
+  assert.strictEqual(source.TRACE_GATE_IS_COVERAGE_ONLY, true);
+  assert.strictEqual(source.traceGateIsCoverageOnly(step), true);
+  // The enterprise guide once said Phase 2 is skipped without execution results; either shape of that rule fails.
+  assert.strictEqual(
+    source.traceGateIsCoverageOnly(step.replace(eligibility, eligibility.replace(';', ' && executionResults.length > 0;'))),
+    false,
+  );
+  assert.strictEqual(source.traceGateIsCoverageOnly(`${step}\ngateEligible = gateEligible && hasExecutionResults;\n`), false);
+  assert.strictEqual(source.traceGateIsCoverageOnly(step.replace(eligibility, '')), false);
+});
+
 check(
   'EXIT_CODE_STRINGS is every exit code cli/test-review.js, cli/evaluate.js and the runner table declare, stringified, each once',
   () => {
@@ -398,6 +432,67 @@ check('THIRTY_FOUR_CONCERNS matches an independent count of "CONCERNS" verdicts 
   }
   assert.strictEqual(source.THIRTY_FOUR_CONCERNS, count === 34);
   assert.strictEqual(count, 34);
+});
+
+check('PAIRED_CAPTURE_IS_MANUAL matches what retainSkillArtifacts actually writes into provenance.json', () => {
+  // Independent of the module's reading of the source text: run the writer itself
+  // in a child process and read back the keys of the file it wrote.
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'doc-claim-provenance-'));
+  try {
+    const workspace = path.join(scratch, 'workspace');
+    fs.mkdirSync(workspace);
+    const script = `
+      const { retainSkillArtifacts } = require(${JSON.stringify(path.join(__dirname, 'lib', 'retain-skill-artifacts.js'))});
+      retainSkillArtifacts({ artifactsDir: ${JSON.stringify(path.join(scratch, 'out'))}, workspace: { dir: ${JSON.stringify(workspace)} },
+        caseId: 'probe', agent: 'probe', model: 'probe-model', repetition: 1, attempt: 1, prompt: 'probe', observation: {} })
+        .then((dir) => process.stdout.write(JSON.stringify(Object.keys(JSON.parse(require('node:fs').readFileSync(dir + '/provenance.json', 'utf8'))))));
+    `;
+    const run = require('node:child_process').spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
+    assert.strictEqual(run.status, 0, run.stderr);
+    const written = JSON.parse(run.stdout);
+    assert.deepStrictEqual(
+      written,
+      source.retainedProvenanceKeys(fs.readFileSync(path.join(__dirname, 'lib', 'retain-skill-artifacts.js'), 'utf8')),
+    );
+    assert.ok(
+      source.PAIRED_CAPTURE_FIELDS.every((field) => !written.includes(field)),
+      `the writer now records ${written.join(', ')}`,
+    );
+    assert.strictEqual(source.PAIRED_CAPTURE_IS_MANUAL, true);
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true });
+  }
+});
+
+check('pairedCaptureIsManual turns false on each revert case', () => {
+  const manual = {
+    provenanceKeys: ['mode', 'caseId', 'agent', 'requestedModel', 'repetition', 'attempt', 'capturedAt', 'originalWorkspace'],
+    testDesignSource: '    usage: null, // no adapter reports tokens\n',
+    scripts: [{ file: 'test/lib/configuration-experiment.js', text: 'function appendExposure(ledger, entry) {}' }],
+  };
+  assert.strictEqual(source.pairedCaptureIsManual(manual), true);
+  assert.strictEqual(
+    source.pairedCaptureIsManual({
+      ...manual,
+      scripts: [...manual.scripts, { file: 'cli/lib/capture.js', text: 'ledger = appendExposure(ledger, entry);' }],
+    }),
+    false,
+    'a planted ledger writer',
+  );
+  assert.strictEqual(
+    source.pairedCaptureIsManual({ ...manual, testDesignSource: '    usage: { inputTokens: 10 },\n' }),
+    false,
+    'a non-null usage',
+  );
+  assert.strictEqual(
+    source.pairedCaptureIsManual({ ...manual, provenanceKeys: [...manual.provenanceKeys, 'cost'] }),
+    false,
+    'a provenance cost key',
+  );
+});
+
+check('retainedProvenanceKeys refuses a writer it cannot read', () => {
+  assert.throws(() => source.retainedProvenanceKeys('writeText(file, provenance)'), /no longer writes provenance\.json/);
 });
 
 removeStagingFile();

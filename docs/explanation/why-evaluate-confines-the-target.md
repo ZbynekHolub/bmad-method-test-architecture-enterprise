@@ -5,25 +5,53 @@ description: Why Evaluate runs the target of an evaluation under file-system con
 
 # Why Evaluate Confines the Target
 
-Evaluate runs target code in a confined disposable workspace and audits access outside its grants.
-This keeps the target from reading the evaluation or rewriting its evidence.
-A disposable directory alone leaves the rest of the host accessible.
+Evaluate runs each target it launches in a disposable workspace under the host's sandbox and audits what the target opens outside its grants.
+This keeps the target from reading the evaluation or rewriting its evidence, which a disposable directory alone cannot do.
 
-What you configure (the host requirements, the opt-out, the `egress` and `systemPaths` fields of a registry entry, the private home and the login of an agent) is in the [tea-evaluate CLI reference](/docs/reference/tea-evaluate-cli.md#file-system-confinement).
+What you configure (the host requirements, the opt-out, the `egress` and `systemPaths` fields of a registry entry, the private home and the login of an agent) is in the [tea-evaluate CLI reference](/docs/reference/tea-evaluate-confinement.md#file-system-confinement).
 How the parts of Evaluate fit together is in [How Evaluate Works](/docs/explanation/how-evaluate-works.md).
 
 ## What confinement keeps apart
 
-Four things stay apart in every run.
+`preflight` and `run` confine every target process they start, one the target leaves running included, unless `evaluation.json` sets `"confinement": false`.
+Seatbelt supplies the confinement on macOS and Bubblewrap on Linux.
+A host that cannot confine or cannot observe, Windows among them, stops the command with exit 12 and names the reason; opting out runs there and removes every limit on the target, while the run-directory and score checks below still apply.
+A `records` evaluator's trials run in your harness, outside these limits; its `preflight` and qualification still launch the target confined.
 
-- The target and your repository: the target works in a disposable checkout and can write nothing outside it, so an evaluation leaves your working tree, your branches and your hooks as they were.
+In a confined run, four things stay apart.
+
+- The target and your repository: the target writes its disposable checkout and the private temp, port and home directories the runtime hands each call, and nothing else, so your working tree, branches and hooks stay as they were.
 - The target and the evaluation folder: the contract, the probes, the mutations and the evaluator are closed to it, so it cannot read the test it is taking or learn which defect a mutation plants.
-- The target and the evidence: the run directory, the scores and the baseline are written by the runtime and checked before anything reads them.
-- The target and your machine: the places it may use beyond its workspace are a short list you configure, and every other place it opens is recorded.
+- The target and the evidence: the runtime writes the run directory, the scores and the baseline, and checks them before anything reads them.
+- The target and your machine: it reads its workspace, its private directories, the system runtime roots and the `systemPaths` you declare.
+  On macOS, Seatbelt refuses every other file read.
+  On Linux, the read-only view of `/` lets such a read through, and the audit lists it, so `score` exits 3.
 
-Seatbelt on macOS and Bubblewrap on Linux supply the confinement.
-The audit reads through the same mechanism, because a confinement that cannot be observed would turn an empty list of observed mounts into false evidence.
-A host that cannot confine or cannot observe stops the command with exit 12 and names the reason.
+## What confinement does not guarantee
+
+- A complete record on macOS.
+  The kernel's log drops reports, most of all under load, so an empty list of observed mounts means no report arrived.
+  The kernel still refused the read.
+  `run.json` marks a trial `lossy` when the audit detects a loss, and a trial marked `complete` can still have lost a report; Linux's trace holds every traced syscall.
+- Every host service closed.
+  Seatbelt refuses the host's path-based Unix sockets, but the Mach services of macOS stay open, and macOS does not enforce `egress`.
+  Bubblewrap masks the sockets it finds when a call starts, so a socket bound later stays reachable, and the audit lists a connection to it.
+- Limits on the evaluation layer.
+  A `command` evaluator, a sealed-brief agent and the rubric judge are not confined as a target is; [Host services](#host-services) lists the limits they get.
+
+## When isolation fails
+
+- Exit 12 from `preflight` or `run` that names the sandbox or its observer: the host cannot confine or observe.
+- Exit 12 that names a file of the run directory or a score input: the runtime could not write its evidence, or a process changed what it wrote.
+- Exit 3 with `mount outside allowlist`: the audit saw the target reach a path outside its grants.
+  Review the path before you grant it through `systemPaths`.
+- A `lossy` trial named in the summary line of `run`: the macOS audit may be missing a read, so its empty list leaves the trial unproven.
+
+The sections below show how the runtime enforces each part, for readers who audit or maintain it: [the target's git](#the-targets-view-of-your-repository), [call directories](#call-directories), [the audit](#what-the-audit-watches), [host services](#host-services), [the bridge's admission token](#the-bridges-admission-token), [the run directory](#the-run-directory) and [score integrity](#score-integrity).
+
+<a id="how-the-skill-runner-supervises-its-agent"></a>
+
+The skill runner's process lifecycle is in [How the skill runner supervises its agent](/docs/reference/tea-evaluate-cli.md#how-the-skill-runner-supervises-its-agent) in the tea-evaluate CLI reference.
 
 ## The target's view of your repository
 
@@ -122,7 +150,7 @@ A run whose observer fails (the log stream ended, or a read the runtime made did
 
 ## Host services
 
-The services your machine runs for you, such as the container engine or a key agent, are closed to a confined target.
+The services your machine serves on path-based Unix sockets, such as the container engine or a key agent, are closed to a confined target.
 A call to one is refused: under Bubblewrap the runtime masks each of them when a call starts and the call answers `ECONNREFUSED`, and under Seatbelt the profile answers `EPERM`.
 The audit lists only a connection the kernel did not refuse, so a refused call leaves no entry.
 macOS Seatbelt has no abstract sockets, it accepts `egress` and ignores it, and its Mach services are a separate channel the profile does not close.
@@ -158,7 +186,7 @@ A run makes one private parent directory when it starts, before any target runs,
 Every run of your user makes its parent beneath one private root, `/tmp/tea-evaluate-p<uid>` (mode 700, a directory you own that is not a link), whatever the run's `TMPDIR` is; a root that is a link or belongs to another user stops the run with exit 12.
 On Windows, which has no confinement, the root is in the temp directory.
 A run removes its own parent when it ends, an interrupting signal included; the root stays, since another run may be using it.
-A later preflight reclaims a verified dead run's parent after `SIGKILL`, using the ownership record described in [The workspace](/docs/reference/tea-evaluate-cli.md#the-workspace).
+A later preflight reclaims a verified dead run's parent after `SIGKILL`, using the ownership record described in [The workspace](/docs/reference/tea-evaluate-manifest.md#the-workspace).
 
 The confinement withholds the run's private directories from every target and every process a target leaves running, those started before a directory was made included, so the token is unreadable to a confined target, which can neither take the bridge's one admission nor read an evaluator's or a judge's working files.
 It withholds the root, so a process left running by an earlier run, or a target of a run in progress elsewhere, cannot reach the parent of a run made after its sandbox was built, whatever temp directory either run uses.
@@ -210,7 +238,7 @@ Each probe's `score.json` records the argv as it ran, with the evaluation folder
 The inputs are the compiled contract, the preflight verdict, the evaluator configuration, the scoring policy, and each set's probe, records and isolation manifest.
 The checks above parse the held bytes, and `partitions.json`, `gap-view.json` and `interpretation.json` are built from them, so nothing a process writes to the run directory after the check reaches a view.
 A manifest the check found absent is passed to eval-quality as absent whatever appears there later.
-The protection starts when `score` reads the inputs: a file rewritten together with its digest in `run.json` before `score` starts verifies as the run's own, and only confinement keeps a target from writing the run directory at all (see [File-system confinement](/docs/reference/tea-evaluate-cli.md#file-system-confinement)).
+The protection starts when `score` reads the inputs: a file rewritten together with its digest in `run.json` before `score` starts verifies as the run's own, and only confinement keeps a target from writing the run directory at all (see [File-system confinement](/docs/reference/tea-evaluate-confinement.md#file-system-confinement)).
 
 Two checks follow every `eval-quality score` call, before anything is copied:
 
@@ -222,7 +250,7 @@ Two checks follow every `eval-quality score` call, before anything is copied:
   The `eval-quality:` lines on the call's stderr must be the ones the result would print (the qualification failures and, for an Invalid result, its basis, which is how an exit 3 gets its reason); when the library refuses the held bytes, only the exit is compared, since the CLI renders that error itself.
   A rewrite that eval-quality read and a process then restored, a well-formed artifact with altered outcomes or the same artifact in other bytes, an artifact removed or staged afresh, and an exit or reason that does not follow from the held bytes, exit 12 naming the mismatch.
 
-The aggregate call (see [Run-wide strength aggregate](/docs/reference/tea-evaluate-cli.md#run-wide-strength-aggregate)) is held to the same inputs.
+The aggregate call (see [Run-wide strength aggregate](/docs/reference/tea-evaluate-evidence.md#run-wide-strength-aggregate)) is held to the same inputs.
 After it, `score` reads every input again (the run's policy among them), reads the persisted evidence artifacts back through the held directory and compares them with the bytes it copied, and exits 12 naming the file that changed, without copying the aggregate.
 It then aggregates the held bytes in process with eval-quality's `aggregateStrength` (the evidence files, the floors copy and the held policy, each read through the engine's lexical scanner as the CLI reads them) and requires the staged aggregate to equal the serialized result byte for byte and the call's exit to be the one the held bytes give (0 for an aggregate, 4 for a refused set, 5 for a fault in an input).
 A policy rewritten for the aggregate's read and put back is caught here, because the engine refuses an evidence set whose recorded policy digest it does not name; an aggregate substituted for the staged one is caught by the byte comparison; a call that leaves no aggregate where the held bytes give one is caught by the exit.
@@ -233,49 +261,10 @@ The comparison covers the artifact, the exit and the `eval-quality:` stderr line
 A refused call copies no evidence; its reason is on the probe's entry in the invocation's `score.json`, the other probes still run, and `score` exits 12.
 The recorded argv names the run directory's own files, so rerunning `eval-quality score` by hand on it with a fresh `--out` reproduces the persisted evidence byte for byte on a run no process changed.
 
-`run` holds the call it makes for each attempt of a sealed-brief agent evaluator's qualification (see [Qualifying a sealed-brief agent](/docs/reference/tea-evaluate-cli.md#qualifying-a-sealed-brief-agent)) the same way, since the attempt's votes decide whether the evaluator qualifies.
+`run` holds the call it makes for each attempt of a sealed-brief agent evaluator's qualification (see [Qualifying a sealed-brief agent](/docs/reference/tea-evaluate-evaluators.md#qualifying-a-sealed-brief-agent)) the same way, since the attempt's votes decide whether the evaluator qualifies.
 Before the call, `run` reads the attempt's inputs once through the run directory writer: the compiled contract, the preflight verdict, the evaluator configuration, the scoring policy, the probe, the attempt's record and its isolation manifest.
 The writer hands back only the bytes the runtime wrote, held to the digest it took when it wrote them, so a file that is not those bytes, is a link or is gone exits 12 naming the file before any call is made.
 After the call, `run` reads every input again through the writer and compares the call with the in-process score of the held bytes, with the comparison `score` makes: the first input that changed is named, the staged artifact must equal the serialized result byte for byte, the call's exit must be the one the held bytes give, and its `eval-quality:` lines must be the ones the result would print.
 A rewrite that stays, a rewrite put back before the check, a well-formed artifact with altered votes, the same artifact in other bytes, an artifact removed or staged afresh, and an exit or reason that does not follow from the held bytes exit 12 with no vote recorded for the call, no `evidence-artifact.json` under the attempt's directory and no `evaluator-qualification.json`.
 The staged bytes the comparison accepted are the bytes copied into the run directory and read for the vote.
 Rerunning an accepted attempt's recorded argv with a fresh `--out` reproduces its evidence bytes.
-
-## How the skill runner supervises its agent
-
-`tea-skill-runner` runs one headless agent turn and has to report how it ended, whatever the agent does.
-It cannot trust the agent to end its own children, to answer a signal or to stay in one process.
-A registry entry's `maxElapsedMs` must leave room for the startup and shutdown reserves below.
-
-On POSIX, the agent runs in its own process group.
-When the agent exits, every process left in that group receives `SIGKILL` at once.
-The group is also stopped when `--timeout-ms` runs out, when the runner's process group receives `SIGINT`, `SIGTERM`, `SIGHUP` or `SIGQUIT` (a terminal's Ctrl-C or `Ctrl-\` included), and when the runner or the supervisor process between it and the agent dies, by `SIGKILL` included.
-Stopping sends the group the signal received (`SIGTERM` for a timeout or a death), and the group `SIGKILL` 2 s later if it is still running.
-An agent the `SIGKILL` ends is reported as killed by `SIGKILL` once it outlived the grace period after the signal that asked it to stop; a `SIGQUIT` can end that way wherever the system hands core files to a collector, since writing the core can take longer than the grace period.
-A Ctrl-Z suspends the runner, and the agent runs on, bounded by `--timeout-ms` and the runner's end.
-Once resumed, the runner reports how the agent ended, however long it was suspended.
-On POSIX, four processes supervise the agent: one in the runner's process group, a leader in a session of its own, a guardian that leads the agent's process group, and a detached watchdog.
-The guardian's lifeline closes even if the supervisor and leader receive `SIGKILL` together; it then stops its group.
-While the runner remains active, a missing-report transport failure is bounded by a 25 s startup reserve, the agent's `--timeout-ms` wall clock, and 7 s for supervisor backstop and output drain.
-On POSIX, a detached watchdog owns the guardian's group through a leader-only pipe.
-It confirms readiness before the guardian starts the agent.
-If the leader dies, the pipe closes and the watchdog sends `SIGKILL` to the group, even while the guardian is stopped.
-After a normal agent exit, the leader kills the group and releases the watchdog.
-The process integration gate requires the guardian, agent, and ordinary child to end within 10 s of a simultaneous leader and supervisor kill.
-The guardian allows 10 s for watchdog setup, and the agent's `--timeout-ms` wall clock starts when its PID is reported.
-If the watchdog cannot arm, the agent does not start and the runner reports a setup failure.
-The agent's standard input, output and error are pipes the group leader owns, and the leader copies the runner's input to the agent and the agent's output to the runner.
-Once the agent exits, the leader copies what those pipes still hold and closes each one when it reaches its end, stays empty for 100 ms, or has been read for 2 s of the time the runner keeps up with it; output any process writes after that is lost.
-A process that leaves the group, such as a daemon that starts its own session, keeps running, and the runner does not wait for it.
-If the group leader has not ended 5 s after `--timeout-ms` runs out (it was stopped with `SIGSTOP`, say), the other kills it and the agent's group, and the runner exits 4.
-On Windows, a PowerShell helper creates a Windows Job Object with kill-on-close ownership and assigns the guardian before the agent starts.
-The guardian launches the helper from the host's absolute SystemRoot path, so a project-local `powershell.exe` cannot claim readiness.
-The agent and its ordinary descendants inherit that job.
-The helper holds its sole job handle until the guardian closes their pipe after the agent exits, or the pipe closes when the guardian dies.
-Closing the handle stops every process in the job.
-The guardian allows 90 s for setup.
-The supervisor has a 105 s startup backstop measured from its own start, covering cold Node startup before the guardian's timer begins.
-If the helper cannot establish ownership, the agent does not start and the runner exits 4 with the setup failure.
-The leader reports its guardian PID, agent readiness, and completion to the supervisor over a dedicated pipe with a 2 s write bound; a failed report stops the guardian.
-The `--timeout-ms` wall clock starts when the guardian reports the actual agent PID; the supervisor's 5 s agent backstop follows that clock.
-The Windows process integration gate requires the direct agent and its child to end within 10 s of normal agent exit or a dual leader and supervisor kill.

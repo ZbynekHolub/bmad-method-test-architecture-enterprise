@@ -341,6 +341,13 @@
           "export": "NPM_TEST_CHAIN_LENGTH"
         }
       },
+      "setupKeyCount": {
+        "kind": "module",
+        "from": {
+          "module": "test/lib/doc-count-sources.js",
+          "export": "SETUP_KEY_COUNT"
+        }
+      },
       "knowledgeFragmentTotal": {
         "kind": "module",
         "from": {
@@ -872,6 +879,23 @@
           "match": "Its ([a-z-]+) skills cover"
         },
         "counts": ["canonicalWorkflowCount"]
+      },
+      {
+        "file": "docs/reference/configuration.md",
+        "claim": "how many module settings the migration keeps",
+        "pattern": {
+          "match": "The migration keeps the (\\w+) current module settings"
+        },
+        "counts": ["setupKeyCount"]
+      },
+      {
+        "file": "docs/explanation/verification-architecture.md",
+        "claim": "the knowledge-fragment total in the self-audit",
+        "pattern": {
+          "match": "Most of TEA's (\\d+) knowledge fragments name"
+        },
+        "counts": ["knowledgeFragmentTotal"],
+        "rendering": "digits"
       }
     ]
   },
@@ -1197,6 +1221,10 @@
           "reason": "a shell variable the reference names among the variables a target receives as the call gave them, which no source declares"
         },
         {
+          "token": "pactUrls",
+          "reason": "a @seontechnologies/pactjs-utils export, not a TEA declaration"
+        },
+        {
           "token": "createCommandLineAdapter",
           "reason": "an eval-quality package export, not a TEA declaration"
         },
@@ -1223,6 +1251,10 @@
         {
           "token": "contractVerdict",
           "reason": "a field of an eval-quality evidence artifact that holds its CONCERNS or PASS rung"
+        },
+        {
+          "token": "productionVerdict",
+          "reason": "the field of an eval-quality evidence artifact that holds the verdict of production-mode records"
         },
         {
           "token": "structuredContent",
@@ -1537,10 +1569,6 @@
           "reason": "a @seontechnologies/pactjs-utils export, not a TEA declaration"
         },
         {
-          "token": "pactUrls",
-          "reason": "a @seontechnologies/pactjs-utils export, not a TEA declaration"
-        },
-        {
           "token": "waitForTimeout",
           "reason": "Playwright\u2019s own built-in API, not a TEA declaration"
         },
@@ -1549,8 +1577,16 @@
           "reason": "Playwright\u2019s own built-in API, not a TEA declaration"
         },
         {
-          "token": "getByLabel",
-          "reason": "Playwright\u2019s own built-in API, not a TEA declaration"
+          "token": "baseURL",
+          "reason": "a Playwright config option, not a TEA declaration"
+        },
+        {
+          "token": "webServer",
+          "reason": "a Playwright config option that starts the app before tests, not a TEA declaration"
+        },
+        {
+          "token": "authSessionEnabled",
+          "reason": "an option fixture of the @seontechnologies/playwright-utils auth-session fixtures, not a TEA declaration"
         },
         {
           "token": "waitForSelector",
@@ -1940,6 +1976,20 @@
           "module": "test/lib/doc-claim-sources.js",
           "export": "PLAYWRIGHT_UTILS_ROW_IDS"
         }
+      },
+      {
+        "file": "docs/how-to/workflows/run-test-design.md",
+        "claim": "the system-level test-design output files",
+        "pattern": {
+          "match": "System-level mode writes three files:\\n\\n((?:- [^\\n]*\\n)+)"
+        },
+        "tokenShape": {
+          "match": "\\.md$"
+        },
+        "expected": {
+          "module": "test/lib/doc-claim-sources.js",
+          "export": "TEST_DESIGN_SYSTEM_OUTPUTS"
+        }
       }
     ],
     "codes": {
@@ -2004,6 +2054,9 @@
         },
         {
           "match": "emits these scaffolds with"
+        },
+        {
+          "match": "do not skip the trace gate"
         },
         {
           "match": "\\bas of\\b",
@@ -2092,10 +2145,37 @@
           "reason": "a grep of the canonical automate skill's red-mode step files for test.skip("
         },
         {
+          "file": "docs/how-to/brownfield/use-tea-for-enterprise.md",
+          "key": "Missing execution results are a gap in release evidence and do not skip the trace gate.",
+          "settles": {
+            "module": "test/lib/doc-claim-sources.js",
+            "export": "TRACE_GATE_IS_COVERAGE_ONLY"
+          },
+          "reason": "trace's step-05-gate-decision.md decides gate eligibility from allow_gate and the COLLECTED status alone"
+        },
+        {
           "file": "docs/explanation/verification-architecture.md",
           "key": "no plugin API for execution targets today",
           "settles": "read",
           "reason": "a claim about the absence of a feature; nothing in the tree can decide whether an extension surface was deliberately never built"
+        },
+        {
+          "file": "docs/how-to/evaluate/measure-repeatability-and-compare-a-configuration.md",
+          "key": "Capturing these inputs is manual today",
+          "settles": {
+            "module": "test/lib/doc-claim-sources.js",
+            "export": "PAIRED_CAPTURE_IS_MANUAL"
+          },
+          "reason": "test/lib/retain-skill-artifacts.js writes none of receipt, blockId, observed, usage, cost or latency into provenance.json, test/eval-test-design.js gives no usage property a non-null value, and no tracked script outside the configuration experiment reader, its test and the doc-claims sources names appendExposure"
+        },
+        {
+          "file": "docs/reference/configuration-experiment-reader.md",
+          "key": "Capturing these inputs is manual today",
+          "settles": {
+            "module": "test/lib/doc-claim-sources.js",
+            "export": "PAIRED_CAPTURE_IS_MANUAL"
+          },
+          "reason": "test/lib/retain-skill-artifacts.js writes none of receipt, blockId, observed, usage, cost or latency into provenance.json, test/eval-test-design.js gives no usage property a non-null value, and no tracked script outside the configuration experiment reader, its test and the doc-claims sources names appendExposure"
         },
         {
           "file": "docs/reference/configuration.md",
