@@ -1251,6 +1251,47 @@ async function main() {
     `the actual protected baseline normalizes fragment-selection's implicit zero stability ceiling (${baselineComparison.status})`,
   );
 
+  // Two servers started at once each bind a port the operating system assigns, so they can never share one.
+  const voucherService = path.join(PROJECT_ROOT, 'test', 'fixtures', 'automate-eval', 'voucher-service');
+  const voucherServers = await Promise.allSettled([
+    automate.startVoucherServer({ cwd: voucherService }),
+    automate.startVoucherServer({ cwd: voucherService }),
+  ]);
+  try {
+    const [first, second] = voucherServers.map((settled) => settled.value);
+    check(
+      first && second && first.port !== second.port,
+      `concurrent voucher-service servers bind distinct ports (${voucherServers.map((settled) => settled.value?.port ?? settled.reason?.message).join(', ')})`,
+    );
+    for (const server of [first, second].filter(Boolean)) {
+      const health = await fetch(`http://127.0.0.1:${server.port}/health`);
+      check(health.status === 200, `the voucher-service on its reported port ${server.port} answers /health`);
+    }
+  } finally {
+    for (const settled of voucherServers) {
+      const child = settled.value?.child;
+      if (!child || child.exitCode !== null || child.signalCode !== null) continue;
+      const exited = new Promise((resolve) => child.once('exit', resolve));
+      automate.stopVoucherServer(child);
+      await exited;
+    }
+  }
+  const crashingService = fs.mkdtempSync(path.join(os.tmpdir(), 'eval-diagnostics-crashing-service-'));
+  try {
+    fs.mkdirSync(path.join(crashingService, 'src'));
+    fs.writeFileSync(path.join(crashingService, 'src', 'server.js'), "throw new Error('seeded boot failure');\n", 'utf8');
+    const crashed = await automate.startVoucherServer({ cwd: crashingService }).then(
+      () => null,
+      (error) => error,
+    );
+    check(
+      crashed?.message.includes('exited (code 1') && crashed.message.includes('Error: seeded boot failure'),
+      `a voucher-service that dies on boot reports its error line (${crashed?.message})`,
+    );
+  } finally {
+    fs.rmSync(crashingService, { recursive: true, force: true });
+  }
+
   const liveOutput = path.join(os.tmpdir(), `eval-diagnostics-${process.pid}.json`);
   try {
     const live = spawnSync(process.execPath, [path.join(PROJECT_ROOT, 'test', 'eval-automate.js'), '--json', liveOutput], {

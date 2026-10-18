@@ -214,6 +214,7 @@ jobs:
         shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
     steps:
       - name: Checkout
+        id: checkout
         uses: actions/checkout@v5
         with:
           # This job runs npm ci (arbitrary install scripts), and its chain
@@ -320,8 +321,10 @@ jobs:
       # run leaves its evidence bundle to audit. A shard that ran none of them
       # has no directory to upload. test:evaluate-ci-tiers parses this step and fails
       # when it, its `if: always()` or the path of any evaluation is missing.
+      # Every upload here also waits on a successful checkout, since its local
+      # action resolves from that checkout (test:artifact-retry holds this).
       - name: Upload the evidence bundles of this shard's evaluation pr checks
-        if: always()
+        if: always() && steps.checkout.outcome == 'success'
         timeout-minutes: 10
         uses: ./.github/actions/upload-artifact-retry
         with:
@@ -342,7 +345,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload this shard's raw coverage
-        if: always()
+        if: always() && steps.checkout.outcome == 'success'
         timeout-minutes: 10
         uses: ./.github/actions/upload-artifact-retry
         with:
@@ -354,7 +357,7 @@ jobs:
       # Merge every shard's file with `jq -S -s add shard-*.json` and commit the
       # result as tools/test-shard-weights.json to rebalance the shards.
       - name: Upload this shard's per-script timings
-        if: always()
+        if: always() && steps.checkout.outcome == 'success'
         timeout-minutes: 10
         uses: ./.github/actions/upload-artifact-retry
         with:
@@ -476,6 +479,7 @@ jobs:
           fi
 
       - name: Checkout
+        id: checkout
         uses: actions/checkout@v5
         with:
           # This job runs npm ci (arbitrary install scripts); the token
@@ -506,8 +510,13 @@ jobs:
       - name: Merge the shards' coverage and enforce the threshold
         run: npx c8 report --temp-directory "$RUNNER_TEMP/v8"
 
+      # A local action resolves from the checkout. The chain gate above runs
+      # before it, so a red chain would otherwise reach this step with no
+      # checkout and fail it a second time on the missing action.yaml.
+      # test:artifact-retry refuses a local-action step that can run without
+      # a successful checkout.
       - name: Upload the coverage report
-        if: always()
+        if: always() && steps.checkout.outcome == 'success'
         timeout-minutes: 10
         uses: ./.github/actions/upload-artifact-retry
         with:

@@ -123,7 +123,6 @@ const EXPIRED_VOUCHER = { type: 'fixed', amountOff: 5, minimumSpend: 10, expires
 const EXPIRED_CART_TOTAL = 50;
 const OTHER_REDEEMED_ON = '2026-01-01';
 
-const SMOKE_PORT = 4320;
 const SMOKE_TIMEOUT_MS = 5000;
 
 const colors = {
@@ -207,13 +206,13 @@ function redeemFixtureCheck(scratchDir, voucher, cartTotal, redeemedOn) {
 }
 
 /** One HTTP round trip against the smoke-tested server, JSON in and JSON out. */
-function smokeRequest({ method, path: requestPath, body }) {
+function smokeRequest({ port, method, path: requestPath, body }) {
   return new Promise((resolve, reject) => {
     const payload = body === undefined ? undefined : JSON.stringify(body);
     const request = http.request(
       {
         host: '127.0.0.1',
-        port: SMOKE_PORT,
+        port,
         method,
         path: requestPath,
         headers: payload === undefined ? {} : { 'content-type': 'application/json', 'content-length': Buffer.byteLength(payload) },
@@ -233,18 +232,38 @@ function smokeRequest({ method, path: requestPath, body }) {
   });
 }
 
-/** Polls `GET /health` until it answers 200 or `deadline` passes. */
-async function waitForHealth(deadline) {
+/**
+ * Waits for the server's startup line to name its bound port, then polls
+ * `GET /health` on that port until it answers 200 or `deadline` passes.
+ *
+ * @param {import('node:child_process').ChildProcess} child The server process, so an early exit fails at once.
+ * @param {() => number | null} boundPort The port the startup line named, or null until it has.
+ * @returns {Promise<number>} The port that answered.
+ */
+async function waitForHealth(child, boundPort, deadline) {
   while (Date.now() < deadline) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      throw new Error(`voucher-service exited (code ${child.exitCode}, signal ${child.signalCode}) before answering /health`);
+    }
+    const port = boundPort();
+    if (port === null) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      continue;
+    }
     try {
-      const response = await smokeRequest({ method: 'GET', path: '/health' });
-      if (response.status === 200) return;
+      const response = await smokeRequest({ port, method: 'GET', path: '/health' });
+      if (response.status === 200) return port;
     } catch {
       // The server has not opened its port yet. Retry until the deadline.
     }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
-  throw new Error(`voucher-service did not answer /health on port ${SMOKE_PORT} within ${SMOKE_TIMEOUT_MS}ms`);
+  const port = boundPort();
+  throw new Error(
+    port === null
+      ? `voucher-service named no listening port within ${SMOKE_TIMEOUT_MS}ms`
+      : `voucher-service did not answer /health on port ${port} within ${SMOKE_TIMEOUT_MS}ms`,
+  );
 }
 
 /**
@@ -260,8 +279,22 @@ async function runServerSmoke() {
   const smokeProblems = [];
   const child = spawn(process.execPath, ['src/server.js'], {
     cwd: absolute(SERVER_ROOT),
-    env: { ...process.env, PORT: String(SMOKE_PORT) },
-    stdio: ['ignore', 'ignore', 'pipe'],
+    // PORT=0 lets the server take a port the operating system assigns, so a
+    // second checkout running this suite at the same time cannot collide with
+    // this one on a fixed port.
+    env: { ...process.env, PORT: '0' },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  // Taken at spawn: a server that dies during startup has already closed by the time the finally block runs.
+  const closed = new Promise((resolve) => child.once('close', resolve));
+
+  let stdout = '';
+  let boundPort = null;
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk;
+    const listening = /listening on http:\/\/127\.0\.0\.1:(\d+)\r?\n/.exec(stdout);
+    if (listening && boundPort === null) boundPort = Number(listening[1]);
   });
 
   let stderr = '';
@@ -270,9 +303,9 @@ async function runServerSmoke() {
   });
 
   try {
-    await waitForHealth(Date.now() + SMOKE_TIMEOUT_MS);
+    const port = await waitForHealth(child, () => boundPort, Date.now() + SMOKE_TIMEOUT_MS);
 
-    const health = await smokeRequest({ method: 'GET', path: '/health' });
+    const health = await smokeRequest({ port, method: 'GET', path: '/health' });
     console.log(`${colors.dim}server smoke (GET /health):${colors.reset} ${health.status} ${JSON.stringify(health.body)}`);
     if (health.status !== 200 || health.body?.ok !== true) {
       smokeProblems.push(
@@ -281,6 +314,7 @@ async function runServerSmoke() {
     }
 
     const accepted = await smokeRequest({
+      port,
       method: 'POST',
       path: '/redeem',
       body: { code: 'SAVE10', cartTotal: 50, redeemedOn: '2026-01-01' },
@@ -295,6 +329,7 @@ async function runServerSmoke() {
     }
 
     const rejected = await smokeRequest({
+      port,
       method: 'POST',
       path: '/redeem',
       body: { code: 'SAVE10', cartTotal: 49, redeemedOn: '2026-01-01' },
@@ -312,7 +347,7 @@ async function runServerSmoke() {
     smokeProblems.push(`server smoke could not run: ${error.message}${detail.length > 0 ? `; server stderr: ${detail}` : ''}`);
   } finally {
     child.kill('SIGTERM');
-    await new Promise((resolve) => child.once('close', resolve));
+    await closed;
   }
 
   return smokeProblems;
