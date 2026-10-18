@@ -1,0 +1,421 @@
+#!/usr/bin/env node
+/**
+ * tea-unit-check: runs generated Vitest or Jest tests under the project's own
+ * runner and writes the execution evidence tea-automate verifies.
+ *
+ * Expand mode runs each generated file in the project. Red mode proves a red
+ * scaffold fails for its intended reason while the permanent scaffold stays
+ * skipped:
+ *
+ *   the consuming project with generated `test.skip()` / `it.skip()` leaves
+ *     -> a disposable copy of the project (node_modules linked, never copied;
+ *        a workspace package keeps its workspace root's files and dependencies)
+ *     -> in the copy only, each generated leaf's `.skip` is blanked to spaces at
+ *        the location the source inventory derived, so no unrelated skip moves
+ *        and no other registration changes column
+ *     -> one JSON report, bound to the permanent scaffold bytes by SHA-256
+ *
+ * Each file runs alone, so one file's load failure never masks another file's
+ * result. The runner writes its native JSON report; this command adds what that
+ * report cannot carry: Vitest's JSON reporter omits unhandled errors, so the
+ * process exit code and Vitest's unhandled-error banner are recorded beside it.
+ *
+ * The runner is detected from the project's package.json and config files.
+ * `--runner` only chooses between runners the project already declares.
+ *
+ * Usage:
+ *   tea-unit-check --mode expand|red --project-root <dir> --report <path> --file <path> [--file <path>]
+ *     [--runner vitest|jest] [--per-file-timeout-ms 120000] [--work-dir <dir>]
+ *
+ * Exit codes:
+ *   0  every file ran to some conclusion and the report was written
+ *   2  a usage error, or the run could not be set up
+ */
+
+'use strict';
+
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { createHash } = require('node:crypto');
+const { spawn, spawnSync } = require('node:child_process');
+const { Command } = require('commander');
+const { generatedInventory } = require('./lib/automate-inventory');
+const { UNIT_CHECK_KIND, UNIT_RUNNERS, detectRunners, normalizeUnitReport, workspaceAncestors } = require('./lib/unit-runners');
+
+const NAME = 'tea-unit-check';
+// Directories the copy never carries: dependency trees are linked in place and
+// TeA's own output holds evidence, never product or test source.
+const COPY_EXCLUDED = new Set(['node_modules', '.git', '_bmad-output']);
+// Directories the integrity digest skips: dependencies, VCS state, evidence and
+// runner output that a test run writes by design.
+const DIGEST_EXCLUDED = new Set(['node_modules', '.git', '_bmad-output', 'test-results', '.cache', 'coverage', '__snapshots__']);
+// Vitest's default reporter prints this banner when it caught unhandled errors; its JSON report omits them.
+const VITEST_UNHANDLED = /Vitest caught \d+ unhandled errors? during the test run/;
+
+class SetupError extends Error {}
+
+function fail(message) {
+  process.stderr.write(`${NAME}: ${message}\n`);
+  process.exit(2);
+}
+
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const slash = (value) => value.split(path.sep).join('/');
+const real = (value) => fs.realpathSync.native(value);
+const inside = (base, absolute) => {
+  const relative = path.relative(base, absolute);
+  return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+};
+
+function projectFile(root, value) {
+  const absolute = path.resolve(root, value);
+  if (absolute === root || !inside(root, absolute)) throw new SetupError(`--file must name a file inside the project: ${value}`);
+  if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) throw new SetupError(`--file does not exist: ${value}`);
+  const resolved = real(absolute);
+  if (!inside(root, resolved)) throw new SetupError(`--file resolves outside the project: ${value}`);
+  return slash(path.relative(root, resolved));
+}
+
+/** The project's own installed runner, found where Node resolves it from the project or its workspace. */
+function runnerEntry(root, runner) {
+  for (const directory of [root, ...workspaceAncestors(root)]) {
+    const manifest = path.join(directory, 'node_modules', runner, 'package.json');
+    if (!fs.existsSync(manifest)) continue;
+    const pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+    const bin = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin?.[runner];
+    if (!bin) throw new SetupError(`${runner} at ${manifest} declares no ${runner} executable`);
+    const entry = path.join(path.dirname(manifest), bin);
+    if (!fs.existsSync(entry)) throw new SetupError(`${runner} declares its executable at ${entry}, which does not exist`);
+    return { entry, version: pkg.version };
+  }
+  throw new SetupError(`the project's ${runner} is not installed; run its package install first`);
+}
+
+/** Content, permission and link-target digest of every file under `root`, so any write, chmod or relink shows. */
+function digestTree(root, skip = new Set()) {
+  const digest = new Map();
+  const walk = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      const relative = slash(path.relative(root, absolute));
+      if (skip.has(relative)) continue;
+      if (entry.isDirectory()) {
+        if (!DIGEST_EXCLUDED.has(entry.name)) walk(absolute);
+      } else if (entry.isSymbolicLink()) digest.set(relative, `link:${fs.readlinkSync(absolute)}`);
+      else if (entry.isFile())
+        digest.set(relative, `${(fs.statSync(absolute).mode & 0o777).toString(8)}:${sha256(fs.readFileSync(absolute))}`);
+    }
+  };
+  walk(root);
+  return digest;
+}
+
+const changed = (before, after) => [...new Set([...before.keys(), ...after.keys()])].filter((key) => before.get(key) !== after.get(key));
+
+/**
+ * Copy the project without dependency trees and link each one so the copy
+ * resolves the project's own packages. A workspace package is copied under a
+ * mirror of its workspace root: each ancestor's own files (tsconfig bases,
+ * Babel and package manifests) and its node_modules link, so hoisted
+ * dependencies and relative `extends` resolve as they do in place.
+ */
+function disposableCopy(root, scratch) {
+  const ancestors = workspaceAncestors(root);
+  const top = ancestors.at(-1) ?? root;
+  const mirror = path.join(scratch, 'workspace');
+  const copyRoot = path.join(mirror, path.relative(top, root));
+  for (const ancestor of ancestors) {
+    const target = path.join(mirror, path.relative(top, ancestor));
+    fs.mkdirSync(target, { recursive: true });
+    for (const entry of fs.readdirSync(ancestor, { withFileTypes: true })) {
+      const source = path.join(ancestor, entry.name);
+      if (entry.name === 'node_modules') fs.symlinkSync(real(source), path.join(target, entry.name), 'junction');
+      else if (entry.isFile()) fs.copyFileSync(source, path.join(target, entry.name));
+    }
+  }
+  const links = [];
+  fs.cpSync(root, copyRoot, {
+    recursive: true,
+    verbatimSymlinks: true,
+    filter: (source) => {
+      const name = path.basename(source);
+      if (source === root || !COPY_EXCLUDED.has(name)) return true;
+      if (name === 'node_modules') links.push(path.relative(root, source));
+      return false;
+    },
+  });
+  // A link that reaches back into the project must reach the copy instead, or a
+  // test writing through it would change the permanent project.
+  const rebase = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory()) rebase(absolute);
+      else if (entry.isSymbolicLink()) {
+        const original = path.join(root, path.relative(copyRoot, absolute));
+        const pointed = path.resolve(path.dirname(original), fs.readlinkSync(absolute));
+        if (inside(root, pointed)) {
+          fs.unlinkSync(absolute);
+          fs.symlinkSync(path.join(copyRoot, path.relative(root, pointed)), absolute);
+        }
+      }
+    }
+  };
+  rebase(copyRoot);
+  for (const relative of links) {
+    const target = path.join(copyRoot, relative);
+    if (fs.existsSync(path.dirname(target))) fs.symlinkSync(real(path.join(root, relative)), target, 'junction');
+  }
+  return copyRoot;
+}
+
+function runnerArguments(runner, entry, file, output) {
+  return runner === 'vitest'
+    ? // The default reporter prints the unhandled-error banner the JSON reporter omits.
+      [
+        entry,
+        'run',
+        file,
+        '--reporter=default',
+        '--reporter=json',
+        `--outputFile.json=${output}`,
+        '--includeTaskLocation',
+        '--coverage.enabled=false',
+      ]
+    : [
+        entry,
+        '--json',
+        '--testLocationInResults',
+        `--outputFile=${output}`,
+        '--ci',
+        '--coverage=false',
+        '--no-watchman',
+        '--runTestsByPath',
+        file,
+      ];
+}
+
+/**
+ * Run the runner as the leader of its own process group, so a timeout kills
+ * its worker processes too: a hung test file must not leave a busy worker behind.
+ */
+function execute(args, { cwd, timeoutMs }) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, args, {
+      cwd,
+      env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },
+      detached: process.platform !== 'win32',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
+    const streams = { stdout: '', stderr: '' };
+    for (const name of ['stdout', 'stderr'])
+      child[name].on('data', (chunk) => {
+        if (streams[name].length < 4 * 1024 * 1024) streams[name] += chunk;
+      });
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+      else {
+        try {
+          process.kill(-child.pid, 'SIGKILL');
+        } catch {
+          child.kill('SIGKILL');
+        }
+      }
+    }, timeoutMs);
+    child.once('error', (error) => {
+      clearTimeout(timer);
+      resolve({ status: null, signal: null, error, timedOut, ...streams });
+    });
+    child.once('close', (status, signal) => {
+      clearTimeout(timer);
+      resolve({ status, signal, error: null, timedOut, ...streams });
+    });
+  });
+}
+
+async function runFile({ runner, entry, cwd, file, output, timeoutMs }) {
+  const absolute = path.join(cwd, file);
+  const result = await execute(runnerArguments(runner, entry, absolute, output), { cwd, timeoutMs });
+  const exitCode = result.status;
+  const outcome = (loadError, runError = null, tests = []) => ({ exitCode, loadError, runError, tests });
+  const tail = String(result.stderr || result.stdout || '')
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .slice(-6)
+    .join(' | ');
+  if (result.timedOut) return outcome(`timed out after ${timeoutMs}ms; the runner and its workers were killed`);
+  if (result.signal) return outcome(`the runner was killed by ${result.signal}`);
+  if (result.error) return outcome(`spawn failed: ${result.error.message}`);
+  if (!fs.existsSync(output)) return outcome(`no JSON report was written (exit ${exitCode}); ${tail || 'nothing on stderr'}`);
+  let normalized;
+  try {
+    normalized = normalizeUnitReport(JSON.parse(fs.readFileSync(output, 'utf8')));
+  } catch (error) {
+    return outcome(`the runner report could not be read: ${error.message}`);
+  }
+  const target = real(absolute);
+  const own = normalized.files.filter((item) => fs.existsSync(item.name) && real(item.name) === target);
+  if (own.length === 0) return outcome(`the runner report has no result for ${file} (exit ${exitCode}); ${tail || 'nothing on stderr'}`);
+  const fileErrors = own.filter((item) => item.error);
+  if (fileErrors.length > 0)
+    return outcome(
+      fileErrors
+        .map((item) => item.error)
+        .join('\n')
+        .split('\n')
+        .slice(0, 6)
+        .join(' | '),
+    );
+  // Stack frames name the disposable copy; the message itself is the evidence.
+  const tests = own.flatMap((item) =>
+    item.tests.map((test) => {
+      const last = test.attempts.at(-1);
+      const message = test.message?.replaceAll(/^\s+at .*$\n?/gm, '').trim() || null;
+      return {
+        titlePath: test.titlePath,
+        line: test.line,
+        column: test.column,
+        status: last.status,
+        failure: last.failure,
+        attempts: test.attempts,
+        message,
+      };
+    }),
+  );
+  const failed = tests.some((test) => test.status === 'failed');
+  const unhandled = runner === 'vitest' && VITEST_UNHANDLED.test(`${result.stderr}\n${result.stdout}`);
+  const runError =
+    own.length > 1
+      ? `${file} ran in ${own.length} runner projects; one result per generated test is required`
+      : unhandled
+        ? 'Vitest caught unhandled errors during the run; its JSON report omits them'
+        : normalized.errors > 0
+          ? `the runner reported ${normalized.errors} run-level error(s)`
+          : exitCode !== 0 && !failed
+            ? `the runner exited ${exitCode} with no failed test`
+            : null;
+  return outcome(null, runError, tests);
+}
+
+async function main(argv) {
+  const program = new Command();
+  program
+    .name(NAME)
+    .description('Run generated Vitest or Jest tests, red scaffolds in a disposable activated copy, and report what happened.')
+    .requiredOption('--mode <mode>', 'expand runs the files in place; red activates skipped scaffolds in a disposable copy')
+    .requiredOption('--project-root <dir>', 'the consuming project')
+    .requiredOption('--report <path>', 'where to write the JSON report')
+    .option('--file <path>', 'generated test file inside the project (repeatable)', (value, previous) => [...previous, value], [])
+    .option('--runner <name>', 'vitest or jest; only needed when the project declares both')
+    .option('--per-file-timeout-ms <n>', 'wall-clock bound per file', String(120_000))
+    .option('--work-dir <dir>', 'parent directory for the disposable red copy', os.tmpdir());
+  program.exitOverride();
+  try {
+    program.parse(argv);
+  } catch (error) {
+    if (error.exitCode === 0) return;
+    fail(error.message);
+  }
+  const options = program.opts();
+  let scratch;
+  try {
+    if (!['expand', 'red'].includes(options.mode)) throw new SetupError('--mode must be expand or red');
+    const red = options.mode === 'red';
+    if (!fs.existsSync(options.projectRoot) || !fs.statSync(options.projectRoot).isDirectory())
+      throw new SetupError(`--project-root ${options.projectRoot} is not a directory`);
+    const root = real(options.projectRoot);
+    const timeoutMs = Number.parseInt(options.perFileTimeoutMs, 10);
+    if (!Number.isInteger(timeoutMs) || timeoutMs <= 0 || String(timeoutMs) !== options.perFileTimeoutMs)
+      throw new SetupError('--per-file-timeout-ms must be a positive integer');
+    if (options.file.length === 0) throw new SetupError('name at least one generated test file with --file');
+    const files = options.file.map((file) => projectFile(root, file));
+    if (new Set(files).size !== files.length) throw new SetupError('--file names the same file twice');
+
+    const detected = detectRunners(root).filter(({ runner }) => UNIT_RUNNERS.includes(runner));
+    if (options.runner !== undefined && !UNIT_RUNNERS.includes(options.runner)) throw new SetupError('--runner must be vitest or jest');
+    const candidates = options.runner ? detected.filter(({ runner }) => runner === options.runner) : detected;
+    if (candidates.length === 0)
+      throw new SetupError(
+        options.runner ? `the project does not declare ${options.runner}` : 'the project declares neither Vitest nor Jest',
+      );
+    if (candidates.length > 1) throw new SetupError('the project declares both Vitest and Jest; pass --runner to choose one');
+    const [{ runner, configFile }] = candidates;
+    const { entry, version } = runnerEntry(root, runner);
+
+    const activations = [];
+    const inventory = generatedInventory(root, files, { runner, activations });
+    if (red) {
+      const active = inventory.tests.filter((leaf) => leaf.activationLine === undefined);
+      if (active.length > 0)
+        throw new SetupError(
+          `red scaffolds must register every generated leaf with .skip: ${active.map((leaf) => `${leaf.file} ${leaf.titlePath.join(' > ')}`).join('; ')}`,
+        );
+    }
+
+    const reportPath = path.resolve(options.report);
+    if (!fs.existsSync(options.workDir) || !fs.statSync(options.workDir).isDirectory())
+      throw new SetupError(`--work-dir ${options.workDir} is not a directory`);
+    scratch = real(fs.mkdtempSync(path.join(real(options.workDir), `${NAME}-`)));
+    const outputs = path.join(scratch, 'reports');
+    fs.mkdirSync(outputs);
+    const before = new Map(files.map((file) => [file, sha256(fs.readFileSync(path.join(root, file)))]));
+    const reportRelative = inside(root, reportPath) ? slash(path.relative(root, reportPath)) : null;
+    const projectBefore = red ? digestTree(root, new Set([reportRelative].filter(Boolean))) : null;
+    let cwd = root;
+    let copyBefore;
+    if (red) {
+      cwd = disposableCopy(root, scratch);
+      for (const file of files) {
+        const copied = path.join(cwd, file);
+        let text = fs.readFileSync(copied, 'utf8');
+        // Blank `.skip` to spaces (newlines kept), so every later registration keeps its line and column.
+        for (const { start, end } of activations.filter((edit) => edit.file === file))
+          text = `${text.slice(0, start)}${text.slice(start, end).replaceAll(/[^\n\r]/g, ' ')}${text.slice(end)}`;
+        fs.writeFileSync(copied, text);
+      }
+      copyBefore = digestTree(cwd);
+    }
+    const results = [];
+    for (const [index, file] of files.entries())
+      results.push({
+        file,
+        sha256: before.get(file),
+        ...(red ? { activated: activations.filter((edit) => edit.file === file).length } : {}),
+        ...(await runFile({ runner, entry, cwd, file, output: path.join(outputs, `${index}.json`), timeoutMs })),
+      });
+    const report = {
+      schemaVersion: 1,
+      kind: UNIT_CHECK_KIND,
+      mode: options.mode,
+      runner,
+      runnerVersion: version,
+      configFile,
+      projectRoot: root,
+      files: results,
+    };
+    if (red) {
+      // Writes in the copy and writes that escaped into the permanent project both count.
+      const touched = new Set(changed(copyBefore, digestTree(cwd)));
+      for (const file of changed(projectBefore, digestTree(root, new Set([reportRelative].filter(Boolean))))) touched.add(file);
+      for (const file of files) if (sha256(fs.readFileSync(path.join(root, file))) !== before.get(file)) touched.add(file);
+      report.productionFilesTouched = [...touched].sort();
+    }
+    fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+    fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+    process.stdout.write(`Wrote ${reportPath}.\n`);
+  } catch (error) {
+    // Exit through exitCode so the finally block still removes the disposable copy.
+    process.stderr.write(`${NAME}: ${error instanceof SetupError ? error.message : `the run could not be set up: ${error.message}`}\n`);
+    process.exitCode = 2;
+  } finally {
+    if (scratch) fs.rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
+if (require.main === module) main(process.argv).catch((error) => fail(error?.message ?? String(error)));
+
+module.exports = { main, runnerArguments };

@@ -277,7 +277,7 @@ function buildLlmsTxt() {
     `- **[tea-evaluate Evaluators](${SITE_URL}/reference/tea-evaluate-evaluators)**: The evaluation layer, the rubric judge, calibration labels and sealed-brief agent qualification`,
     `- **[tea-evaluate Evidence](${SITE_URL}/reference/tea-evaluate-evidence)**: The run directory, record path forms and the run-wide strength aggregate`,
     `- **[tea-test-review CLI](${SITE_URL}/reference/tea-test-review-cli)**: Headless test review in CI: flags, exit codes and the JSON verdict`,
-    `- **[tea-automate CLI](${SITE_URL}/reference/tea-automate-cli)**: Headless test generation: flags, the Playwright, Vitest and Jest evidence it verifies, and tea-unit-red-check`,
+    `- **[tea-automate CLI](${SITE_URL}/reference/tea-automate-cli)**: Headless test generation: flags, the Playwright, Vitest and Jest evidence it verifies, and tea-unit-check`,
     '',
     '## Reference lookups',
     '',

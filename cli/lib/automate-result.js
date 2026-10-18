@@ -7,7 +7,7 @@ const { isDeepStrictEqual, stripVTControlCharacters } = require('node:util');
 const yaml = require('js-yaml');
 const { projectPath } = require('./workflow-cli');
 const { generatedInventory, reconcileInventory } = require('./automate-inventory');
-const { UNIT_RED_KIND, normalizeUnitReport, unitReportRunner } = require('./unit-runners');
+const { UNIT_CHECK_KIND, normalizeUnitReport, unitReportRunner } = require('./unit-runners');
 
 const STATUSES = ['passed', 'verified red', 'failed', 'could not measure', 'disabled'];
 const RESULT_KEYS = [
@@ -98,16 +98,27 @@ function reportCounts(report) {
     const normalized = normalizeUnitReport(report);
     result.errors = normalized.errors;
     for (const file of normalized.files) for (const test of file.tests) for (const attempt of test.attempts) addUnit(attempt);
-  } else if (report.kind === UNIT_RED_KIND) {
-    if (report.schemaVersion !== 1 || !Array.isArray(report.files) || !Array.isArray(report.productionFilesTouched))
-      throw new Error('unit red check report is malformed');
-    result.errors = report.productionFilesTouched.length;
+  } else if (report.kind === UNIT_CHECK_KIND) {
+    const red = report.mode === 'red';
+    if (
+      report.schemaVersion !== 1 ||
+      !['expand', 'red'].includes(report.mode) ||
+      !Array.isArray(report.files) ||
+      (red && !Array.isArray(report.productionFilesTouched))
+    )
+      throw new Error('tea-unit-check report is malformed');
+    result.errors = red ? report.productionFilesTouched.length : 0;
     for (const file of report.files) {
       if (file?.loadError) result.errors++;
+      if (file?.runError) result.errors++;
       for (const test of file?.tests ?? []) {
-        if (test?.status === 'failed' && !['assertion', 'timeout', 'error'].includes(test.failure))
-          throw new Error('unit red check failure lacks a classified reason');
-        addUnit(test);
+        // Every attempt counts, so a retry cannot hide an earlier wrong-reason failure.
+        if (!Array.isArray(test?.attempts) || test.attempts.length === 0) throw new Error('tea-unit-check test lacks its attempts');
+        for (const attempt of test.attempts) {
+          if (attempt?.status === 'failed' && !['assertion', 'timeout', 'error'].includes(attempt.failure))
+            throw new Error('tea-unit-check failure lacks a classified reason');
+          addUnit(attempt);
+        }
       }
     }
   } else if (report.schemaVersion === 1 && Array.isArray(report.files) && Array.isArray(report.productionFilesTouched)) {
@@ -224,7 +235,7 @@ function parseResult({
     // The report family selects the registration grammar; reconciliation then
     // requires that family to match a runner the project declared before the run.
     const unitRunner = nativeReports
-      .map((report) => (report.kind === UNIT_RED_KIND ? report.runner : unitReportRunner(report)))
+      .map((report) => (report.kind === UNIT_CHECK_KIND ? report.runner : unitReportRunner(report)))
       .find(Boolean);
     const inventory = generatedInventory(projectRoot, result.generatedFiles, { runner: unitRunner ?? 'playwright' });
     if (evidenceDir)

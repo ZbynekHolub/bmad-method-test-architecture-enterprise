@@ -50,7 +50,7 @@
     "tea-trace": "cli/trace.js",
     "tea-trace-runner": "cli/trace-runner.js",
     "tea-transcript-runner": "cli/transcript-runner.js",
-    "tea-unit-red-check": "cli/unit-red-check.js"
+    "tea-unit-check": "cli/unit-check.js"
   },
   "files": [
     "skills",

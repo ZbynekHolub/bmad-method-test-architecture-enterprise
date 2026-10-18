@@ -42,22 +42,52 @@ const CONFIG_FILES = {
 };
 const PACKAGES = { playwright: '@playwright/test', vitest: 'vitest', jest: 'jest' };
 const UNIT_RUNNERS = ['vitest', 'jest'];
-const UNIT_RED_KIND = 'tea-unit-red-check';
+const UNIT_CHECK_KIND = 'tea-unit-check';
 const UNIT_STATUSES = { passed: 'passed', failed: 'failed', skipped: 'skipped', pending: 'skipped', todo: 'skipped', disabled: 'skipped' };
+
+function readPackage(directory) {
+  const pkgPath = path.join(directory, 'package.json');
+  if (!fs.existsSync(pkgPath)) return {};
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  } catch (error) {
+    throw new Error(`${pkgPath} is invalid JSON: ${error.message}`);
+  }
+  if (!pkg || typeof pkg !== 'object' || Array.isArray(pkg)) throw new Error(`${pkgPath} must contain an object`);
+  return pkg;
+}
+
+// The directories above a workspace package up to its workspace or repository
+// root, nearest first. A project outside any workspace or repository has none,
+// so detection and the disposable copy never reach into unrelated parents.
+function workspaceAncestors(projectRoot) {
+  const root = fs.realpathSync(projectRoot);
+  const boundary = (directory) =>
+    fs.existsSync(path.join(directory, '.git')) ||
+    fs.existsSync(path.join(directory, 'pnpm-workspace.yaml')) ||
+    Object.hasOwn(readPackage(directory), 'workspaces');
+  if (boundary(root)) return [];
+  const ancestors = [];
+  for (let directory = path.dirname(root); ; directory = path.dirname(directory)) {
+    ancestors.push(directory);
+    if (boundary(directory)) return ancestors;
+    if (path.dirname(directory) === directory) return [];
+  }
+}
 
 function detectRunners(projectRoot) {
   const root = fs.realpathSync(projectRoot);
-  let pkg = {};
-  const pkgPath = path.join(root, 'package.json');
-  if (fs.existsSync(pkgPath)) {
-    try {
-      pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    } catch (error) {
-      throw new Error(`package.json is invalid JSON: ${error.message}`);
-    }
-    if (!pkg || typeof pkg !== 'object' || Array.isArray(pkg)) throw new Error('package.json must contain an object');
-  }
+  const pkg = readPackage(root);
   const declared = { ...pkg.dependencies, ...pkg.devDependencies };
+  // A workspace package may rely on a runner its workspace root declares.
+  const hoisted = Object.assign(
+    {},
+    ...workspaceAncestors(root).map((directory) => {
+      const ancestor = readPackage(directory);
+      return { ...ancestor.dependencies, ...ancestor.devDependencies };
+    }),
+  );
   const runners = [];
   for (const runner of Object.keys(PACKAGES)) {
     // Vite's own config names Vitest only when the project declares Vitest.
@@ -66,7 +96,8 @@ function detectRunners(projectRoot) {
     );
     let configFile = candidates.find((file) => fs.existsSync(path.join(root, file))) ?? null;
     if (!configFile && runner === 'jest' && Object.hasOwn(pkg, 'jest')) configFile = 'package.json';
-    if (configFile || Object.hasOwn(declared, PACKAGES[runner])) runners.push({ runner, configFile });
+    if (configFile || Object.hasOwn(declared, PACKAGES[runner]) || (runner !== 'playwright' && Object.hasOwn(hoisted, PACKAGES[runner])))
+      runners.push({ runner, configFile });
   }
   return runners;
 }
@@ -79,13 +110,21 @@ function unitReportRunner(report) {
 
 const plain = (value) => stripVTControlCharacters(String(value ?? ''));
 
-// One failed attempt: an assertion is the intended red reason; a timeout is a
+// One failure message: an assertion is the intended red reason; a timeout is a
 // runner error like Playwright's timedOut; anything else is a wrong-reason failure.
 function failureKind(message, detail) {
   const text = plain(message);
   if (/\bTest timed out in \d+ ?ms\b|\bExceeded timeout of \d+ ?ms\b/.test(text)) return 'timeout';
   if (detail?.matcherResult || /^(?:\w*AssertionError)\b/.test(text) || /(?:^|\n)(?:Error: )?expect\(/.test(text)) return 'assertion';
   return 'error';
+}
+
+// One failed attempt can carry several messages (a hook error after an assertion).
+// It counts as an assertion failure only when every message is one.
+function attemptFailure(messages, details = []) {
+  const kinds = messages.map((message, index) => failureKind(message, details[index]));
+  if (kinds.includes('timeout')) return 'timeout';
+  return kinds.length > 0 && kinds.every((kind) => kind === 'assertion') ? 'assertion' : 'error';
 }
 
 function normalizeUnitReport(report) {
@@ -125,11 +164,20 @@ function normalizeUnitReport(report) {
       const details = Array.isArray(assertion.failureDetails) ? assertion.failureDetails : [];
       const attempts = [];
       if (runner === 'jest') {
-        if (assertion.retryReasons !== undefined && !Array.isArray(assertion.retryReasons))
-          throw new Error(`native Jest result has malformed retry reasons: ${result.name}`);
-        for (const reason of assertion.retryReasons ?? []) attempts.push({ status: 'failed', failure: failureKind(reason) });
-      }
-      attempts.push({ status, failure: status === 'failed' ? failureKind(messages[0], details[0]) : null });
+        // Jest records retry reasons only with logErrorsBeforeRetry; invocations always counts the attempts.
+        const reasons = assertion.retryReasons ?? [];
+        if (!Array.isArray(reasons)) throw new Error(`native Jest result has malformed retry reasons: ${result.name}`);
+        const invocations = assertion.invocations ?? 1;
+        if (!Number.isSafeInteger(invocations) || invocations < 1)
+          throw new Error(`native Jest result has malformed invocations: ${result.name}`);
+        for (let index = 0; index < Math.max(invocations - 1, reasons.length); index++)
+          attempts.push({ status: 'failed', failure: reasons[index] === undefined ? 'error' : failureKind(plain(reasons[index])) });
+        attempts.push({ status, failure: status === 'failed' ? attemptFailure(messages, details) : null });
+      } else if (status === 'passed') {
+        // Vitest keeps a retried test's earlier failures in failureMessages of its final pass.
+        for (const message of messages) attempts.push({ status: 'failed', failure: failureKind(message) });
+        attempts.push({ status, failure: null });
+      } else attempts.push({ status, failure: status === 'failed' ? attemptFailure(messages, details) : null });
       if (status === 'failed') failedTests++;
       tests.push({
         titlePath: [...assertion.ancestorTitles, assertion.title],
@@ -152,4 +200,14 @@ function normalizeUnitReport(report) {
   return { runner, files, errors };
 }
 
-module.exports = { CONFIG_FILES, UNIT_RUNNERS, UNIT_RED_KIND, detectRunners, unitReportRunner, normalizeUnitReport, failureKind };
+module.exports = {
+  CONFIG_FILES,
+  UNIT_RUNNERS,
+  UNIT_CHECK_KIND,
+  detectRunners,
+  workspaceAncestors,
+  unitReportRunner,
+  normalizeUnitReport,
+  failureKind,
+  attemptFailure,
+};

@@ -543,12 +543,4 @@ if (require.main === module) {
   main(process.argv).catch((error) => fail(error?.stack ?? error?.message ?? String(error)));
 }
 
-module.exports = {
-  discoverSpecFiles,
-  filesUnder,
-  snapshotFile,
-  resolvePlaywrightCli,
-  runOneSpecFile,
-  SKIP_CALL,
-  DIGEST_EXCLUDED_DIRECTORIES,
-};
+module.exports = { discoverSpecFiles, filesUnder, resolvePlaywrightCli, runOneSpecFile, SKIP_CALL, DIGEST_EXCLUDED_DIRECTORIES };

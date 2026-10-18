@@ -78,7 +78,7 @@ function defaultsAgree(moduleRoot) {
   );
 }
 
-const UNIT_RED_CHECK = path.resolve(__dirname, '..', 'unit-red-check.js');
+const UNIT_CHECK = path.resolve(__dirname, '..', 'unit-check.js');
 
 function runnerLines(mode, runners, projectRoot) {
   const unit = runners.filter(({ runner }) => runner === 'vitest' || runner === 'jest');
@@ -86,22 +86,13 @@ function runnerLines(mode, runners, projectRoot) {
     `Project test runners detected by the CLI from package.json and config files: ${runners.length > 0 ? runners.map(({ runner, configFile }) => `${runner} (${configFile ?? 'declared dependency, default config'})`).join(', ') : 'none'}. Vitest and Jest evidence is accepted only for a detected runner.`,
   ];
   if (unit.length === 0) return lines;
+  const choose = unit.length > 1 ? ' --runner <vitest or jest, the runner these generated files use>' : '';
   lines.push(
     'For generated Vitest or Jest tests, use a literal string title in a direct test() or it() call for expand or test.skip() or it.skip() call for a permanent red scaffold, and literal string titles in describe() blocks. Do not register them through loops, test.each(), describe.each(), test.for(), skipIf(), runIf(), todo(), fails() or helper functions. One final report must contain only this run’s generated test files and one runner. Give this rule to every test-generation subagent.',
+    mode === 'expand'
+      ? `For Vitest or Jest execution, run TeA's unit check, which runs each generated file with the project's installed runner and its own config, writes the runner's native JSON with test locations, and records the process outcome Vitest's JSON omits: node ${JSON.stringify(UNIT_CHECK)} --mode expand --project-root ${JSON.stringify(projectRoot ?? '.')}${choose} --report <fresh report path> --file <generated file> (repeat --file). Exit 0 means the report was written. List that report in executionReports. Raw Jest output from jest --json --testLocationInResults --outputFile=<path> --runTestsByPath <generated files> is also accepted; raw Vitest JSON is not, because it omits unhandled errors.`
+      : `For Vitest or Jest red verification, run TeA's unit check, which copies the project, activates only the generated .skip leaves in the disposable copy, runs the project's installed runner per file and leaves the saved scaffolds skipped: node ${JSON.stringify(UNIT_CHECK)} --mode red --project-root ${JSON.stringify(projectRoot ?? '.')}${choose} --report <fresh report path> --file <generated file> (repeat --file). Exit 0 means the report was written. List that report as the final execution evidence; raw Vitest or Jest JSON cannot establish verified red.`,
   );
-  if (mode === 'expand') {
-    if (unit.some(({ runner }) => runner === 'vitest'))
-      lines.push(
-        'For Vitest expand execution, run the installed Vitest from the project root with its own config, selecting only the generated files: npx vitest run <generated files> --reporter=json --outputFile=<fresh report path> --includeTaskLocation. List that JSON report in executionReports.',
-      );
-    if (unit.some(({ runner }) => runner === 'jest'))
-      lines.push(
-        'For Jest expand execution, run the installed Jest from the project root with its own config, selecting only the generated files: npx jest --json --testLocationInResults --outputFile=<fresh report path> --runTestsByPath <generated files>. List that JSON report in executionReports.',
-      );
-  } else
-    lines.push(
-      `For Vitest or Jest red verification, run the TeA unit red check, which copies the project, activates only the generated .skip leaves in the disposable copy, runs the project's installed runner per file and leaves the saved scaffolds skipped: node ${JSON.stringify(UNIT_RED_CHECK)} --project-root ${JSON.stringify(projectRoot ?? '.')} --report <fresh report path> --file <generated file> (repeat --file). Exit 0 means the report was written. List that report as the final execution evidence; raw Vitest or Jest JSON from a disposable copy cannot establish verified red.`,
-    );
   return lines;
 }
 
