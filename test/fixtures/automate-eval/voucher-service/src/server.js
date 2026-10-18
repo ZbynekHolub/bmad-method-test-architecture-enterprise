@@ -17,6 +17,8 @@
  * body is JSON on every request and response.
  *
  * The server binds the loopback interface only, on PORT (default 4320).
+ * PORT=0 asks the operating system for a free port, and the startup line
+ * names the port actually bound.
  */
 
 const http = require('node:http');
@@ -98,7 +100,7 @@ const server = http.createServer((request, response) => {
   });
 });
 server.listen(PORT, HOST, () => {
-  process.stdout.write(`voucher-redemption-service listening on http://${HOST}:${PORT}\n`);
+  process.stdout.write(`voucher-redemption-service listening on http://${HOST}:${server.address().port}\n`);
 });
 
 for (const signal of ['SIGINT', 'SIGTERM']) {

@@ -18,6 +18,17 @@
  *    a partial upload cannot collide; the waits between attempts total at least
  *    two minutes and fit inside the step's timeout.
  *
+ * A local action resolves from the job's checkout, so a step that uses one on
+ * a path where the checkout has not succeeded fails on the missing action.yaml.
+ * The coverage job once did exactly that: its chain gate ran before the
+ * checkout, and the always() upload after it errored a second time. So in
+ * every workflow, each step that uses a local action comes after an
+ * actions/checkout step of this repository that cannot swallow its own
+ * failure, and a step whose if: calls a status function (always(), failure(),
+ * cancelled()) also requires that checkout's success with
+ * `&& steps.<id>.outcome == 'success'`. A step with no status function runs
+ * only when every earlier step succeeded, the checkout included.
+ *
  * It then proves it can fail: each guard is reverted in a parsed copy and must
  * be reported.
  *
@@ -32,7 +43,8 @@ const path = require('node:path');
 const yaml = require('js-yaml');
 
 const ROOT = path.join(__dirname, '..');
-const WORKFLOW = path.join(ROOT, '.github', 'workflows', 'quality.yaml');
+const WORKFLOWS = path.join(ROOT, '.github', 'workflows');
+const WORKFLOW = path.join(WORKFLOWS, 'quality.yaml');
 const ACTIONS = {
   './.github/actions/upload-artifact-retry': {
     file: '.github/actions/upload-artifact-retry/action.yaml',
@@ -81,8 +93,45 @@ function actionProblems(uses, action) {
   return { problems, worstSeconds: waited + ATTEMPTS * ATTEMPT_SECONDS };
 }
 
-function workflowProblems(workflow, actions) {
+/** The steps of each job that use a local action on a path where the repository may not be checked out. */
+function localActionProblems(workflow) {
   const problems = [];
+  for (const [jobName, job] of Object.entries(workflow?.jobs ?? {})) {
+    const steps = job.steps ?? [];
+    const checkoutIndex = steps.findIndex(
+      (step) =>
+        typeof step.uses === 'string' &&
+        step.uses.startsWith('actions/checkout@') &&
+        step.with?.repository === undefined &&
+        step.with?.path === undefined,
+    );
+    const checkout = steps[checkoutIndex];
+    for (const [index, step] of steps.entries()) {
+      if (typeof step.uses !== 'string' || !step.uses.startsWith('./')) continue;
+      const label = `${jobName}: "${step.name}" uses ${step.uses}`;
+      if (checkoutIndex === -1 || checkoutIndex > index) {
+        problems.push(`${label} before the job checks the repository out`);
+        continue;
+      }
+      if (checkout['continue-on-error'] !== undefined && checkout['continue-on-error'] !== false)
+        problems.push(`${label} after a checkout that continues on error, so it can run without the checkout`);
+      const condition = String(step.if ?? '')
+        .replace(/^\s*\$\{\{\s*([\s\S]*?)\s*\}\}\s*$/, '$1')
+        .trim();
+      if (!/\b(?:always|failure|cancelled)\(\)/.test(condition)) continue;
+      const guard = checkout.id && `steps.${checkout.id}.outcome == 'success'`;
+      const guarded = guard && condition.endsWith(` && ${guard}`) && !condition.includes('||');
+      if (!guarded)
+        problems.push(
+          `${label} under if: ${condition}, which can run without the checkout; add && steps.<checkout id>.outcome == 'success'`,
+        );
+    }
+  }
+  return problems;
+}
+
+function workflowProblems(workflow, actions) {
+  const problems = [...localActionProblems(workflow)];
   const worst = Object.fromEntries(Object.keys(ACTIONS).map((uses) => [uses, actionProblems(uses, actions[uses])]));
   for (const { problems: found } of Object.values(worst)) problems.push(...found);
   for (const [jobName, job] of Object.entries(workflow.jobs ?? {})) {
@@ -108,6 +157,14 @@ const workflow = yaml.load(fs.readFileSync(WORKFLOW, 'utf8'));
 const actions = Object.fromEntries(Object.entries(ACTIONS).map(([uses, { file }]) => [uses, load(file)]));
 assert.deepEqual(workflowProblems(workflow, actions), []);
 checks++;
+for (const file of fs.readdirSync(WORKFLOWS).filter((name) => /\.ya?ml$/.test(name))) {
+  assert.deepEqual(
+    localActionProblems(load(path.join('.github', 'workflows', file))),
+    [],
+    `${file} uses a local action without a checkout`,
+  );
+  checks++;
+}
 const transfers = Object.values(workflow.jobs).flatMap((job) => (job.steps ?? []).filter((step) => ACTIONS[step.uses]));
 assert.ok(transfers.length >= 5, 'quality.yaml routes its uploads and the coverage download through the retrying actions');
 checks++;
@@ -160,6 +217,38 @@ const reverts = [
     'a dropped attempt',
     (copy) => copy.actions['./.github/actions/upload-artifact-retry'].runs.steps.splice(-2, 2),
     /makes 3 attempts, expected 4/,
+  ],
+  [
+    'an always() local-action step without the checkout guard',
+    (copy) => (copy.workflow.jobs.coverage.steps.find((step) => step.name === 'Upload the coverage report').if = 'always()'),
+    /coverage: "Upload the coverage report" uses .* under if: always\(\), which can run without the checkout/,
+  ],
+  [
+    'a checkout guard joined by ||',
+    (copy) => (copy.workflow.jobs.chain.steps.find((step) => ACTIONS[step.uses]).if = "always() || steps.checkout.outcome == 'success'"),
+    /which can run without the checkout/,
+  ],
+  [
+    'a local-action step ahead of the checkout',
+    (copy) => {
+      const { steps } = copy.workflow.jobs.coverage;
+      const download = steps.splice(
+        steps.findIndex((step) => step.uses === './.github/actions/download-artifact-retry'),
+        1,
+      );
+      steps.unshift(...download);
+    },
+    /coverage: "Download every shard's raw coverage" uses .* before the job checks the repository out/,
+  ],
+  [
+    'a checkout that continues on error',
+    (copy) => (copy.workflow.jobs.coverage.steps.find((step) => step.uses?.startsWith('actions/checkout@'))['continue-on-error'] = true),
+    /after a checkout that continues on error/,
+  ],
+  [
+    'a checkout into another path',
+    (copy) => (copy.workflow.jobs.chain.steps.find((step) => step.uses?.startsWith('actions/checkout@')).with.path = 'elsewhere'),
+    /chain: .* before the job checks the repository out/,
   ],
   [
     'waits too short for an outage',

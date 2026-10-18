@@ -166,9 +166,10 @@ function workflowProblems(workflow) {
   if (upload === undefined) {
     problems.push('the chain job has no upload-artifact-retry step named evaluate-runs-*');
   } else {
-    if (upload.if !== 'always()')
+    // always() lets a red shard upload; the checkout guard keeps the local action resolvable (test:artifact-retry).
+    if (upload.if !== "always() && steps.checkout.outcome == 'success'")
       problems.push(
-        `the evaluate-runs upload runs on ${JSON.stringify(upload.if)}, so a red shard uploads nothing; it must run if: always()`,
+        `the evaluate-runs upload runs on ${JSON.stringify(upload.if)}, so a red shard uploads nothing; it must run if: always() && steps.checkout.outcome == 'success'`,
       );
     if (!String(upload.with.name).includes('${{ matrix.shard }}'))
       problems.push('the evaluate-runs artifact name omits matrix.shard, so shards overwrite one another');

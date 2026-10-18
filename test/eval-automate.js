@@ -97,7 +97,6 @@
 
 const fs = require('node:fs');
 const http = require('node:http');
-const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
@@ -486,18 +485,6 @@ function caseIds() {
 /* Servers: the real, unmutated fixture and a mutated scratch copy            */
 /* -------------------------------------------------------------------------- */
 
-/** @returns {Promise<number>} An ephemeral TCP port, free on 127.0.0.1 at the moment this resolves. */
-function getFreePort() {
-  return new Promise((resolve, reject) => {
-    const probe = net.createServer();
-    probe.once('error', reject);
-    probe.listen(0, '127.0.0.1', () => {
-      const { port } = probe.address();
-      probe.close((closeError) => (closeError ? reject(closeError) : resolve(port)));
-    });
-  });
-}
-
 /** A GET to `url`, resolving true on any HTTP response and false on a connection error. */
 function respondsOnce(url) {
   return new Promise((resolve) => {
@@ -544,35 +531,61 @@ function stageMutatedService() {
 }
 
 /**
- * Starts `<cwd>/src/server.js` as a child process and waits for it to answer
- * `/health`.
+ * Starts `<cwd>/src/server.js` as a child process on a port the operating
+ * system assigns, and waits for it to answer `/health`.
  *
- * @param {{cwd: string, port: number}} options
- * @returns {Promise<import('node:child_process').ChildProcess>}
+ * The child binds `PORT=0` itself and names the bound port on its startup
+ * line. Probing for a free port here and handing it over would leave a window
+ * between the probe's close and the child's bind: on Linux two probes taken
+ * before either server binds can return the same port, and the second server
+ * then found the first one already answering on it.
+ *
+ * @param {{cwd: string}} options
+ * @returns {Promise<{child: import('node:child_process').ChildProcess, port: number}>}
  */
-async function startVoucherServer({ cwd, port }) {
-  const healthUrl = `http://127.0.0.1:${port}/health`;
-  if (await respondsOnce(healthUrl)) throw new Error(`port ${port} is already answering; refusing to start a second server on it`);
+async function startVoucherServer({ cwd }) {
   const child = spawn(process.execPath, [path.join(cwd, 'src', 'server.js')], {
     cwd,
-    env: { ...process.env, PORT: String(port) },
-    stdio: 'ignore',
+    env: { ...process.env, PORT: '0' },
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
-  const deadline = (await nowMs()) + SERVER_START_TIMEOUT_MS;
+  let stdout = '';
+  let stderr = '';
+  let port = null;
   let spawnError = null;
   child.once('error', (error) => {
     spawnError = error;
   });
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk;
+    const listening = /listening on http:\/\/127\.0\.0\.1:(\d+)/.exec(stdout);
+    if (listening && port === null) port = Number(listening[1]);
+  });
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', (chunk) => {
+    stderr += chunk;
+  });
+  const deadline = (await nowMs()) + SERVER_START_TIMEOUT_MS;
   while ((await nowMs()) < deadline) {
     if (spawnError) throw new Error(`voucher-service failed to start from ${cwd}: ${spawnError.message}`);
     if (child.exitCode !== null || child.signalCode !== null) {
-      throw new Error(`voucher-service exited (code ${child.exitCode}, signal ${child.signalCode}) before answering ${healthUrl}`);
+      // An uncaught throw ends with Node's version banner; the error line names the cause.
+      const lines = stderr.trim().split('\n');
+      const detail = lines.find((line) => /Error\b/.test(line)) ?? lines.at(-1);
+      throw new Error(
+        `voucher-service exited (code ${child.exitCode}, signal ${child.signalCode}) before answering /health${detail ? `: ${detail}` : ''}`,
+      );
     }
-    if (await respondsOnce(healthUrl)) return child;
+    if (port !== null && (await respondsOnce(`http://127.0.0.1:${port}/health`))) return { child, port };
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   stopVoucherServer(child);
-  throw new Error(`voucher-service did not answer ${healthUrl} within ${SERVER_START_TIMEOUT_MS}ms`);
+  throw new Error(
+    port === null
+      ? `voucher-service from ${cwd} named no listening port within ${SERVER_START_TIMEOUT_MS}ms`
+      : `voucher-service did not answer http://127.0.0.1:${port}/health within ${SERVER_START_TIMEOUT_MS}ms`,
+  );
 }
 
 /** SIGKILL rather than SIGTERM: this harness owns the server for its own run and needs it gone, not given a chance to linger. */
@@ -864,27 +877,24 @@ async function runLiveCycle(groundTruth) {
   // yet to clean up, whereas calling the exit-happy resolver from inside the
   // staged-and-running block below would skip the `finally` entirely.
   const cliPath = resolvePlaywrightCliPath();
-  const fixedPort = await getFreePort();
   const mutatedDir = stageMutatedService();
-  let mutatedPort;
   let fixedServer;
   let mutatedServer;
   try {
-    mutatedPort = await getFreePort();
-    fixedServer = await startVoucherServer({ cwd: SERVICE_ROOT, port: fixedPort });
-    mutatedServer = await startVoucherServer({ cwd: mutatedDir, port: mutatedPort });
+    fixedServer = await startVoucherServer({ cwd: SERVICE_ROOT });
+    mutatedServer = await startVoucherServer({ cwd: mutatedDir });
 
     const fixedRuns = new Map();
     const mutatedRuns = new Map();
     for (const caseEntry of groundTruth.cases) {
       const specAbsolute = path.join(FIXTURE_ROOT, caseEntry.specFile);
-      fixedRuns.set(caseEntry.id, runCaseAgainstServer({ specAbsolute, baseUrl: `http://127.0.0.1:${fixedPort}`, cliPath }));
-      mutatedRuns.set(caseEntry.id, runCaseAgainstServer({ specAbsolute, baseUrl: `http://127.0.0.1:${mutatedPort}`, cliPath }));
+      fixedRuns.set(caseEntry.id, runCaseAgainstServer({ specAbsolute, baseUrl: `http://127.0.0.1:${fixedServer.port}`, cliPath }));
+      mutatedRuns.set(caseEntry.id, runCaseAgainstServer({ specAbsolute, baseUrl: `http://127.0.0.1:${mutatedServer.port}`, cliPath }));
     }
     return scoreRun(groundTruth, fixedRuns, mutatedRuns);
   } finally {
-    stopVoucherServer(fixedServer);
-    stopVoucherServer(mutatedServer);
+    stopVoucherServer(fixedServer?.child);
+    stopVoucherServer(mutatedServer?.child);
     fs.rmSync(mutatedDir, { recursive: true, force: true });
   }
 }
