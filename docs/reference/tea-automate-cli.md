@@ -158,6 +158,7 @@ A filtered native run must still cover every generated leaf in each matching pro
 ### tea-unit-check
 
 `tea-unit-check` runs generated Vitest or Jest files with the project's installed runner and its own config, one file at a time, and writes the evidence `tea-automate` verifies.
+It needs Vitest 3 or newer, whose reporter API reports each test's attempts.
 Expand mode runs the files in place.
 Red mode copies the project to a temporary directory, or the whole workspace for a workspace package, links its `node_modules` directories, and blanks only each generated leaf's `.skip` in the copy.
 The saved scaffolds keep their skips.

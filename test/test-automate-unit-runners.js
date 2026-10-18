@@ -342,6 +342,15 @@ async function main() {
       path.join(root, 'vitest.config.mjs'),
       "export default { test: { include: ['tests/**/*.test.ts'], tags: [{ name: 'flaky', retry: 2 }] } };\n",
     );
+    fs.writeFileSync(
+      path.join(root, 'tests/skipped.test.ts'),
+      `${HEADER.vitest}test('runs', () => {});\ntest.skip('skipped', () => {});\n`,
+    );
+    const skipped = unitCheck(root, 'expand', ['tests/skipped.test.ts']).report;
+    check(
+      skipped.files[0].runError === null && reportCounts(skipped).skipped === 1,
+      'a skipped Vitest test made no attempt and raises no attempt error',
+    );
     for (const [name, options, label] of [
       ['retry', '{ retry: 1 }', 'a test retry option'],
       ['repeats', '{ repeats: 2 }', 'a test repeats option'],
@@ -912,6 +921,17 @@ async function main() {
         linked.productionFilesTouched.includes('../shared/src/index.js'),
       'a write through a link into the rest of a plain repository lands in the copy and is reported',
     );
+    // A relative link out of the repository still reaches its target from the copy.
+    const external = path.join(scratch, `external-${projects}`);
+    fs.mkdirSync(external);
+    fs.writeFileSync(path.join(external, 'value.txt'), 'outside\n');
+    fs.symlinkSync(path.relative(path.join(repo, 'app'), external), path.join(repo, 'app/external'));
+    fs.writeFileSync(
+      path.join(repo, 'app/tests/external.test.ts'),
+      `${HEADER.vitest}import fs from 'node:fs';\ntest.skip('reads outside', () => { expect(fs.readFileSync('external/value.txt', 'utf8')).toBe('inside'); });\n`,
+    );
+    const outside = unitCheck(path.join(repo, 'app'), 'red', ['tests/external.test.ts']).report;
+    check(outside.files[0].tests[0]?.failure === 'assertion', 'a relative link out of the repository resolves to its target in the copy');
     // Overlapping link targets, found inner first, copy once.
     fs.mkdirSync(path.join(repo, 'shared/src/sub'));
     fs.symlinkSync('../index.js', path.join(repo, 'shared/src/sub/index-link.js'));

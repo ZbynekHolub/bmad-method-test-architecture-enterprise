@@ -9,13 +9,17 @@ export default class AttemptsReporter {
     this.tests = [];
   }
 
+  // The reporter API (Vitest 3 or newer) gives a test that ran its diagnostic; a
+  // skipped test never ran, so it has none and made no attempt. A test that ran
+  // without one records null, which tea-unit-check treats as unknown attempts.
   onTestCaseResult(testCase) {
-    const diagnostic = testCase.diagnostic?.();
+    const diagnostic = typeof testCase.diagnostic === 'function' ? testCase.diagnostic() : undefined;
+    const skipped = testCase.result?.()?.state === 'skipped';
     this.tests.push({
       moduleId: testCase.module?.moduleId ?? null,
       fullName: testCase.fullName ?? null,
-      retryCount: diagnostic?.retryCount ?? null,
-      repeatCount: diagnostic?.repeatCount ?? null,
+      retryCount: diagnostic ? diagnostic.retryCount : skipped ? 0 : null,
+      repeatCount: diagnostic ? diagnostic.repeatCount : skipped ? 0 : null,
     });
   }
 

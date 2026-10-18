@@ -266,15 +266,20 @@ function disposableCopy(root, scratch, { ancestors, base, top, linked }) {
       if (entry.isDirectory()) rebase(absolute);
       else if (entry.isSymbolicLink()) {
         const original = path.join(base, path.relative(mirror, absolute));
+        const text = fs.readlinkSync(absolute);
         let pointed;
         try {
           pointed = real(original);
         } catch {
-          pointed = path.resolve(path.dirname(original), fs.readlinkSync(absolute));
+          pointed = path.resolve(path.dirname(original), text);
         }
         if (roots.some((item) => item === pointed || inside(item, pointed))) {
           fs.unlinkSync(absolute);
           fs.symlinkSync(mirrorOf(pointed), absolute);
+        } else if (!path.isAbsolute(text)) {
+          // The copy sits elsewhere, so a relative link out of the scope must name its target absolutely.
+          fs.unlinkSync(absolute);
+          fs.symlinkSync(pointed, absolute);
         }
       }
     }
@@ -500,6 +505,9 @@ async function main(argv) {
     if (candidates.length > 1) throw new SetupError('the project declares both Vitest and Jest; pass --runner to choose one');
     const [{ runner, configFile }] = candidates;
     const { entry, version } = runnerEntry(root, runner);
+    // The attempt diagnostics need the reporter API Vitest 3 introduced.
+    if (runner === 'vitest' && Number.parseInt(version, 10) < 3)
+      throw new SetupError(`tea-unit-check needs Vitest 3 or newer; the project has ${version}`);
 
     const activations = [];
     const inventory = generatedInventory(root, files, { runner, activations });
