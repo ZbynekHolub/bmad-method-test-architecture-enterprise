@@ -322,19 +322,6 @@ function unitLeaves(ast, file, bindings, inventory, activations) {
         if (chain.some((member) => UNIT_DYNAMIC.has(member)))
           throw new Error(`generated test inventory has unresolved table registration: ${file}`);
         const callback = node.arguments.find(isCallback);
-        // Retries and repeats make one leaf report several attempts the JSON cannot separate.
-        const options = node.arguments.find((arg, index) => index > 0 && !isCallback(arg) && arg.type !== 'NumericLiteral');
-        if (
-          options &&
-          (options.type !== 'ObjectExpression' ||
-            options.properties.some(
-              (property) =>
-                property.type !== 'ObjectProperty' ||
-                property.computed ||
-                ['retry', 'repeats'].includes(property.key?.name ?? literal(property.key)),
-            ))
-        )
-          throw new Error(`generated test inventory has a retry, repeat or dynamic test option: ${file}`);
         if (resolved.kind === 'suite') {
           if (chain.length > 1 || (chain.length === 1 && !UNIT_SUITE_MODIFIERS.has(chain[0])))
             throw new Error(`generated test inventory has unsupported registration: ${file}`);

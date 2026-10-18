@@ -57,6 +57,8 @@ const COPY_EXCLUDED = new Set(['node_modules', '.git', '_bmad-output']);
 // Directories the integrity digest skips: dependencies, VCS state, evidence and
 // runner output that a test run writes by design.
 const DIGEST_EXCLUDED = new Set(['node_modules', '.git', '_bmad-output', 'test-results', '.cache', 'coverage', '__snapshots__']);
+// Records each Vitest test's actual retry and repeat counts, which its JSON omits.
+const ATTEMPTS_REPORTER = path.join(__dirname, 'lib', 'vitest-attempts-reporter.mjs');
 // Vitest's default reporter prints this banner when it caught unhandled errors; its JSON report omits them.
 const VITEST_UNHANDLED = /Vitest caught \d+ unhandled errors? during the test run/;
 
@@ -134,7 +136,7 @@ function digestTree(root, skip = new Set()) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const absolute = path.join(directory, entry.name);
       const relative = slash(path.relative(root, absolute));
-      if (skip.has(relative)) continue;
+      if (skip.has(absolute)) continue;
       if (entry.isDirectory()) {
         if (!DIGEST_EXCLUDED.has(entry.name)) walk(absolute);
       } else if (entry.isSymbolicLink()) digest.set(relative, `link:${fs.readlinkSync(absolute)}`);
@@ -153,11 +155,52 @@ const changed = (before, after) => [...new Set([...before.keys(), ...after.keys(
  * paths: the workspace or repository root. `top` is the tree copied whole: the
  * workspace for a workspace package, otherwise the project alone, so a project
  * in a repository subfolder never copies or digests the rest of the repository.
+ * `linked` lists what the project's own symlinks reach elsewhere under `base`:
+ * those targets are copied and digested too, so no write through a link can
+ * reach the permanent repository unseen.
  */
 function copyScope(root) {
   const ancestors = workspaceAncestors(root);
   const base = ancestors.at(-1) ?? root;
-  return { ancestors, base, top: base !== root && isWorkspaceRoot(base) ? base : root };
+  const top = base !== root && isWorkspaceRoot(base) ? base : root;
+  const linked = new Set();
+  const scan = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      if (COPY_EXCLUDED.has(entry.name)) continue;
+      if (entry.isSymbolicLink()) {
+        let pointed;
+        try {
+          pointed = real(absolute);
+        } catch {
+          continue;
+        }
+        if (inside(base, pointed) && !inside(top, pointed) && ![...linked].some((item) => inside(item, pointed))) {
+          linked.add(pointed);
+          if (fs.statSync(pointed).isDirectory()) scan(pointed);
+        }
+      } else if (entry.isDirectory()) scan(absolute);
+    }
+  };
+  scan(top);
+  return { ancestors, base, top, linked: [...linked] };
+}
+
+/** Digest every root of the scope, keyed by path relative to the project root. */
+function digestScope(root, roots, locate = (item) => item, skip = new Set()) {
+  const digest = new Map();
+  for (const item of roots) {
+    const located = locate(item);
+    if (!fs.existsSync(located)) continue;
+    if (fs.statSync(located).isDirectory()) {
+      for (const [relative, value] of digestTree(located, skip)) digest.set(slash(path.relative(root, path.join(item, relative))), value);
+    } else
+      digest.set(
+        slash(path.relative(root, item)),
+        `${(fs.statSync(located).mode & 0o777).toString(8)}:${sha256(fs.readFileSync(located))}`,
+      );
+  }
+  return digest;
 }
 
 /**
@@ -165,11 +208,11 @@ function copyScope(root) {
  * resolves the project's own packages. A workspace package is copied with its
  * whole workspace, so hoisted dependencies, sibling packages and relative
  * `extends` resolve as they do in place, and a test writing into a sibling
- * package writes into the copy. A project inside a plain repository keeps only
- * its ancestors' own files and dependency links above it.
+ * package writes into the copy. A project inside a plain repository keeps its
+ * ancestors' own files and dependency links above it, and the targets of its
+ * symlinks into the rest of the repository.
  */
-function disposableCopy(root, scratch) {
-  const { ancestors, base, top } = copyScope(root);
+function disposableCopy(root, scratch, { ancestors, base, top, linked }) {
   const mirror = path.join(scratch, 'workspace');
   const mirrorOf = (absolute) => path.join(mirror, path.relative(base, absolute));
   for (const ancestor of ancestors.filter((directory) => !inside(top, directory))) {
@@ -181,6 +224,11 @@ function disposableCopy(root, scratch) {
     }
   }
   const links = [];
+  const copyFile = (from, to) => {
+    fs.mkdirSync(path.dirname(to), { recursive: true });
+    fs.copyFileSync(from, to);
+    fs.chmodSync(to, fs.statSync(from).mode & 0o7777);
+  };
   // A hand-rolled walk: fs.cpSync refuses any copy whose destination lies inside
   // its source, which a work directory inside the project makes true.
   const copy = (source, target) => {
@@ -190,41 +238,48 @@ function disposableCopy(root, scratch) {
       const to = path.join(target, entry.name);
       if (from === scratch || inside(scratch, from)) continue;
       if (COPY_EXCLUDED.has(entry.name)) {
-        if (entry.name === 'node_modules') links.push(path.relative(top, from));
+        if (entry.name === 'node_modules') links.push(from);
       } else if (entry.isSymbolicLink()) fs.symlinkSync(fs.readlinkSync(from), to);
       else if (entry.isDirectory()) copy(from, to);
-      else if (entry.isFile()) {
-        fs.copyFileSync(from, to);
-        fs.chmodSync(to, fs.statSync(from).mode & 0o7777);
-      }
+      else if (entry.isFile()) copyFile(from, to);
     }
   };
-  copy(top, mirrorOf(top));
-  // A link that reaches back into the workspace must reach the copy instead, or
-  // a test writing through it would change the permanent project.
+  const roots = [top, ...linked];
+  for (const item of roots) {
+    if (fs.statSync(item).isDirectory()) copy(item, mirrorOf(item));
+    else copyFile(item, mirrorOf(item));
+  }
+  // A link that reaches back into the copied scope must reach the copy instead,
+  // or a test writing through it would change the permanent project.
   const rebase = (directory) => {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const absolute = path.join(directory, entry.name);
       if (entry.isDirectory()) rebase(absolute);
       else if (entry.isSymbolicLink()) {
         const original = path.join(base, path.relative(mirror, absolute));
-        const pointed = path.resolve(path.dirname(original), fs.readlinkSync(absolute));
-        if (inside(top, pointed)) {
+        let pointed;
+        try {
+          pointed = real(original);
+        } catch {
+          pointed = path.resolve(path.dirname(original), fs.readlinkSync(absolute));
+        }
+        if (roots.some((item) => item === pointed || inside(item, pointed))) {
           fs.unlinkSync(absolute);
           fs.symlinkSync(mirrorOf(pointed), absolute);
         }
       }
     }
   };
-  rebase(mirrorOf(top));
-  for (const relative of links) {
-    const target = mirrorOf(path.join(top, relative));
-    if (fs.existsSync(path.dirname(target))) fs.symlinkSync(real(path.join(top, relative)), target, 'junction');
+  for (const item of roots) if (fs.statSync(item).isDirectory()) rebase(mirrorOf(item));
+  for (const from of links) {
+    const target = mirrorOf(from);
+    if (fs.existsSync(path.dirname(target))) fs.symlinkSync(real(from), target, 'junction');
   }
-  return { copyRoot: mirrorOf(root), copyTop: mirrorOf(top) };
+  return { copyRoot: mirrorOf(root), mirrorOf, roots };
 }
 
 function runnerArguments(runner, entry, file, output) {
+  const attempts = `--reporter=${ATTEMPTS_REPORTER}`;
   return runner === 'vitest'
     ? // The default reporter prints the unhandled-error banner the JSON reporter omits.
       [
@@ -234,6 +289,7 @@ function runnerArguments(runner, entry, file, output) {
         '--reporter=default',
         '--reporter=json',
         `--outputFile.json=${output}`,
+        attempts,
         '--includeTaskLocation',
         '--coverage.enabled=false',
         // One attempt per test, so every failure message belongs to that attempt.
@@ -258,11 +314,11 @@ function runnerArguments(runner, entry, file, output) {
  * Run the runner as the leader of its own process group, so a timeout kills
  * its worker processes too: a hung test file must not leave a busy worker behind.
  */
-function execute(args, { cwd, timeoutMs }) {
+function execute(args, { cwd, timeoutMs, env }) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, args, {
       cwd,
-      env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },
+      env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1', ...env },
       detached: process.platform !== 'win32',
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
@@ -303,7 +359,12 @@ function execute(args, { cwd, timeoutMs }) {
 
 async function runFile({ runner, entry, cwd, file, output, timeoutMs }) {
   const absolute = path.join(cwd, file);
-  const result = await execute(runnerArguments(runner, entry, absolute, output), { cwd, timeoutMs });
+  const attemptsFile = `${output}.attempts.json`;
+  const result = await execute(runnerArguments(runner, entry, absolute, output), {
+    cwd,
+    timeoutMs,
+    env: { TEA_UNIT_CHECK_ATTEMPTS: attemptsFile },
+  });
   const exitCode = result.status;
   const outcome = (loadError, runError = null, tests = []) => ({ exitCode, loadError, runError, tests });
   const tail = String(result.stderr || result.stdout || '')
@@ -353,8 +414,28 @@ async function runFile({ runner, entry, cwd, file, output, timeoutMs }) {
   );
   const failed = tests.some((test) => test.status === 'failed');
   const unhandled = runner === 'vitest' && result.unhandled;
+  // Vitest's JSON keeps one result per test; a retry or repeat, from any config, must not hide behind it.
+  let repeated = null;
+  if (runner === 'vitest') {
+    let diagnostics = null;
+    try {
+      diagnostics = JSON.parse(fs.readFileSync(attemptsFile, 'utf8'));
+    } catch {
+      repeated = 'Vitest wrote no attempt diagnostics, so its retries and repeats cannot be ruled out';
+    }
+    const extra = (diagnostics ?? []).filter(
+      (item) =>
+        item.moduleId &&
+        fs.existsSync(item.moduleId) &&
+        real(item.moduleId) === target &&
+        (item.retryCount !== 0 || item.repeatCount !== 0),
+    );
+    if (extra.length > 0)
+      repeated = `Vitest retried or repeated ${extra.map((item) => item.fullName).join(', ')}; one attempt per generated test is required`;
+  }
   const runError =
-    own.length > 1
+    repeated ??
+    (own.length > 1
       ? `${file} ran in ${own.length} runner projects; one result per generated test is required`
       : unhandled
         ? 'Vitest caught unhandled errors during the run; its JSON report omits them'
@@ -362,7 +443,7 @@ async function runFile({ runner, entry, cwd, file, output, timeoutMs }) {
           ? `the runner reported ${normalized.errors} run-level error(s)`
           : exitCode !== 0 && !failed
             ? `the runner exited ${exitCode} with no failed test`
-            : null;
+            : null);
   return outcome(null, runError, tests);
 }
 
@@ -430,14 +511,16 @@ async function main(argv) {
     fs.mkdirSync(outputs);
     const before = new Map(files.map((file) => [file, sha256(fs.readFileSync(path.join(root, file)))]));
     // Red integrity covers the whole tree the copy carries: the project, or its workspace.
-    const { top } = copyScope(root);
-    const reportSkip = new Set([reportPath, scratch].filter((item) => inside(top, item)).map((item) => slash(path.relative(top, item))));
-    const projectBefore = red ? digestTree(top, reportSkip) : null;
+    const scope = copyScope(root);
+    const roots = [scope.top, ...scope.linked];
+    // The report and the work directory change during the run by design.
+    const skip = new Set([reportPath, scratch]);
+    const projectBefore = red ? digestScope(root, roots, undefined, skip) : null;
     let cwd = root;
     let copy;
     let copyBefore;
     if (red) {
-      copy = disposableCopy(root, scratch);
+      copy = disposableCopy(root, scratch, scope);
       cwd = copy.copyRoot;
       for (const file of files) {
         const copied = path.join(cwd, file);
@@ -447,7 +530,7 @@ async function main(argv) {
           text = `${text.slice(0, start)}${text.slice(start, end).replaceAll(/[^\n\r]/g, ' ')}${text.slice(end)}`;
         fs.writeFileSync(copied, text);
       }
-      copyBefore = digestTree(copy.copyTop);
+      copyBefore = digestScope(root, roots, copy.mirrorOf);
     }
     const results = [];
     for (const [index, file] of files.entries())
@@ -469,9 +552,8 @@ async function main(argv) {
     };
     if (red) {
       // Writes in the copy and writes that escaped into the permanent project both count.
-      const fromTop = (relative) => slash(path.relative(root, path.join(top, relative)));
-      const touched = new Set(changed(copyBefore, digestTree(copy.copyTop)).map(fromTop));
-      for (const file of changed(projectBefore, digestTree(top, reportSkip))) touched.add(fromTop(file));
+      const touched = new Set(changed(copyBefore, digestScope(root, roots, copy.mirrorOf)));
+      for (const file of changed(projectBefore, digestScope(root, roots, undefined, skip))) touched.add(file);
       for (const file of files) if (sha256(fs.readFileSync(path.join(root, file))) !== before.get(file)) touched.add(file);
       report.productionFilesTouched = [...touched].sort();
     }

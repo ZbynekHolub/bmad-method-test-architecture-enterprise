@@ -178,9 +178,9 @@ function normalizeUnitReport(report) {
         for (const message of messages) attempts.push({ status: 'failed', failure: failureKind(message) });
         attempts.push({ status, failure: null });
       } else if (status === 'failed') {
-        // tea-unit-check runs Vitest with --retry=0 and generated tests declare no
-        // retry, so a failed test is one attempt and its messages (soft assertions,
-        // hook errors) belong to it.
+        // tea-unit-check runs Vitest with --retry=0 and reports any retry or repeat
+        // it still observes as a run error, so a failed test is one attempt and its
+        // messages (soft assertions, hook errors) belong to it.
         attempts.push({ status, failure: attemptFailure(messages) });
       } else attempts.push({ status, failure: null });
       if (status === 'failed') failedTests++;

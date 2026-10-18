@@ -142,14 +142,14 @@ Playwright results must identify the same file, suite/title, source line, column
 Vitest and Jest results must identify the same file, `describe` path, title, line and column, inside the consuming project.
 A `tea-unit-check` report must also name the detected config file and the generated files' SHA-256; a raw Jest report without test locations is rejected.
 Every retry attempt counts, so a test that passes on retry cannot produce a passing expand.
-`tea-unit-check` runs Vitest with `--retry=0` and Jest with `--testFailureExitCode=1`, and generated tests may not declare `retry` or `repeats` options, so each Vitest result is one attempt and Jest retries come from its `invocations` count.
+`tea-unit-check` runs Vitest with `--retry=0` and Jest with `--testFailureExitCode=1`. Vitest's JSON keeps one result per test, so a small reporter records each test's actual retry and repeat count, and any retry or repeat, from a test option or a config tag, is a run error. Jest retries come from its `invocations` count.
 Jest test files that import from `@jest/globals` through Babel or ts-jest are supported.
 Native ATDD results must identify a unique file and leaf title.
 Missing files, leaves, or project scopes reject success.
 
 Static literal registrations support named imports, CommonJS destructuring, module namespaces, and aliases returned by `extend` or `mergeTests`.
 For Vitest and Jest, `test`, `it`, `describe` and `suite` may be imported, required from `@jest/globals`, or used as globals; `vi.mock` and `jest.mock` calls are allowed.
-`each`, `for`, `skipIf`, `runIf`, `todo` and `fails` registrations, and `retry` or `repeats` test options, cannot be verified from source.
+`each`, `for`, `skipIf`, `runIf`, `todo` and `fails` registrations cannot be verified from source.
 Native source locations follow the binding and module format, including `.mjs` and package `type: module`.
 Nested Playwright configs keep the consuming project root as the file identity base.
 Project selection follows native glob and serialized RegExp `testMatch`/`testIgnore` rules, including flags.

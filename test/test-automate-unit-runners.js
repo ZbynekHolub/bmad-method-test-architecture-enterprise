@@ -329,26 +329,35 @@ async function main() {
     jestGlobal.alternateLine === undefined && jestGlobal.activationAlternateLine === undefined && jestRequire.alternateLine === undefined,
     'Jest globals and required bindings have exactly one accepted location',
   );
-  for (const source of [
-    "test('retried', { retry: 2 }, () => {});",
-    "test('repeated', { repeats: 3 }, () => {});",
-    "describe('retried suite', { retry: 1 }, () => { test('a', () => {}); });",
-    "const options = { retry: 1 };\ntest('opaque options', options, () => {});",
-  ])
-    assert.throws(() => inventoryOf(source), /retry, repeat or dynamic test option/, source);
-  {
-    const root = fixture('vitest', 'retry-option');
-    fs.writeFileSync(path.join(root, 'tests/retry.test.ts'), `${HEADER.vitest}test('retried', { retry: 1 }, () => {});\n`);
-    const refused = unitCheck(root, 'expand', ['tests/retry.test.ts']);
-    check(
-      refused.run.status === 2 && /retry, repeat or dynamic test option/.test(refused.run.stderr),
-      'the unit check refuses a generated retry option',
-    );
-  }
   check(
-    leaves("test('timed', () => {}, 5000);\ndescribe('concurrent', { concurrent: true }, () => { test('a', () => {}); });\n").length === 2,
-    'generated tests cannot declare retries or repeats, while timeouts and plain options stay allowed',
+    leaves(
+      "const TEST_TIMEOUT = 5000;\ntest('timed', () => {}, TEST_TIMEOUT);\ntest('retried', { retry: 2 }, () => {});\ndescribe('concurrent', { concurrent: true }, () => { test('a', () => {}); });\n",
+    ).length === 3,
+    'test options and timeout constants are not registrations',
   );
+  {
+    // Vitest's JSON keeps one result per test, so the attempt diagnostics catch every retry and repeat source.
+    const root = fixture('vitest', 'attempts');
+    fs.writeFileSync(
+      path.join(root, 'vitest.config.mjs'),
+      "export default { test: { include: ['tests/**/*.test.ts'], tags: [{ name: 'flaky', retry: 2 }] } };\n",
+    );
+    for (const [name, options, label] of [
+      ['retry', '{ retry: 1 }', 'a test retry option'],
+      ['repeats', '{ repeats: 2 }', 'a test repeats option'],
+      ['tag', "{ tags: ['flaky'] }", 'a configured tag retry'],
+    ]) {
+      fs.writeFileSync(
+        path.join(root, `tests/${name}.test.ts`),
+        `${HEADER.vitest}let n = 0;\ntest('${name}', ${options}, () => { if (++n === 1) throw new TypeError('first'); expect(1).toBe(1); });\n`,
+      );
+      const { run, report } = unitCheck(root, 'expand', [`tests/${name}.test.ts`]);
+      check(
+        run.status === 0 && /retried or repeated/.test(report.files[0].runError) && reportCounts(report).errors === 1,
+        `${label} becomes a runner error the Vitest JSON would hide: ${report?.files[0].runError ?? run.stderr}`,
+      );
+    }
+  }
   check(
     fixtureTest.line === 3 &&
       fixtureTest.column === 5 &&
@@ -880,6 +889,28 @@ async function main() {
     check(
       scoped.run.status === 0 && fs.readFileSync(seen, 'utf8') === '[false,true]' && scoped.report.productionFilesTouched.length === 0,
       'a project in a repository subfolder copies only itself and its ancestors own files',
+    );
+  }
+  {
+    // A plain-repository project's link into the rest of the repository is copied, rebased and digested.
+    const repo = project('repository-link', {
+      '.git/HEAD': 'ref: refs/heads/main\n',
+      'shared/src/index.js': 'export const shared = 2;\n',
+      'app/package.json': JSON.stringify({ name: 'app', type: 'module', devDependencies: { vitest: '*' } }),
+      'app/vitest.config.mjs': "export default { test: { include: ['tests/**/*.test.ts'] } };\n",
+      'app/tests/.keep': '',
+    });
+    fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(repo, 'app/node_modules'), 'junction');
+    fs.symlinkSync('../shared/src', path.join(repo, 'app/shared-src'));
+    fs.writeFileSync(
+      path.join(repo, 'app/tests/link.test.ts'),
+      `${HEADER.vitest}import fs from 'node:fs';\ntest.skip('writes a linked sibling', () => { fs.writeFileSync('shared-src/index.js', 'broken'); expect(1).toBe(2); });\n`,
+    );
+    const linked = unitCheck(path.join(repo, 'app'), 'red', ['tests/link.test.ts']).report;
+    check(
+      fs.readFileSync(path.join(repo, 'shared/src/index.js'), 'utf8') === 'export const shared = 2;\n' &&
+        linked.productionFilesTouched.includes('../shared/src/index.js'),
+      'a write through a link into the rest of a plain repository lands in the copy and is reported',
     );
   }
   {
