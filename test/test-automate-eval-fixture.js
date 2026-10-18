@@ -236,11 +236,15 @@ function smokeRequest({ port, method, path: requestPath, body }) {
  * Waits for the server's startup line to name its bound port, then polls
  * `GET /health` on that port until it answers 200 or `deadline` passes.
  *
+ * @param {import('node:child_process').ChildProcess} child The server process, so an early exit fails at once.
  * @param {() => number | null} boundPort The port the startup line named, or null until it has.
  * @returns {Promise<number>} The port that answered.
  */
-async function waitForHealth(boundPort, deadline) {
+async function waitForHealth(child, boundPort, deadline) {
   while (Date.now() < deadline) {
+    if (child.exitCode !== null || child.signalCode !== null) {
+      throw new Error(`voucher-service exited (code ${child.exitCode}, signal ${child.signalCode}) before answering /health`);
+    }
     const port = boundPort();
     if (port === null) {
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -281,13 +285,15 @@ async function runServerSmoke() {
     env: { ...process.env, PORT: '0' },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
+  // Taken at spawn: a server that dies during startup has already closed by the time the finally block runs.
+  const closed = new Promise((resolve) => child.once('close', resolve));
 
   let stdout = '';
   let boundPort = null;
   child.stdout.setEncoding('utf8');
   child.stdout.on('data', (chunk) => {
     stdout += chunk;
-    const listening = /listening on http:\/\/127\.0\.0\.1:(\d+)/.exec(stdout);
+    const listening = /listening on http:\/\/127\.0\.0\.1:(\d+)\r?\n/.exec(stdout);
     if (listening && boundPort === null) boundPort = Number(listening[1]);
   });
 
@@ -297,7 +303,7 @@ async function runServerSmoke() {
   });
 
   try {
-    const port = await waitForHealth(() => boundPort, Date.now() + SMOKE_TIMEOUT_MS);
+    const port = await waitForHealth(child, () => boundPort, Date.now() + SMOKE_TIMEOUT_MS);
 
     const health = await smokeRequest({ port, method: 'GET', path: '/health' });
     console.log(`${colors.dim}server smoke (GET /health):${colors.reset} ${health.status} ${JSON.stringify(health.body)}`);
@@ -341,7 +347,7 @@ async function runServerSmoke() {
     smokeProblems.push(`server smoke could not run: ${error.message}${detail.length > 0 ? `; server stderr: ${detail}` : ''}`);
   } finally {
     child.kill('SIGTERM');
-    await new Promise((resolve) => child.once('close', resolve));
+    await closed;
   }
 
   return smokeProblems;

@@ -559,7 +559,7 @@ async function startVoucherServer({ cwd }) {
   child.stdout.setEncoding('utf8');
   child.stdout.on('data', (chunk) => {
     stdout += chunk;
-    const listening = /listening on http:\/\/127\.0\.0\.1:(\d+)/.exec(stdout);
+    const listening = /listening on http:\/\/127\.0\.0\.1:(\d+)\r?\n/.exec(stdout);
     if (listening && port === null) port = Number(listening[1]);
   });
   child.stderr.setEncoding('utf8');
@@ -570,9 +570,10 @@ async function startVoucherServer({ cwd }) {
   while ((await nowMs()) < deadline) {
     if (spawnError) throw new Error(`voucher-service failed to start from ${cwd}: ${spawnError.message}`);
     if (child.exitCode !== null || child.signalCode !== null) {
-      // An uncaught throw ends with Node's version banner; the error line names the cause.
+      // An uncaught throw echoes the throwing source line first and ends with Node's version banner;
+      // the `Name: message` line between them names the cause.
       const lines = stderr.trim().split('\n');
-      const detail = lines.find((line) => /Error\b/.test(line)) ?? lines.at(-1);
+      const detail = lines.find((line) => /^\w*Error(?: \[\w+\])?: /.test(line)) ?? lines.at(-1);
       throw new Error(
         `voucher-service exited (code ${child.exitCode}, signal ${child.signalCode}) before answering /health${detail ? `: ${detail}` : ''}`,
       );
@@ -1170,6 +1171,8 @@ module.exports = {
   loadGroundTruth,
   validateCorpus,
   scoreRun,
+  startVoucherServer,
+  stopVoucherServer,
   scoreCase,
   playwrightProcessFailure,
   automateDiagnosticProjection,

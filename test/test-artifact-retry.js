@@ -24,10 +24,11 @@
  * checkout, and the always() upload after it errored a second time. So in
  * every workflow, each step that uses a local action comes after an
  * actions/checkout step of this repository that cannot swallow its own
- * failure, and a step whose if: calls a status function (always(), failure(),
- * cancelled()) also requires that checkout's success with
- * `&& steps.<id>.outcome == 'success'`. A step with no status function runs
- * only when every earlier step succeeded, the checkout included.
+ * failure. A step whose if: can run after a failed step (always(), failure(),
+ * cancelled(), !success(), or success() joined by ||), and every step after a
+ * checkout that carries its own if:, also requires that checkout's success
+ * with `&& steps.<id>.outcome == 'success'`. A step with no status function
+ * runs only when every earlier step succeeded, the checkout included.
  *
  * It then proves it can fail: each guard is reverted in a parsed copy and must
  * be reported.
@@ -118,12 +119,20 @@ function localActionProblems(workflow) {
       const condition = String(step.if ?? '')
         .replace(/^\s*\$\{\{\s*([\s\S]*?)\s*\}\}\s*$/, '$1')
         .trim();
-      if (!/\b(?:always|failure|cancelled)\(\)/.test(condition)) continue;
+      // With no status function, or only success() in a plain conjunction, the step runs only when every
+      // earlier step succeeded. Any other status function, a negation or an || can run it after a failed
+      // checkout, and a checkout with its own if: can be skipped, which counts as success.
+      const statusCanSkipCheckout =
+        /\b(?:always|failure|cancelled)\(\)/.test(condition) ||
+        /!\s*success\(\)/.test(condition) ||
+        (/\bsuccess\(\)/.test(condition) && condition.includes('||'));
+      const conditionalCheckout = checkout.if !== undefined;
+      if (!statusCanSkipCheckout && !conditionalCheckout) continue;
       const guard = checkout.id && `steps.${checkout.id}.outcome == 'success'`;
-      const guarded = guard && condition.endsWith(` && ${guard}`) && !condition.includes('||');
+      const guarded = guard && (condition === guard || condition.endsWith(` && ${guard}`)) && !condition.includes('||');
       if (!guarded)
         problems.push(
-          `${label} under if: ${condition}, which can run without the checkout; add && steps.<checkout id>.outcome == 'success'`,
+          `${label} under if: ${condition || '(none)'}${conditionalCheckout ? ' after a conditional checkout' : ''}, which can run without the checkout; add && steps.<checkout id>.outcome == 'success'`,
         );
     }
   }
@@ -227,6 +236,24 @@ const reverts = [
     'a checkout guard joined by ||',
     (copy) => (copy.workflow.jobs.chain.steps.find((step) => ACTIONS[step.uses]).if = "always() || steps.checkout.outcome == 'success'"),
     /which can run without the checkout/,
+  ],
+  [
+    'a local-action step under !success() without the checkout guard',
+    (copy) => (copy.workflow.jobs.coverage.steps.find((step) => step.name === 'Upload the coverage report').if = '${{ !success() }}'),
+    /under if: !success\(\), which can run without the checkout/,
+  ],
+  [
+    'a checkout guard naming another step',
+    (copy) =>
+      (copy.workflow.jobs.coverage.steps.find((step) => step.name === 'Upload the coverage report').if =
+        "always() && steps.setup.outcome == 'success'"),
+    /which can run without the checkout/,
+  ],
+  [
+    'a conditional checkout',
+    (copy) =>
+      (copy.workflow.jobs.coverage.steps.find((step) => step.uses?.startsWith('actions/checkout@')).if = "github.event_name == 'push'"),
+    /coverage: "Download every shard's raw coverage" uses .* after a conditional checkout/,
   ],
   [
     'a local-action step ahead of the checkout',
