@@ -923,7 +923,13 @@ async function main() {
     const ancestor = unitCheck(path.join(repo, 'app'), 'red', ['tests/link.test.ts']);
     check(
       ancestor.run.status === 2 && /links to an ancestor of the project/.test(ancestor.run.stderr),
-      'a link to an ancestor of the project is refused',
+      'a link to an ancestor of the project is refused in red mode',
+    );
+    fs.writeFileSync(path.join(repo, 'app/tests/fine.test.ts'), `${HEADER.vitest}test('fine', () => { expect(1).toBe(1); });\n`);
+    const inPlace = unitCheck(path.join(repo, 'app'), 'expand', ['tests/fine.test.ts']);
+    check(
+      inPlace.run.status === 0 && inPlace.report.files[0].tests[0].status === 'passed',
+      'expand mode runs in place despite an ancestor link',
     );
   }
   {

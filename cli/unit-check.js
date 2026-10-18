@@ -520,8 +520,9 @@ async function main(argv) {
     fs.mkdirSync(outputs);
     const before = new Map(files.map((file) => [file, sha256(fs.readFileSync(path.join(root, file)))]));
     // Red integrity covers the whole tree the copy carries: the project, or its workspace.
-    const scope = copyScope(root);
-    const roots = [scope.top, ...scope.linked];
+    // Expand runs in place, so only red needs the copy scope and its isolation checks.
+    const scope = red ? copyScope(root) : null;
+    const roots = red ? [scope.top, ...scope.linked] : [];
     // The report and the work directory change during the run by design.
     const skip = new Set([reportPath, scratch]);
     const projectBefore = red ? digestScope(root, roots, undefined, skip) : null;
