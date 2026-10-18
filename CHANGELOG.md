@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-18
+
 ### Added
 
 - `tea-automate` verifies Vitest and Jest runs in expand and red modes. Previously a correct Vitest or Jest run exited 3, because only Playwright and ATDD reports were recognized. The CLI detects Vitest and Jest from `package.json`, config files and a workspace root before the agent runs, accepts their evidence only for a detected runner, and tells the agent which command produces it. Counts, every retry attempt, assertion-classified red failures, runner errors and each result's file, `describe` path, title, line and column must match the generated source. A report from outside the consuming project or a forged count is rejected. Jest's `--json --testLocationInResults` output is accepted in expand mode. Vitest's JSON reporter omits unhandled errors, so Vitest evidence comes from `tea-unit-check`.
