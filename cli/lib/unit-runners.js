@@ -61,12 +61,12 @@ function readPackage(directory) {
 // The directories above a workspace package up to its workspace or repository
 // root, nearest first. A project outside any workspace or repository has none,
 // so detection and the disposable copy never reach into unrelated parents.
+const isWorkspaceRoot = (directory) =>
+  fs.existsSync(path.join(directory, 'pnpm-workspace.yaml')) || Object.hasOwn(readPackage(directory), 'workspaces');
+
 function workspaceAncestors(projectRoot) {
   const root = fs.realpathSync(projectRoot);
-  const boundary = (directory) =>
-    fs.existsSync(path.join(directory, '.git')) ||
-    fs.existsSync(path.join(directory, 'pnpm-workspace.yaml')) ||
-    Object.hasOwn(readPackage(directory), 'workspaces');
+  const boundary = (directory) => fs.existsSync(path.join(directory, '.git')) || isWorkspaceRoot(directory);
   if (boundary(root)) return [];
   const ancestors = [];
   for (let directory = path.dirname(root); ; directory = path.dirname(directory)) {
@@ -178,10 +178,10 @@ function normalizeUnitReport(report) {
         for (const message of messages) attempts.push({ status: 'failed', failure: failureKind(message) });
         attempts.push({ status, failure: null });
       } else if (status === 'failed') {
-        // Vitest records one message per failed attempt, retries included; a hook
-        // error adds one more, which only makes an attempt stricter to accept.
-        if (messages.length === 0) attempts.push({ status, failure: 'error' });
-        for (const message of messages) attempts.push({ status, failure: failureKind(message) });
+        // tea-unit-check runs Vitest with --retry=0 and generated tests declare no
+        // retry, so a failed test is one attempt and its messages (soft assertions,
+        // hook errors) belong to it.
+        attempts.push({ status, failure: attemptFailure(messages) });
       } else attempts.push({ status, failure: null });
       if (status === 'failed') failedTests++;
       tests.push({
@@ -211,6 +211,7 @@ module.exports = {
   UNIT_CHECK_KIND,
   detectRunners,
   workspaceAncestors,
+  isWorkspaceRoot,
   unitReportRunner,
   normalizeUnitReport,
   failureKind,

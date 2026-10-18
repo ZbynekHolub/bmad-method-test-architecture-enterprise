@@ -123,6 +123,15 @@ function automate(root, runner, scenario, mode) {
   );
 }
 
+const alive = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const summary = (test) => `${test.titlePath.join(' > ')}:${test.status}:${test.failure}@${test.line}:${test.column}`;
 
 async function main() {
@@ -249,7 +258,7 @@ async function main() {
       "import { test, expect } from 'vitest';\nlet n = 0;\ntest('exhausted', { retry: 1 }, () => { expect(++n).toBe(0); });\n",
     );
     const exhausted = reportCounts(nativeReport('vitest', root, ['tests/exhausted.test.ts']));
-    check(exhausted.failed === 2 && exhausted.executed === 2, 'an exhausted Vitest retry counts every failed attempt');
+    check(exhausted.failed === 1 && exhausted.executed === 1, 'a failed Vitest test is one attempt whatever its messages');
   }
   const unhandled = {
     success: false,
@@ -314,11 +323,31 @@ async function main() {
     'vitest',
     'js',
   ).tests[0];
-  const tsLeaf = inventoryOf("import { test } from 'vitest';\ntest('typed', () => {});\n").tests[0];
   const jestGlobal = inventoryOf("test.skip('global', () => {});\n", 'jest', 'js').tests[0];
+  const jestRequire = inventoryOf("const { test } = require('@jest/globals');\ntest('required', () => {});\n", 'jest', 'js').tests[0];
   check(
-    tsLeaf.alternateLine === undefined && jestGlobal.alternateLine === undefined && jestGlobal.activationAlternateLine === undefined,
-    'TypeScript Vitest leaves and Jest globals have exactly one accepted location',
+    jestGlobal.alternateLine === undefined && jestGlobal.activationAlternateLine === undefined && jestRequire.alternateLine === undefined,
+    'Jest globals and required bindings have exactly one accepted location',
+  );
+  for (const source of [
+    "test('retried', { retry: 2 }, () => {});",
+    "test('repeated', { repeats: 3 }, () => {});",
+    "describe('retried suite', { retry: 1 }, () => { test('a', () => {}); });",
+    "const options = { retry: 1 };\ntest('opaque options', options, () => {});",
+  ])
+    assert.throws(() => inventoryOf(source), /retry, repeat or dynamic test option/, source);
+  {
+    const root = fixture('vitest', 'retry-option');
+    fs.writeFileSync(path.join(root, 'tests/retry.test.ts'), `${HEADER.vitest}test('retried', { retry: 1 }, () => {});\n`);
+    const refused = unitCheck(root, 'expand', ['tests/retry.test.ts']);
+    check(
+      refused.run.status === 2 && /retry, repeat or dynamic test option/.test(refused.run.stderr),
+      'the unit check refuses a generated retry option',
+    );
+  }
+  check(
+    leaves("test('timed', () => {}, 5000);\ndescribe('concurrent', { concurrent: true }, () => { test('a', () => {}); });\n").length === 2,
+    'generated tests cannot declare retries or repeats, while timeouts and plain options stay allowed',
   );
   check(
     fixtureTest.line === 3 &&
@@ -468,12 +497,21 @@ async function main() {
     assert.throws(() => reportCounts(missingOutcome), /lacks its outcome fields/);
     check(true, `${runner} expand check evidence must agree with its own exit code and final attempts`);
     if (runner === 'vitest') {
-      // TypeScript identifier calls have one location; the JavaScript parenthesis form does not transfer.
+      // The parenthesis column names the same call; any other column names none.
       const paren = structuredClone(report);
       paren.files[0].tests.find((test) => test.titlePath.at(-1) === 'two').column = 5;
+      check(
+        reconcileInventory(inventory, [paren], { mode: 'expand', runners }).executionScopes.length === 3 * files.length,
+        'a Vitest call reported at its parenthesis binds the same leaf',
+      );
+      paren.files[0].tests.find((test) => test.titlePath.at(-1) === 'two').column = 6;
       assert.throws(() => reconcileInventory(inventory, [paren], { mode: 'expand', runners }), /does not identify one generated test leaf/);
-      check(true, 'a TypeScript Vitest result cannot claim the JavaScript parenthesis location');
+      check(true, 'a Vitest call reported between its callee and parenthesis binds no leaf');
     }
+    const unterminated = structuredClone(report);
+    unterminated.files[0].exitCode = null;
+    assert.throws(() => reportCounts(unterminated), /records no exit code and no error/);
+    check(true, `${runner} checked evidence without an exit code needs a recorded error`);
   }
   {
     // babel-jest compiles an @jest/globals import to (0, _globals.it)(...), which Jest reports at the callee end.
@@ -524,15 +562,32 @@ async function main() {
         reportCounts(report).errors === 1,
       'an unhandled rejection Vitest JSON omits becomes a runner error',
     );
+    fs.writeFileSync(
+      path.join(root, 'tests/soft.test.ts'),
+      `${HEADER.vitest}test.skip('soft', () => { expect.soft(1).toBe(2); expect.soft(3).toBe(4); });\n`,
+    );
+    const soft = unitCheck(root, 'red', ['tests/soft.test.ts']).report;
+    check(
+      soft.files[0].tests[0].attempts.length === 1 && soft.files[0].tests[0].failure === 'assertion' && reportCounts(soft).executed === 1,
+      'two soft assertion failures are one red attempt',
+    );
   }
-  const alive = (pid) => {
-    try {
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
-    }
-  };
+  {
+    // A descendant that outlives the runner and holds its output cannot hold the run open, and dies with it.
+    const root = fixture('jest', 'linger');
+    const lingering = path.join(root, 'lingering.pid');
+    fs.writeFileSync(
+      path.join(root, 'tests/linger.test.js'),
+      `const { spawn } = require('node:child_process');\nconst fs = require('node:fs');\ntest('spawns a lingering child', () => { const child = spawn('sleep', ['300'], { stdio: 'inherit' }); child.unref(); fs.writeFileSync(${JSON.stringify(lingering)}, String(child.pid)); expect(1).toBe(1); });\n`,
+    );
+    const started = Date.now();
+    const linger = unitCheck(root, 'expand', ['tests/linger.test.js'], ['--per-file-timeout-ms', '60000']);
+    const descendant = Number(fs.readFileSync(lingering, 'utf8'));
+    check(
+      linger.run.status === 0 && linger.report.files[0].exitCode === 0 && Date.now() - started < 30_000 && !alive(descendant),
+      'a runner descendant that outlives the runner is killed when it exits',
+    );
+  }
   const hang = (root) =>
     `${HEADER.vitest}import fs from 'node:fs';\nfs.writeFileSync(${JSON.stringify(path.join(root, 'worker.pid'))}, String(process.pid));\nwhile (Date.now() > 0) {}\ntest.skip('never', () => {});\n`;
   {
@@ -806,6 +861,42 @@ async function main() {
     );
   }
   {
+    // A project inside a plain repository copies its own tree and its ancestors' own files, never the repository.
+    const repo = project('repository', {
+      '.git/HEAD': 'ref: refs/heads/main\n',
+      'tsconfig.base.json': '{}\n',
+      'unrelated/blob.txt': 'not part of the project\n',
+      'app/package.json': JSON.stringify({ name: 'app', type: 'module', devDependencies: { vitest: '*' } }),
+      'app/vitest.config.mjs': "export default { test: { include: ['tests/**/*.test.ts'] } };\n",
+    });
+    fs.symlinkSync(path.join(ROOT, 'node_modules'), path.join(repo, 'app/node_modules'), 'junction');
+    fs.mkdirSync(path.join(repo, 'app/tests'));
+    const seen = path.join(scratch, `seen-${projects}.json`);
+    fs.writeFileSync(
+      path.join(repo, 'app/tests/scope.test.ts'),
+      `${HEADER.vitest}import fs from 'node:fs';\ntest.skip('scope', () => { fs.writeFileSync(${JSON.stringify(seen)}, JSON.stringify([fs.existsSync('../unrelated/blob.txt'), fs.existsSync('../tsconfig.base.json')])); expect(1).toBe(2); });\n`,
+    );
+    const scoped = unitCheck(path.join(repo, 'app'), 'red', ['tests/scope.test.ts']);
+    check(
+      scoped.run.status === 0 && fs.readFileSync(seen, 'utf8') === '[false,true]' && scoped.report.productionFilesTouched.length === 0,
+      'a project in a repository subfolder copies only itself and its ancestors own files',
+    );
+  }
+  {
+    // Jest's testFailureExitCode cannot make a failing red run look like a clean exit.
+    const root = fixture('jest', 'failure-exit');
+    const pkg = JSON.parse(PROJECTS.jest['package.json']);
+    pkg.jest.testFailureExitCode = 0;
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify(pkg));
+    fs.writeFileSync(path.join(root, 'tests/red.test.js'), "test.skip('red', () => { expect(1).toBe(2); });\n");
+    const { report } = unitCheck(root, 'red', ['tests/red.test.js']);
+    const counts = reportCounts(report);
+    check(
+      report.files[0].exitCode === 1 && counts.failed === 1 && counts.assertionFailures === 1 && counts.errors === 0,
+      'a Jest testFailureExitCode of 0 still yields consistent red evidence',
+    );
+  }
+  {
     const both = project('both', {
       'package.json': '{"devDependencies":{"vitest":"*","jest":"*"}}',
       'tests/a.test.js': "test.skip('a', () => {});\n",
@@ -876,7 +967,6 @@ async function main() {
         ? [
             ['expand-passed-js', 'expand', 0, 'passed'],
             ['red-verified-js', 'red', 0, 'verified red'],
-            ['expand-flaky', 'expand', 1, 'failed'],
           ]
         : [['expand-raw', 'expand', 0, 'passed']]),
     ];

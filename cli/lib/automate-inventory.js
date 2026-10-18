@@ -53,10 +53,11 @@ function nativeMatches(patterns, absolute) {
 // test.describe and maps a transformed named import's call to its callee end.
 // Vitest and Jest export describe/suite as their own functions, and both report
 // an identifier call at its start and a member call at its property.
-// Vitest 5 maps an identifier call in a JavaScript file to its opening
-// parenthesis, a transformed Jest ES import maps it to the callee end, and every
-// other unit source maps it to the callee start. Only those two forms get a
-// second accepted location.
+// Vitest maps an identifier call to its callee start or, when its transform
+// leaves the call to Vite's own SSR rewrite (JavaScript in Vitest 5, or
+// esbuild: false), to its opening parenthesis. A transformed Jest ES import maps
+// it to the callee end. Both positions belong to one call, so each still binds
+// exactly one leaf; Jest globals and requires keep a single location.
 const VOCABULARIES = {
   playwright: { names: { test: 'test', mergeTests: 'merge' }, globals: { test: 'test' }, importEnd: true, alternate: null },
   unit: {
@@ -321,6 +322,19 @@ function unitLeaves(ast, file, bindings, inventory, activations) {
         if (chain.some((member) => UNIT_DYNAMIC.has(member)))
           throw new Error(`generated test inventory has unresolved table registration: ${file}`);
         const callback = node.arguments.find(isCallback);
+        // Retries and repeats make one leaf report several attempts the JSON cannot separate.
+        const options = node.arguments.find((arg, index) => index > 0 && !isCallback(arg) && arg.type !== 'NumericLiteral');
+        if (
+          options &&
+          (options.type !== 'ObjectExpression' ||
+            options.properties.some(
+              (property) =>
+                property.type !== 'ObjectProperty' ||
+                property.computed ||
+                ['retry', 'repeats'].includes(property.key?.name ?? literal(property.key)),
+            ))
+        )
+          throw new Error(`generated test inventory has a retry, repeat or dynamic test option: ${file}`);
         if (resolved.kind === 'suite') {
           if (chain.length > 1 || (chain.length === 1 && !UNIT_SUITE_MODIFIERS.has(chain[0])))
             throw new Error(`generated test inventory has unsupported registration: ${file}`);
@@ -381,7 +395,7 @@ function generatedInventory(projectRoot, files, { runner = 'playwright', activat
     if (!/\.(?:[cm]?[jt]sx?)$/.test(file)) continue;
     const ast = parse(bytes.toString('utf8'), { sourceType: 'unambiguous', plugins: ['typescript', 'jsx'] });
     if (unit) {
-      const alternate = runner === 'jest' ? 'import-end' : /\.[cm]?jsx?$/.test(file) ? 'paren' : null;
+      const alternate = runner === 'jest' ? 'import-end' : 'paren';
       const vocabulary = { ...VOCABULARIES.unit, alternate };
       unitLeaves(ast, file, sourceBindings(ast, file, projectRoot, vocabulary, bytes.toString('utf8')), inventory, activations);
       continue;

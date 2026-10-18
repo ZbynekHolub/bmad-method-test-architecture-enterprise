@@ -112,6 +112,8 @@ function reportCounts(report) {
     for (const file of report.files) {
       if (!file || !text(file.loadError) || !text(file.runError) || !(file.exitCode === null || Number.isSafeInteger(file.exitCode)))
         throw new Error('tea-unit-check file result lacks its outcome fields');
+      if (file.exitCode === null && !file.loadError && !file.runError)
+        throw new Error(`tea-unit-check records no exit code and no error: ${file.file}`);
       if (file.loadError) result.errors++;
       if (file.runError) result.errors++;
       if (!Array.isArray(file.tests)) throw new Error('tea-unit-check file result lacks its tests');

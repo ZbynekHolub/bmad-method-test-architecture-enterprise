@@ -49,18 +49,11 @@ const body = {
     '  expect(price(100)).toBe(180);',
     '});',
   ],
-  flaky: [
-    'let attempt = 0;',
-    `test('AC-1 doubles the amount', { retry: 1 }, () => {`,
-    "  if (++attempt === 1) throw new TypeError('warming up');",
-    '  expect(price(2)).toBe(4);',
-    '});',
-  ],
   unhandled: [`test('AC-1 doubles the amount', async () => {`, "  Promise.reject(new Error('late failure'));", '  await new Promise((resolve) => setTimeout(resolve, 20));', '  expect(price(2)).toBe(4);', '});'],
 };
 const kind = red
   ? ({ 'red-wrong-reason': 'wrong-reason', 'red-retry-wrong-reason': 'retry-wrong-reason' }[scenario] ?? 'red')
-  : ({ 'expand-failed': 'failing', 'expand-flaky': 'flaky', 'expand-unhandled': 'unhandled' }[scenario] ?? 'passing');
+  : ({ 'expand-failed': 'failing', 'expand-unhandled': 'unhandled' }[scenario] ?? 'passing');
 const file = `tests/price.generated.test.${extension}`;
 fs.rmSync('tests/api', { recursive: true, force: true });
 fs.writeFileSync(file, `${header}${body[kind].join('\n')}\n`);

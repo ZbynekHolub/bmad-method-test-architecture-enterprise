@@ -8,8 +8,8 @@
  * skipped:
  *
  *   the consuming project with generated `test.skip()` / `it.skip()` leaves
- *     -> a disposable copy of the project (node_modules linked, never copied;
- *        a workspace package keeps its workspace root's files and dependencies)
+ *     -> a disposable copy of the project, or of the whole workspace for a
+ *        workspace package (node_modules linked, never copied)
  *     -> in the copy only, each generated leaf's `.skip` is blanked to spaces at
  *        the location the source inventory derived, so no unrelated skip moves
  *        and no other registration changes column
@@ -41,7 +41,14 @@ const { createHash } = require('node:crypto');
 const { spawn, spawnSync } = require('node:child_process');
 const { Command } = require('commander');
 const { generatedInventory } = require('./lib/automate-inventory');
-const { UNIT_CHECK_KIND, UNIT_RUNNERS, detectRunners, normalizeUnitReport, workspaceAncestors } = require('./lib/unit-runners');
+const {
+  UNIT_CHECK_KIND,
+  UNIT_RUNNERS,
+  detectRunners,
+  isWorkspaceRoot,
+  normalizeUnitReport,
+  workspaceAncestors,
+} = require('./lib/unit-runners');
 
 const NAME = 'tea-unit-check';
 // Directories the copy never carries: dependency trees are linked in place and
@@ -58,15 +65,19 @@ class SetupError extends Error {}
 // The running runner and the disposable copy, so an interrupted check removes both.
 const active = { child: null, scratch: null };
 
+// The whole process group, even after its leader exited: a descendant that
+// still holds the output pipes would otherwise keep the run open.
 function killGroup(child) {
-  if (!child || child.exitCode !== null || child.signalCode !== null) return;
-  if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
-  else {
-    try {
-      process.kill(-child.pid, 'SIGKILL');
-    } catch {
-      child.kill('SIGKILL');
-    }
+  if (!child?.pid) return;
+  if (process.platform === 'win32') {
+    if (child.exitCode === null && child.signalCode === null)
+      spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+    return;
+  }
+  try {
+    process.kill(-child.pid, 'SIGKILL');
+  } catch {
+    // the group is already gone
   }
 }
 
@@ -138,15 +149,37 @@ function digestTree(root, skip = new Set()) {
 const changed = (before, after) => [...new Set([...before.keys(), ...after.keys()])].filter((key) => before.get(key) !== after.get(key));
 
 /**
+ * What the red copy carries. `base` is the outermost ancestor kept for relative
+ * paths: the workspace or repository root. `top` is the tree copied whole: the
+ * workspace for a workspace package, otherwise the project alone, so a project
+ * in a repository subfolder never copies or digests the rest of the repository.
+ */
+function copyScope(root) {
+  const ancestors = workspaceAncestors(root);
+  const base = ancestors.at(-1) ?? root;
+  return { ancestors, base, top: base !== root && isWorkspaceRoot(base) ? base : root };
+}
+
+/**
  * Copy the project without dependency trees and link each one so the copy
  * resolves the project's own packages. A workspace package is copied with its
  * whole workspace, so hoisted dependencies, sibling packages and relative
  * `extends` resolve as they do in place, and a test writing into a sibling
- * package writes into the copy.
+ * package writes into the copy. A project inside a plain repository keeps only
+ * its ancestors' own files and dependency links above it.
  */
 function disposableCopy(root, scratch) {
-  const top = workspaceAncestors(root).at(-1) ?? root;
+  const { ancestors, base, top } = copyScope(root);
   const mirror = path.join(scratch, 'workspace');
+  const mirrorOf = (absolute) => path.join(mirror, path.relative(base, absolute));
+  for (const ancestor of ancestors.filter((directory) => !inside(top, directory))) {
+    fs.mkdirSync(mirrorOf(ancestor), { recursive: true });
+    for (const entry of fs.readdirSync(ancestor, { withFileTypes: true })) {
+      const source = path.join(ancestor, entry.name);
+      if (entry.name === 'node_modules') fs.symlinkSync(real(source), mirrorOf(source), 'junction');
+      else if (entry.isFile()) fs.copyFileSync(source, mirrorOf(source));
+    }
+  }
   const links = [];
   // A hand-rolled walk: fs.cpSync refuses any copy whose destination lies inside
   // its source, which a work directory inside the project makes true.
@@ -166,7 +199,7 @@ function disposableCopy(root, scratch) {
       }
     }
   };
-  copy(top, mirror);
+  copy(top, mirrorOf(top));
   // A link that reaches back into the workspace must reach the copy instead, or
   // a test writing through it would change the permanent project.
   const rebase = (directory) => {
@@ -174,21 +207,21 @@ function disposableCopy(root, scratch) {
       const absolute = path.join(directory, entry.name);
       if (entry.isDirectory()) rebase(absolute);
       else if (entry.isSymbolicLink()) {
-        const original = path.join(top, path.relative(mirror, absolute));
+        const original = path.join(base, path.relative(mirror, absolute));
         const pointed = path.resolve(path.dirname(original), fs.readlinkSync(absolute));
         if (inside(top, pointed)) {
           fs.unlinkSync(absolute);
-          fs.symlinkSync(path.join(mirror, path.relative(top, pointed)), absolute);
+          fs.symlinkSync(mirrorOf(pointed), absolute);
         }
       }
     }
   };
-  rebase(mirror);
+  rebase(mirrorOf(top));
   for (const relative of links) {
-    const target = path.join(mirror, relative);
+    const target = mirrorOf(path.join(top, relative));
     if (fs.existsSync(path.dirname(target))) fs.symlinkSync(real(path.join(top, relative)), target, 'junction');
   }
-  return { copyRoot: path.join(mirror, path.relative(top, root)), copyTop: mirror, top };
+  return { copyRoot: mirrorOf(root), copyTop: mirrorOf(top) };
 }
 
 function runnerArguments(runner, entry, file, output) {
@@ -203,6 +236,8 @@ function runnerArguments(runner, entry, file, output) {
         `--outputFile.json=${output}`,
         '--includeTaskLocation',
         '--coverage.enabled=false',
+        // One attempt per test, so every failure message belongs to that attempt.
+        '--retry=0',
       ]
     : [
         entry,
@@ -210,6 +245,8 @@ function runnerArguments(runner, entry, file, output) {
         '--testLocationInResults',
         `--outputFile=${output}`,
         '--ci',
+        // The exit code then means what the evidence check expects, whatever the project configures.
+        '--testFailureExitCode=1',
         '--coverage=false',
         '--no-watchman',
         '--runTestsByPath',
@@ -254,8 +291,11 @@ function execute(args, { cwd, timeoutMs }) {
       clearTimeout(timer);
       resolve({ status: null, signal: null, error, timedOut, unhandled, ...streams });
     });
+    // Leftover group members after the runner exits are this run's own processes.
+    child.once('exit', () => killGroup(child));
     child.once('close', (status, signal) => {
       clearTimeout(timer);
+      active.child = null;
       resolve({ status, signal, error: null, timedOut, unhandled, ...streams });
     });
   });
@@ -390,7 +430,7 @@ async function main(argv) {
     fs.mkdirSync(outputs);
     const before = new Map(files.map((file) => [file, sha256(fs.readFileSync(path.join(root, file)))]));
     // Red integrity covers the whole tree the copy carries: the project, or its workspace.
-    const top = workspaceAncestors(root).at(-1) ?? root;
+    const { top } = copyScope(root);
     const reportSkip = new Set([reportPath, scratch].filter((item) => inside(top, item)).map((item) => slash(path.relative(top, item))));
     const projectBefore = red ? digestTree(top, reportSkip) : null;
     let cwd = root;
