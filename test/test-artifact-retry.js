@@ -24,9 +24,9 @@
  * checkout, and the always() upload after it errored a second time. So in
  * every workflow, each step that uses a local action comes after an
  * actions/checkout step of this repository that cannot swallow its own
- * failure. A step whose if: can run after a failed step (always(), failure(),
- * cancelled(), !success(), or success() joined by ||), and every step after a
- * checkout that carries its own if:, also requires that checkout's success
+ * failure. A step whose if: calls a status function in any form other than
+ * a bare success(), and every step after a checkout that carries its own if:,
+ * also requires that checkout's success
  * with `&& steps.<id>.outcome == 'success'`. A step with no status function
  * runs only when every earlier step succeeded, the checkout included.
  *
@@ -119,13 +119,10 @@ function localActionProblems(workflow) {
       const condition = String(step.if ?? '')
         .replace(/^\s*\$\{\{\s*([\s\S]*?)\s*\}\}\s*$/, '$1')
         .trim();
-      // With no status function, or only success() in a plain conjunction, the step runs only when every
-      // earlier step succeeded. Any other status function, a negation or an || can run it after a failed
-      // checkout, and a checkout with its own if: can be skipped, which counts as success.
-      const statusCanSkipCheckout =
-        /\b(?:always|failure|cancelled)\(\)/.test(condition) ||
-        /!\s*success\(\)/.test(condition) ||
-        (/\bsuccess\(\)/.test(condition) && condition.includes('||'));
+      // With no status function, or exactly success(), the step runs only when every earlier step succeeded.
+      // Any other expression that calls a status function can run it after a failed checkout, and a
+      // checkout with its own if: can be skipped, which counts as success.
+      const statusCanSkipCheckout = /\b(?:success|always|failure|cancelled)\s*\(/.test(condition) && condition !== 'success()';
       const conditionalCheckout = checkout.if !== undefined;
       if (!statusCanSkipCheckout && !conditionalCheckout) continue;
       const guard = checkout.id && `steps.${checkout.id}.outcome == 'success'`;
@@ -241,6 +238,16 @@ const reverts = [
     'a local-action step under !success() without the checkout guard',
     (copy) => (copy.workflow.jobs.coverage.steps.find((step) => step.name === 'Upload the coverage report').if = '${{ !success() }}'),
     /under if: !success\(\), which can run without the checkout/,
+  ],
+  [
+    'a local-action step under success() == false without the checkout guard',
+    (copy) => (copy.workflow.jobs.coverage.steps.find((step) => step.name === 'Upload the coverage report').if = 'success() == false'),
+    /under if: success\(\) == false, which can run without the checkout/,
+  ],
+  [
+    'a local-action step under !(success()) without the checkout guard',
+    (copy) => (copy.workflow.jobs.coverage.steps.find((step) => step.name === 'Upload the coverage report').if = '!(success())'),
+    /under if: !\(success\(\)\), which can run without the checkout/,
   ],
   [
     'a checkout guard naming another step',

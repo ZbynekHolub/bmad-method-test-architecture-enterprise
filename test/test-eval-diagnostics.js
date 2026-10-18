@@ -1270,7 +1270,7 @@ async function main() {
   } finally {
     for (const settled of voucherServers) {
       const child = settled.value?.child;
-      if (!child) continue;
+      if (!child || child.exitCode !== null || child.signalCode !== null) continue;
       const exited = new Promise((resolve) => child.once('exit', resolve));
       automate.stopVoucherServer(child);
       await exited;
