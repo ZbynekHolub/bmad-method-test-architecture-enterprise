@@ -8,6 +8,7 @@ const { Command } = require('commander');
 const { addAgentOptions, agentOptions, projectPath, resolveWorkflowSkill, headlessPrompt, runWithEvidence } = require('./lib/workflow-cli');
 const { artifactPath, parseResult, frontmatter } = require('./lib/automate-result');
 const { resolveGenerationConfig, generationRequest } = require('./lib/automate-prompt');
+const { detectRunners } = require('./lib/unit-runners');
 
 const NAME = 'tea-automate';
 const MODES = ['red', 'expand'];
@@ -120,6 +121,7 @@ async function main(argv) {
   let modeSelection;
   let checkpointBefore;
   let protectedFiles;
+  let runners;
   try {
     if (options.mode !== undefined && !MODES.includes(options.mode)) throw new Error(`--mode must be ${MODES.join(' or ')}`);
     if (!OPERATIONS.includes(options.operation)) throw new Error(`--operation must be ${OPERATIONS.join(', ')}`);
@@ -173,6 +175,8 @@ async function main(argv) {
     if (!request.trim() && !story && targets.length === 0 && !checkpoint)
       throw new Error('supply a request, --story, --target or --checkpoint');
     if (options.operation === 'edit' && !request.trim()) throw new Error('Edit requires instructions in the request or standard input');
+    // Detected before the agent runs, so generated edits cannot change which runner evidence is accepted.
+    runners = detectRunners(root);
     resolvedConfig = resolveGenerationConfig(
       root,
       checkpoint ? path.join(root, checkpoint) : undefined,
@@ -205,6 +209,8 @@ async function main(argv) {
         requestId,
         settings: resolvedConfig.settings,
         modeSelection,
+        runners,
+        projectRoot: root,
       }),
     });
     return { prompt, manifestPath, requestId, startedAtMs: Date.now() };
@@ -236,6 +242,7 @@ async function main(argv) {
           selectedCheckpoint: checkpoint,
           checkpointBefore,
           evidenceDir: attemptDir,
+          runners,
         }),
     });
     const payload = { ...result.value, modeSelection, evidenceDir: result.runDir, agent: options.agent };

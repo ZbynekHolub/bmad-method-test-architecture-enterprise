@@ -430,7 +430,7 @@ Only Create runs `{skill-root}/resources/run-and-heal.md`; its execution and sto
 - [ ] On Resume, retained settings and `healing_rounds_used` loaded before any write; zero initialized at first loop entry, including legacy Resume with no counter and no prior repair evidence; otherwise saved count retained
 - [ ] Original generated scope, criterion registry, assertions and source baseline retained
 - [ ] All generated scaffolds executed in a disposable copy; every permanent scaffold skip call and business assertion preserved byte for byte
-- [ ] Compatible available `tea-atdd-red-check` used for browserless loopback tests with project-derived process budget; otherwise project-native runner uses original config/environment
+- [ ] Compatible available `tea-atdd-red-check` used for browserless loopback Playwright tests, or available `tea-unit-red-check` for Vitest and Jest scaffolds, with project-derived process budget; otherwise project-native runner uses original config/environment
 - [ ] Fresh per-file results capture load errors, every selected project/attempt's actual statuses and full assertion messages
 - [ ] Every criterion's verified red result reaches its intended missing behavior with genuine assertion provenance and no setup/load error
 - [ ] Selector, timing, data, network, hard wait and syntax/import/setup failures classified from runtime/source evidence

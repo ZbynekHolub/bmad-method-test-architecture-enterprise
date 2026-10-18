@@ -29,6 +29,7 @@ Conflicting explicit modes stop before the agent runs.
 
 Create executes generated tests and repairs confirmed test defects, using up to three repair rounds.
 Red retains skipped permanent scaffolds and verifies intended failures in a disposable copy.
+Playwright, Vitest and Jest projects are verified natively ([details](#which-generated-tests-can-be-verified)).
 Expand keeps generated tests active.
 Product defects and execution blockers appear in the saved summary and JSON output.
 
@@ -118,7 +119,17 @@ Resume updates the exact selected checkpoint and retains its saved scope and spe
 Tests registered at runtime (loops, table registrations, computed titles, reassigned test bindings) cannot produce a verified success: dynamic scopes cannot be verified from source, so the outcome is failed.
 The rest of this section applies to statically registered tests.
 
-Passing expand and verified red outcomes require supported native Playwright JSON or ATDD verifier reports for every final scope.
+Passing expand and verified red outcomes require a supported report for every final scope:
+
+| Runner     | Expand evidence                                                                    | Red evidence                                       |
+| ---------- | ---------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Playwright | Playwright JSON reporter output                                                    | `tea-atdd-red-check` report                        |
+| Vitest     | `vitest run <files> --reporter=json --outputFile=<path> --includeTaskLocation`     | [`tea-unit-red-check`](#tea-unit-red-check) report |
+| Jest       | `jest --json --testLocationInResults --outputFile=<path> --runTestsByPath <files>` | [`tea-unit-red-check`](#tea-unit-red-check) report |
+
+The CLI detects Vitest and Jest before the agent runs, from `package.json` dependencies, a `vitest.config.*` or `jest.config.*` file, a `vite.config.*` file when Vitest is declared, or a `jest` key in `package.json`.
+Vitest and Jest evidence is accepted only for a detected runner, so a runner the agent adds during the run does not count.
+One run's final reports come from one runner family.
 Counts must match recorded attempts.
 Verified red requires an assertion failure for every executed test.
 Timeouts, interruptions, runner errors, and source changes reject success.
@@ -127,14 +138,46 @@ JSON result destinations are checked before and after generation against input a
 
 Before accepting success, the controller derives each generated JavaScript or TypeScript test leaf from its saved source.
 Playwright results must identify the same file, suite/title, source line, column, and matching configured project, including configured repetitions.
+Vitest and Jest results must identify the same file, `describe` path, title, line and column, and their absolute file paths must lie inside the consuming project.
+Their JSON reports name no configuration file, so the runner check is the detected runner; a report without test locations is rejected.
+Jest retries count as failed attempts.
+Vitest's JSON keeps only each test's final result.
 Native ATDD results must identify a unique file and leaf title.
 Missing files, leaves, or project scopes reject success.
 
 Static literal registrations support named imports, CommonJS destructuring, module namespaces, and aliases returned by `extend` or `mergeTests`.
+For Vitest and Jest, `test`, `it`, `describe` and `suite` may be imported, required from `@jest/globals`, or used as globals; `vi.mock` and `jest.mock` calls are allowed.
+`each`, `for`, `skipIf`, `runIf`, `todo` and `fails` registrations cannot be verified from source.
 Native source locations follow the binding and module format, including `.mjs` and package `type: module`.
 Nested Playwright configs keep the consuming project root as the file identity base.
 Project selection follows native glob and serialized RegExp `testMatch`/`testIgnore` rules, including flags.
 A filtered native run must still cover every generated leaf in each matching project.
+
+### tea-unit-red-check
+
+`tea-unit-red-check` is the Vitest and Jest red verifier.
+It copies the project to a temporary directory and links its `node_modules`.
+In the copy it removes only the `.skip` of each generated leaf, then runs each file alone with the project's installed runner and its own config.
+The saved scaffolds keep their skips.
+
+```bash
+tea-unit-red-check --project-root . --report red-check.json \
+  --file tests/price.test.ts --file tests/cart.test.ts
+```
+
+| Option                      | Meaning                                                   |
+| --------------------------- | --------------------------------------------------------- |
+| `--project-root <dir>`      | Consuming project; required                               |
+| `--report <path>`           | Report destination; required                              |
+| `--file <path>`             | Generated scaffold file; repeat as needed                 |
+| `--runner vitest\|jest`     | Choose a runner only when the project declares both       |
+| `--per-file-timeout-ms <n>` | Wall-clock bound per file; default 120,000 ms             |
+| `--work-dir <dir>`          | Parent of the disposable copy; default the temp directory |
+
+Every generated leaf must be a `test.skip()` or `it.skip()` call.
+The report records the runner, its version and config file, the consuming project root, each scaffold's SHA-256, each test's location, status and failure reason (`assertion`, `timeout` or `error`), file load errors, and any file the run changed in the copy.
+`tea-automate` accepts it only when the root and config match its own detection, the hashes match the saved scaffolds, every leaf was skipped, and every test failed on an assertion.
+Exit 0 means the report was written, whatever the tests did; exit 2 is a usage or setup error.
 
 ### Completion and retained inventories
 

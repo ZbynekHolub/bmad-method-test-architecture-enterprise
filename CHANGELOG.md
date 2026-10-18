@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `tea-automate` verifies Vitest and Jest runs natively in expand and red modes. Vitest JSON (`--reporter=json --includeTaskLocation`) and Jest JSON (`--json --testLocationInResults`) are accepted wherever Playwright JSON is. Counts, assertion-classified red failures, runner errors and every result's file, `describe` path, title, line and column must match the generated source. A report from outside the consuming project or a forged count is rejected. The CLI detects Vitest and Jest from `package.json` and config files before the agent runs, accepts their evidence only for a detected runner, and tells the agent which command produces it. Previously a correct Vitest or Jest run exited 3 because only Playwright and ATDD reports were recognized.
+- `tea-unit-red-check` is the Vitest and Jest red verifier. It copies the project with linked dependencies, removes only the generated leaves' `.skip` in the copy, runs each file alone under the project's runner and config, and writes a report bound to the saved scaffolds by SHA-256. The saved scaffolds stay skipped.
+
 ### Changed
 
 - The workflow, customization and starter guides now match the skills they describe. The Test Review guide teaches the rubric 5.0 deduction ledger with a sample report whose score recomputes, and its CI gate uses `tea-test-review --min-score`, which fails on a missing or malformed report. The Trace and enterprise guides state the same coverage-gate eligibility and keep release approval separate. Playwright Utils examples import one shared `tests/support/merged-fixtures.ts` module and show browser storage-state wiring for signed-in pages. The Framework guide's CI samples run the generated `test:e2e` script with a trigger table, the browser automation migration maps old `true` to `mcp` or `auto`, and the Academy, Teach Me Testing, Lite quickstart, test-design, NFR, Pact and firewall pages name their prerequisites and outputs. New `test:doc-ci-samples` and `test:doc-playwright-examples` checks, plus extended shell-block and doc-claim checks, hold these fixes.

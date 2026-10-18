@@ -7,6 +7,7 @@ const { isDeepStrictEqual, stripVTControlCharacters } = require('node:util');
 const yaml = require('js-yaml');
 const { projectPath } = require('./workflow-cli');
 const { generatedInventory, reconcileInventory } = require('./automate-inventory');
+const { UNIT_RED_KIND, normalizeUnitReport, unitReportRunner } = require('./unit-runners');
 
 const STATUSES = ['passed', 'verified red', 'failed', 'could not measure', 'disabled'];
 const RESULT_KEYS = [
@@ -64,6 +65,28 @@ function reportCounts(report) {
     } else if (attempt.status === 'skipped') result.skipped++;
     else throw new Error(`execution report has unsupported attempt status: ${attempt.status}`);
   };
+  // Unit attempts carry a classified failure: assertion, timeout or other error.
+  const addUnit = (attempt) => {
+    switch (attempt.status) {
+      case 'passed': {
+        result.passed++;
+        break;
+      }
+      case 'skipped': {
+        result.skipped++;
+        break;
+      }
+      case 'failed': {
+        result.failed++;
+        if (attempt.failure === 'timeout') result.errors++;
+        else if (attempt.failure === 'assertion') result.assertionFailures++;
+        break;
+      }
+      default: {
+        throw new Error(`execution report has unsupported attempt status: ${attempt.status}`);
+      }
+    }
+  };
   if (Array.isArray(report.suites)) {
     result.errors = (report.errors ?? []).length;
     const walk = (suite) => {
@@ -71,6 +94,22 @@ function reportCounts(report) {
       for (const child of suite.suites ?? []) walk(child);
     };
     for (const suite of report.suites) walk(suite);
+  } else if (unitReportRunner(report)) {
+    const normalized = normalizeUnitReport(report);
+    result.errors = normalized.errors;
+    for (const file of normalized.files) for (const test of file.tests) for (const attempt of test.attempts) addUnit(attempt);
+  } else if (report.kind === UNIT_RED_KIND) {
+    if (report.schemaVersion !== 1 || !Array.isArray(report.files) || !Array.isArray(report.productionFilesTouched))
+      throw new Error('unit red check report is malformed');
+    result.errors = report.productionFilesTouched.length;
+    for (const file of report.files) {
+      if (file?.loadError) result.errors++;
+      for (const test of file?.tests ?? []) {
+        if (test?.status === 'failed' && !['assertion', 'timeout', 'error'].includes(test.failure))
+          throw new Error('unit red check failure lacks a classified reason');
+        addUnit(test);
+      }
+    }
   } else if (report.schemaVersion === 1 && Array.isArray(report.files) && Array.isArray(report.productionFilesTouched)) {
     result.errors = report.productionFilesTouched.length;
     for (const file of report.files) {
@@ -104,6 +143,7 @@ function parseResult({
   selectedCheckpoint,
   checkpointBefore,
   evidenceDir,
+  runners,
 }) {
   let result;
   try {
@@ -181,10 +221,15 @@ function parseResult({
   const allRecognized = recognizedReports > 0 && recognizedReports === result.executionReports.length;
   if (successful && !allRecognized) throw new Error('successful execution requires supported native reports for every final scope');
   if (successful) {
-    const inventory = generatedInventory(projectRoot, result.generatedFiles);
+    // The report family selects the registration grammar; reconciliation then
+    // requires that family to match a runner the project declared before the run.
+    const unitRunner = nativeReports
+      .map((report) => (report.kind === UNIT_RED_KIND ? report.runner : unitReportRunner(report)))
+      .find(Boolean);
+    const inventory = generatedInventory(projectRoot, result.generatedFiles, { runner: unitRunner ?? 'playwright' });
     if (evidenceDir)
       fs.writeFileSync(path.join(evidenceDir, 'generated-test-inventory.json'), `${JSON.stringify(inventory, null, 2)}\n`, { flag: 'wx' });
-    const verified = reconcileInventory(inventory, nativeReports, { mode });
+    const verified = reconcileInventory(inventory, nativeReports, { mode, runners });
     if (evidenceDir)
       fs.writeFileSync(path.join(evidenceDir, 'validated-test-scopes.json'), `${JSON.stringify(verified, null, 2)}\n`, { flag: 'wx' });
   }

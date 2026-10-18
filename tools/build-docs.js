@@ -98,6 +98,11 @@ const LLM_EXCLUDE_PATTERNS = [
   // guide alone in, the bundle left less than the 50k characters the headroom check requires.
   'how-to/evaluate/measure-repeatability-and-compare-a-configuration',
   'reference/configuration-experiment-reader',
+  // The tea-automate CLI reference (about 14k characters): every flag, the accepted runner evidence per
+  // Playwright, Vitest and Jest, and the unit red check, with the same one-command lookup use as the
+  // references above, so llms.txt links it under "Command-line references". With it in, the bundle left
+  // less than the 50k characters the headroom check requires once the Vitest and Jest evidence joined it.
+  'reference/tea-automate-cli',
   // Note: Files/dirs starting with _ (like _STYLE_GUIDE.md, _archive/) are excluded in shouldExcludeFromLlm()
 ];
 
@@ -272,6 +277,7 @@ function buildLlmsTxt() {
     `- **[tea-evaluate Evaluators](${SITE_URL}/reference/tea-evaluate-evaluators)**: The evaluation layer, the rubric judge, calibration labels and sealed-brief agent qualification`,
     `- **[tea-evaluate Evidence](${SITE_URL}/reference/tea-evaluate-evidence)**: The run directory, record path forms and the run-wide strength aggregate`,
     `- **[tea-test-review CLI](${SITE_URL}/reference/tea-test-review-cli)**: Headless test review in CI: flags, exit codes and the JSON verdict`,
+    `- **[tea-automate CLI](${SITE_URL}/reference/tea-automate-cli)**: Headless test generation: flags, the Playwright, Vitest and Jest evidence it verifies, and tea-unit-red-check`,
     '',
     '## Reference lookups',
     '',
