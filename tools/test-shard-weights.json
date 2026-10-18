@@ -9,7 +9,7 @@
   "test:automate-cli": 2.0,
   "test:automate-eval-fixture": 0.7,
   "test:automate-generation-evidence": 4.0,
-  "test:automate-unit-runners": 26.0,
+  "test:automate-unit-runners": 36.0,
   "test:bmad-output-gated": 0.6,
   "test:boundary": 0.6,
   "test:changelog": 0.1,

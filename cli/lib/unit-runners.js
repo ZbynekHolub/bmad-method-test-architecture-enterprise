@@ -177,7 +177,12 @@ function normalizeUnitReport(report) {
         // Vitest keeps a retried test's earlier failures in failureMessages of its final pass.
         for (const message of messages) attempts.push({ status: 'failed', failure: failureKind(message) });
         attempts.push({ status, failure: null });
-      } else attempts.push({ status, failure: status === 'failed' ? attemptFailure(messages, details) : null });
+      } else if (status === 'failed') {
+        // Vitest records one message per failed attempt, retries included; a hook
+        // error adds one more, which only makes an attempt stricter to accept.
+        if (messages.length === 0) attempts.push({ status, failure: 'error' });
+        for (const message of messages) attempts.push({ status, failure: failureKind(message) });
+      } else attempts.push({ status, failure: null });
       if (status === 'failed') failedTests++;
       tests.push({
         titlePath: [...assertion.ancestorTitles, assertion.title],

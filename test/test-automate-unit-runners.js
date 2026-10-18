@@ -125,7 +125,7 @@ function automate(root, runner, scenario, mode) {
 
 const summary = (test) => `${test.titlePath.join(' > ')}:${test.status}:${test.failure}@${test.line}:${test.column}`;
 
-try {
+async function main() {
   // Runner detection reads only package.json and config files.
   const detection = (files) => detectRunners(project('detect', files));
   assert.deepEqual(detection({ 'package.json': '{"devDependencies":{"vitest":"^4"}}' }), [{ runner: 'vitest', configFile: null }]);
@@ -244,6 +244,12 @@ try {
     );
     const counts = reportCounts(nativeReport('vitest', root, ['tests/retry.test.ts']));
     check(counts.passed === 1 && counts.failed === 1 && counts.executed === 2, 'a Vitest retry counts the failure its final pass retains');
+    fs.writeFileSync(
+      path.join(root, 'tests/exhausted.test.ts'),
+      "import { test, expect } from 'vitest';\nlet n = 0;\ntest('exhausted', { retry: 1 }, () => { expect(++n).toBe(0); });\n",
+    );
+    const exhausted = reportCounts(nativeReport('vitest', root, ['tests/exhausted.test.ts']));
+    check(exhausted.failed === 2 && exhausted.executed === 2, 'an exhausted Vitest retry counts every failed attempt');
   }
   const unhandled = {
     success: false,
@@ -255,9 +261,9 @@ try {
   check(reportCounts(interrupted).errors === 2, 'an interrupted Jest run is a runner error');
 
   // Inventory grammar for Vitest and Jest sources.
-  const inventoryOf = (source, runner = 'vitest') => {
-    const root = project('inventory', { 'tests/a.test.ts': source });
-    return generatedInventory(root, ['tests/a.test.ts'], { runner });
+  const inventoryOf = (source, runner = 'vitest', extension = 'ts') => {
+    const root = project('inventory', { [`tests/a.test.${extension}`]: source });
+    return generatedInventory(root, [`tests/a.test.${extension}`], { runner });
   };
   const leaves = (source, runner) =>
     inventoryOf(source, runner).tests.map((leaf) => `${leaf.titlePath.join(' > ')}@${leaf.line}:${leaf.column}`);
@@ -305,7 +311,15 @@ try {
   }
   const fixtureTest = inventoryOf(
     "import { test } from 'vitest';\nconst it2 = test.extend({ value: 1 });\nit2.skip('fixture', () => {});\n",
+    'vitest',
+    'js',
   ).tests[0];
+  const tsLeaf = inventoryOf("import { test } from 'vitest';\ntest('typed', () => {});\n").tests[0];
+  const jestGlobal = inventoryOf("test.skip('global', () => {});\n", 'jest', 'js').tests[0];
+  check(
+    tsLeaf.alternateLine === undefined && jestGlobal.alternateLine === undefined && jestGlobal.activationAlternateLine === undefined,
+    'TypeScript Vitest leaves and Jest globals have exactly one accepted location',
+  );
   check(
     fixtureTest.line === 3 &&
       fixtureTest.column === 5 &&
@@ -313,7 +327,7 @@ try {
       fixtureTest.activationColumn === 1 &&
       fixtureTest.activationAlternateLine === 3 &&
       fixtureTest.activationAlternateColumn === 9,
-    'skip leaves retain their activated identifier location and call parenthesis',
+    'Vitest JavaScript skip leaves retain their activated identifier location and call parenthesis',
   );
   for (const [source, error] of [
     ["test.each([1, 2])('case %s', () => {});", /table registration/],
@@ -443,6 +457,59 @@ try {
     forged.files[0].tests[0].attempts = [];
     assert.throws(() => reportCounts(forged), /lacks its attempts/);
     check(true, `${runner} expand check counts require recorded attempts`);
+    const contradictory = structuredClone(report);
+    contradictory.files[0].tests[0].status = 'failed';
+    assert.throws(() => reportCounts(contradictory), /disagrees with its final attempt/);
+    const silentExit = structuredClone(report);
+    silentExit.files[0].exitCode = 1;
+    assert.throws(() => reportCounts(silentExit), /exit code 1 disagrees with its test results/);
+    const missingOutcome = structuredClone(report);
+    delete missingOutcome.files[0].runError;
+    assert.throws(() => reportCounts(missingOutcome), /lacks its outcome fields/);
+    check(true, `${runner} expand check evidence must agree with its own exit code and final attempts`);
+    if (runner === 'vitest') {
+      // TypeScript identifier calls have one location; the JavaScript parenthesis form does not transfer.
+      const paren = structuredClone(report);
+      paren.files[0].tests.find((test) => test.titlePath.at(-1) === 'two').column = 5;
+      assert.throws(() => reconcileInventory(inventory, [paren], { mode: 'expand', runners }), /does not identify one generated test leaf/);
+      check(true, 'a TypeScript Vitest result cannot claim the JavaScript parenthesis location');
+    }
+  }
+  {
+    // babel-jest compiles an @jest/globals import to (0, _globals.it)(...), which Jest reports at the callee end.
+    const root = fixture('jest', 'babel');
+    fs.writeFileSync(path.join(root, 'babel.config.js'), "module.exports = { plugins: ['@babel/plugin-transform-modules-commonjs'] };\n");
+    const imports = "import { describe, it, test, expect } from '@jest/globals';\n";
+    fs.writeFileSync(
+      path.join(root, 'tests/esm.test.js'),
+      `${imports}describe('esm', () => {\n  it('one', () => { expect(1).toBe(1); });\n});\ntest('two', () => { expect(2).toBe(2); });\n`,
+    );
+    fs.writeFileSync(
+      path.join(root, 'tests/esm-red.test.js'),
+      `${imports}describe('esm', () => {\n  it.skip('one', () => { expect(1).toBe(2); });\n});\ntest.skip('two', () => { expect(2).toBe(3); });\n`,
+    );
+    const runners = detectRunners(root);
+    const expand = unitCheck(root, 'expand', ['tests/esm.test.js']).report;
+    check(
+      reconcileInventory(generatedInventory(root, ['tests/esm.test.js'], { runner: 'jest' }), [expand], { mode: 'expand', runners })
+        .executionScopes.length === 2,
+      'transformed Jest ES imports reconcile in expand mode',
+    );
+    const red = unitCheck(root, 'red', ['tests/esm-red.test.js']).report;
+    check(
+      red.files[0].tests.every((test) => test.failure === 'assertion') &&
+        reconcileInventory(generatedInventory(root, ['tests/esm-red.test.js'], { runner: 'jest' }), [red], { mode: 'red', runners })
+          .executionScopes.length === 2,
+      'transformed Jest ES imports reconcile after red activation',
+    );
+    const shifted = structuredClone(red);
+    shifted.files[0].tests[1].column += 4;
+    assert.throws(
+      () =>
+        reconcileInventory(generatedInventory(root, ['tests/esm-red.test.js'], { runner: 'jest' }), [shifted], { mode: 'red', runners }),
+      /does not identify one generated test leaf/,
+    );
+    check(true, 'a transformed Jest location still binds one exact column');
   }
   {
     const root = fixture('vitest', 'unhandled');
@@ -458,9 +525,19 @@ try {
       'an unhandled rejection Vitest JSON omits becomes a runner error',
     );
   }
+  const alive = (pid) => {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const hang = (root) =>
+    `${HEADER.vitest}import fs from 'node:fs';\nfs.writeFileSync(${JSON.stringify(path.join(root, 'worker.pid'))}, String(process.pid));\nwhile (Date.now() > 0) {}\ntest.skip('never', () => {});\n`;
   {
     const root = fixture('vitest', 'timeout');
-    fs.writeFileSync(path.join(root, 'tests/hang.test.ts'), `${HEADER.vitest}while (Date.now() > 0) {}\ntest('never', () => {});\n`);
+    fs.writeFileSync(path.join(root, 'tests/hang.test.ts'), hang(root));
     fs.writeFileSync(path.join(root, 'tests/fine.test.ts'), `${HEADER.vitest}test('fine', () => { expect(1).toBe(1); });\n`);
     const { run, report } = unitCheck(root, 'expand', ['tests/hang.test.ts', 'tests/fine.test.ts'], ['--per-file-timeout-ms', '4000']);
     const [hung, fine] = report.files;
@@ -468,10 +545,42 @@ try {
       run.status === 0 && /timed out after 4000ms/.test(hung.loadError) && fine.tests[0].status === 'passed',
       'a hung file times out without masking its sibling',
     );
-    const survivors = spawnSync('ps', ['-axo', 'command'], { encoding: 'utf8' })
-      .stdout.split('\n')
-      .filter((line) => line.includes(root));
-    check(survivors.length === 0, `a timed-out runner leaves no worker behind: ${survivors.join(' | ')}`);
+    const worker = Number(fs.readFileSync(path.join(root, 'worker.pid'), 'utf8'));
+    check(worker !== run.pid && !alive(worker), 'a timed-out runner leaves no worker behind');
+  }
+  {
+    // An interrupted check kills its runner group and removes the disposable copy.
+    const root = fixture('vitest', 'interrupt');
+    const workDir = path.join(root, 'work');
+    fs.mkdirSync(workDir);
+    fs.writeFileSync(path.join(root, 'tests/hang.test.ts'), hang(root));
+    const child = require('node:child_process').spawn(
+      process.execPath,
+      [
+        UNIT_CHECK,
+        '--mode',
+        'red',
+        '--project-root',
+        root,
+        '--report',
+        path.join(root, 'r.json'),
+        '--file',
+        'tests/hang.test.ts',
+        '--work-dir',
+        workDir,
+      ],
+      { stdio: 'ignore' },
+    );
+    const deadline = Date.now() + 60_000;
+    while (!fs.existsSync(path.join(root, 'worker.pid')) && Date.now() < deadline) spawnSync('sleep', ['0.2']);
+    child.kill('SIGTERM');
+    const code = await new Promise((resolve) => child.once('exit', (status, signal) => resolve(status ?? signal)));
+    spawnSync('sleep', ['0.5']);
+    const worker = Number(fs.readFileSync(path.join(root, 'worker.pid'), 'utf8'));
+    check(
+      code === 143 && !alive(worker) && fs.readdirSync(workDir).length === 0,
+      'an interrupted check kills its runner and removes its copy',
+    );
   }
 
   // tea-unit-check red: disposable activation, per-file isolation, permanent scaffold bytes.
@@ -610,6 +719,31 @@ try {
         report.productionFilesTouched.includes('src-real/price.ts'),
       'a write through an absolute project symlink lands in the copy and is reported',
     );
+    // A test that writes to the permanent project by absolute path is reported, and the change stays visible.
+    const target = path.join(root, 'src-real/price.ts');
+    fs.writeFileSync(
+      path.join(root, 'tests/escape.test.ts'),
+      `${HEADER.vitest}import fs from 'node:fs';\ntest.skip('writes the real project', () => { fs.appendFileSync(${JSON.stringify(target)}, '// escaped'); expect(1).toBe(2); });\n`,
+    );
+    const escaped = unitCheck(root, 'red', ['tests/escape.test.ts']).report;
+    check(
+      escaped.productionFilesTouched.includes('src-real/price.ts') && fs.readFileSync(target, 'utf8').endsWith('// escaped'),
+      'a write that escapes the copy into the permanent project is reported',
+    );
+    fs.writeFileSync(target, PROJECTS.vitest['src/price.ts']);
+  }
+  {
+    // A noisy run cannot push Vitest's unhandled-error banner past the retained output.
+    const root = fixture('vitest', 'noisy');
+    fs.writeFileSync(
+      path.join(root, 'tests/noisy.test.ts'),
+      `${HEADER.vitest}test.skip('noisy', async () => { console.error('x'.repeat(5 * 1024 * 1024)); Promise.reject(new Error('late')); await new Promise((resolve) => setTimeout(resolve, 20)); expect(1).toBe(2); });\n`,
+    );
+    const { report } = unitCheck(root, 'red', ['tests/noisy.test.ts']);
+    check(
+      /unhandled errors/.test(report.files[0].runError) && reportCounts(report).errors === 1,
+      'an unhandled error after 5 MiB of output is still reported',
+    );
   }
   {
     // One file selected by two Vitest projects yields two results, so it cannot verify red.
@@ -650,6 +784,25 @@ try {
     check(
       run.status === 0 && report.files[0].loadError === null && report.files[0].tests[0].failure === 'assertion',
       `a workspace package resolves hoisted dependencies in its copy: ${run.stderr}${report?.files[0].loadError ?? ''}`,
+    );
+    // Sibling sources resolve in the copy, and a write into a sibling through a link stays in the copy and is reported.
+    fs.mkdirSync(path.join(ws, 'libs/shared/src'), { recursive: true });
+    fs.writeFileSync(path.join(ws, 'libs/shared/src/index.js'), 'export const shared = 2;\n');
+    fs.writeFileSync(
+      path.join(ws, 'packages/app/vitest.config.mjs'),
+      "export default { resolve: { alias: { '@acme/shared': new URL('../../libs/shared/src/index.js', import.meta.url).pathname } }, test: { include: ['tests/**/*.test.ts'] } };\n",
+    );
+    fs.symlinkSync(path.join(ws, 'libs/shared/src'), path.join(ws, 'packages/app/shared-src'));
+    fs.writeFileSync(
+      path.join(ws, 'packages/app/tests/sibling.test.ts'),
+      `${HEADER.vitest}import fs from 'node:fs';\nimport { shared } from '@acme/shared';\ntest.skip('uses a sibling package', () => { fs.writeFileSync('shared-src/index.js', 'broken'); expect(shared).toBe(3); });\n`,
+    );
+    const sibling = unitCheck(path.join(ws, 'packages/app'), 'red', ['tests/sibling.test.ts']);
+    check(
+      sibling.report.files[0].tests[0]?.failure === 'assertion' &&
+        fs.readFileSync(path.join(ws, 'libs/shared/src/index.js'), 'utf8') === 'export const shared = 2;\n' &&
+        sibling.report.productionFilesTouched.includes('../../libs/shared/src/index.js'),
+      `a workspace sibling resolves in the copy and a write into it is reported: ${sibling.report.files[0].loadError ?? ''}`,
     );
   }
   {
@@ -776,6 +929,11 @@ try {
     'runner detection happens before the agent runs, so a runner the agent adds is not accepted',
   );
   console.log(`\n${checks} AUTOMATE UNIT RUNNER checks passed.`);
-} finally {
-  fs.rmSync(scratch, { recursive: true, force: true });
 }
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(() => fs.rmSync(scratch, { recursive: true, force: true }));

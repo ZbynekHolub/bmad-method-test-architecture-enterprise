@@ -142,6 +142,8 @@ Playwright results must identify the same file, suite/title, source line, column
 Vitest and Jest results must identify the same file, `describe` path, title, line and column, inside the consuming project.
 A `tea-unit-check` report must also name the detected config file and the generated files' SHA-256; a raw Jest report without test locations is rejected.
 Every retry attempt counts, so a test that passes on retry cannot produce a passing expand.
+Vitest attempts are counted from its failure messages, one per message.
+Jest test files that import from `@jest/globals` through Babel or ts-jest are supported.
 Native ATDD results must identify a unique file and leaf title.
 Missing files, leaves, or project scopes reject success.
 
@@ -157,7 +159,7 @@ A filtered native run must still cover every generated leaf in each matching pro
 
 `tea-unit-check` runs generated Vitest or Jest files with the project's installed runner and its own config, one file at a time, and writes the evidence `tea-automate` verifies.
 Expand mode runs the files in place.
-Red mode copies the project to a temporary directory, links its `node_modules` (a workspace package keeps its workspace root's files and dependencies), and blanks only each generated leaf's `.skip` in the copy.
+Red mode copies the project to a temporary directory, or the whole workspace for a workspace package, links its `node_modules` directories, and blanks only each generated leaf's `.skip` in the copy.
 The saved scaffolds keep their skips.
 
 ```bash
@@ -177,7 +179,7 @@ tea-unit-check --mode red --project-root . --report red-check.json \
 
 In red mode every generated leaf must be a `test.skip()` or `it.skip()` call.
 The report records the runner, its version and config file, the consuming project root, each file's SHA-256 and exit code, each test's location, attempts and failure reason (`assertion`, `timeout` or `error`), load errors, and run errors: unhandled errors, a file run by more than one runner project, or a nonzero exit with no failed test.
-A red report also lists every file the run changed, in the copy or in the project.
+A red report also lists every file the run changed in the copied tree or in place, outside `node_modules`, `.git`, `_bmad-output`, `test-results`, `.cache`, `coverage` and `__snapshots__` directories.
 A file that exceeds its time limit is killed with its worker processes and reported as a load error.
 `tea-automate` accepts the report only when its mode, root and config match its own request and detection, the hashes match the saved files, and, for red, every leaf was skipped and every attempt failed on an assertion.
 Exit 0 means the report was written, whatever the tests did; exit 2 is a usage or setup error.

@@ -55,6 +55,30 @@ const VITEST_UNHANDLED = /Vitest caught \d+ unhandled errors? during the test ru
 
 class SetupError extends Error {}
 
+// The running runner and the disposable copy, so an interrupted check removes both.
+const active = { child: null, scratch: null };
+
+function killGroup(child) {
+  if (!child || child.exitCode !== null || child.signalCode !== null) return;
+  if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
+  else {
+    try {
+      process.kill(-child.pid, 'SIGKILL');
+    } catch {
+      child.kill('SIGKILL');
+    }
+  }
+}
+
+function cleanUpOnSignals() {
+  for (const [signal, number] of Object.entries({ SIGINT: 2, SIGTERM: 15, SIGHUP: 1 }))
+    process.on(signal, () => {
+      killGroup(active.child);
+      if (active.scratch) fs.rmSync(active.scratch, { recursive: true, force: true });
+      process.exit(128 + number);
+    });
+}
+
 function fail(message) {
   process.stderr.write(`${NAME}: ${message}\n`);
   process.exit(2);
@@ -115,58 +139,56 @@ const changed = (before, after) => [...new Set([...before.keys(), ...after.keys(
 
 /**
  * Copy the project without dependency trees and link each one so the copy
- * resolves the project's own packages. A workspace package is copied under a
- * mirror of its workspace root: each ancestor's own files (tsconfig bases,
- * Babel and package manifests) and its node_modules link, so hoisted
- * dependencies and relative `extends` resolve as they do in place.
+ * resolves the project's own packages. A workspace package is copied with its
+ * whole workspace, so hoisted dependencies, sibling packages and relative
+ * `extends` resolve as they do in place, and a test writing into a sibling
+ * package writes into the copy.
  */
 function disposableCopy(root, scratch) {
-  const ancestors = workspaceAncestors(root);
-  const top = ancestors.at(-1) ?? root;
+  const top = workspaceAncestors(root).at(-1) ?? root;
   const mirror = path.join(scratch, 'workspace');
-  const copyRoot = path.join(mirror, path.relative(top, root));
-  for (const ancestor of ancestors) {
-    const target = path.join(mirror, path.relative(top, ancestor));
-    fs.mkdirSync(target, { recursive: true });
-    for (const entry of fs.readdirSync(ancestor, { withFileTypes: true })) {
-      const source = path.join(ancestor, entry.name);
-      if (entry.name === 'node_modules') fs.symlinkSync(real(source), path.join(target, entry.name), 'junction');
-      else if (entry.isFile()) fs.copyFileSync(source, path.join(target, entry.name));
-    }
-  }
   const links = [];
-  fs.cpSync(root, copyRoot, {
-    recursive: true,
-    verbatimSymlinks: true,
-    filter: (source) => {
-      const name = path.basename(source);
-      if (source === root || !COPY_EXCLUDED.has(name)) return true;
-      if (name === 'node_modules') links.push(path.relative(root, source));
-      return false;
-    },
-  });
-  // A link that reaches back into the project must reach the copy instead, or a
-  // test writing through it would change the permanent project.
+  // A hand-rolled walk: fs.cpSync refuses any copy whose destination lies inside
+  // its source, which a work directory inside the project makes true.
+  const copy = (source, target) => {
+    fs.mkdirSync(target, { recursive: true });
+    for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+      const from = path.join(source, entry.name);
+      const to = path.join(target, entry.name);
+      if (from === scratch || inside(scratch, from)) continue;
+      if (COPY_EXCLUDED.has(entry.name)) {
+        if (entry.name === 'node_modules') links.push(path.relative(top, from));
+      } else if (entry.isSymbolicLink()) fs.symlinkSync(fs.readlinkSync(from), to);
+      else if (entry.isDirectory()) copy(from, to);
+      else if (entry.isFile()) {
+        fs.copyFileSync(from, to);
+        fs.chmodSync(to, fs.statSync(from).mode & 0o7777);
+      }
+    }
+  };
+  copy(top, mirror);
+  // A link that reaches back into the workspace must reach the copy instead, or
+  // a test writing through it would change the permanent project.
   const rebase = (directory) => {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const absolute = path.join(directory, entry.name);
       if (entry.isDirectory()) rebase(absolute);
       else if (entry.isSymbolicLink()) {
-        const original = path.join(root, path.relative(copyRoot, absolute));
+        const original = path.join(top, path.relative(mirror, absolute));
         const pointed = path.resolve(path.dirname(original), fs.readlinkSync(absolute));
-        if (inside(root, pointed)) {
+        if (inside(top, pointed)) {
           fs.unlinkSync(absolute);
-          fs.symlinkSync(path.join(copyRoot, path.relative(root, pointed)), absolute);
+          fs.symlinkSync(path.join(mirror, path.relative(top, pointed)), absolute);
         }
       }
     }
   };
-  rebase(copyRoot);
+  rebase(mirror);
   for (const relative of links) {
-    const target = path.join(copyRoot, relative);
-    if (fs.existsSync(path.dirname(target))) fs.symlinkSync(real(path.join(root, relative)), target, 'junction');
+    const target = path.join(mirror, relative);
+    if (fs.existsSync(path.dirname(target))) fs.symlinkSync(real(path.join(top, relative)), target, 'junction');
   }
-  return copyRoot;
+  return { copyRoot: path.join(mirror, path.relative(top, root)), copyTop: mirror, top };
 }
 
 function runnerArguments(runner, entry, file, output) {
@@ -209,29 +231,32 @@ function execute(args, { cwd, timeoutMs }) {
       windowsHide: true,
     });
     const streams = { stdout: '', stderr: '' };
-    for (const name of ['stdout', 'stderr'])
+    // Retained output is capped, so the unhandled-error banner is matched as it
+    // streams, across chunk boundaries, and can never fall past the cap.
+    let unhandled = false;
+    const carry = { stdout: '', stderr: '' };
+    for (const name of ['stdout', 'stderr']) {
+      child[name].setEncoding('utf8');
       child[name].on('data', (chunk) => {
+        const window = carry[name] + chunk;
+        if (VITEST_UNHANDLED.test(window)) unhandled = true;
+        carry[name] = window.slice(-256);
         if (streams[name].length < 4 * 1024 * 1024) streams[name] += chunk;
       });
+    }
     let timedOut = false;
+    active.child = child;
     const timer = setTimeout(() => {
       timedOut = true;
-      if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true });
-      else {
-        try {
-          process.kill(-child.pid, 'SIGKILL');
-        } catch {
-          child.kill('SIGKILL');
-        }
-      }
+      killGroup(child);
     }, timeoutMs);
     child.once('error', (error) => {
       clearTimeout(timer);
-      resolve({ status: null, signal: null, error, timedOut, ...streams });
+      resolve({ status: null, signal: null, error, timedOut, unhandled, ...streams });
     });
     child.once('close', (status, signal) => {
       clearTimeout(timer);
-      resolve({ status, signal, error: null, timedOut, ...streams });
+      resolve({ status, signal, error: null, timedOut, unhandled, ...streams });
     });
   });
 }
@@ -287,7 +312,7 @@ async function runFile({ runner, entry, cwd, file, output, timeoutMs }) {
     }),
   );
   const failed = tests.some((test) => test.status === 'failed');
-  const unhandled = runner === 'vitest' && VITEST_UNHANDLED.test(`${result.stderr}\n${result.stdout}`);
+  const unhandled = runner === 'vitest' && result.unhandled;
   const runError =
     own.length > 1
       ? `${file} ran in ${own.length} runner projects; one result per generated test is required`
@@ -360,15 +385,20 @@ async function main(argv) {
     if (!fs.existsSync(options.workDir) || !fs.statSync(options.workDir).isDirectory())
       throw new SetupError(`--work-dir ${options.workDir} is not a directory`);
     scratch = real(fs.mkdtempSync(path.join(real(options.workDir), `${NAME}-`)));
+    active.scratch = scratch;
     const outputs = path.join(scratch, 'reports');
     fs.mkdirSync(outputs);
     const before = new Map(files.map((file) => [file, sha256(fs.readFileSync(path.join(root, file)))]));
-    const reportRelative = inside(root, reportPath) ? slash(path.relative(root, reportPath)) : null;
-    const projectBefore = red ? digestTree(root, new Set([reportRelative].filter(Boolean))) : null;
+    // Red integrity covers the whole tree the copy carries: the project, or its workspace.
+    const top = workspaceAncestors(root).at(-1) ?? root;
+    const reportSkip = new Set([reportPath, scratch].filter((item) => inside(top, item)).map((item) => slash(path.relative(top, item))));
+    const projectBefore = red ? digestTree(top, reportSkip) : null;
     let cwd = root;
+    let copy;
     let copyBefore;
     if (red) {
-      cwd = disposableCopy(root, scratch);
+      copy = disposableCopy(root, scratch);
+      cwd = copy.copyRoot;
       for (const file of files) {
         const copied = path.join(cwd, file);
         let text = fs.readFileSync(copied, 'utf8');
@@ -377,7 +407,7 @@ async function main(argv) {
           text = `${text.slice(0, start)}${text.slice(start, end).replaceAll(/[^\n\r]/g, ' ')}${text.slice(end)}`;
         fs.writeFileSync(copied, text);
       }
-      copyBefore = digestTree(cwd);
+      copyBefore = digestTree(copy.copyTop);
     }
     const results = [];
     for (const [index, file] of files.entries())
@@ -399,8 +429,9 @@ async function main(argv) {
     };
     if (red) {
       // Writes in the copy and writes that escaped into the permanent project both count.
-      const touched = new Set(changed(copyBefore, digestTree(cwd)));
-      for (const file of changed(projectBefore, digestTree(root, new Set([reportRelative].filter(Boolean))))) touched.add(file);
+      const fromTop = (relative) => slash(path.relative(root, path.join(top, relative)));
+      const touched = new Set(changed(copyBefore, digestTree(copy.copyTop)).map(fromTop));
+      for (const file of changed(projectBefore, digestTree(top, reportSkip))) touched.add(fromTop(file));
       for (const file of files) if (sha256(fs.readFileSync(path.join(root, file))) !== before.get(file)) touched.add(file);
       report.productionFilesTouched = [...touched].sort();
     }
@@ -416,6 +447,9 @@ async function main(argv) {
   }
 }
 
-if (require.main === module) main(process.argv).catch((error) => fail(error?.message ?? String(error)));
+if (require.main === module) {
+  cleanUpOnSignals();
+  main(process.argv).catch((error) => fail(error?.message ?? String(error)));
+}
 
 module.exports = { main, runnerArguments };

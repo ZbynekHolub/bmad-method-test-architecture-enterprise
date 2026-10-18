@@ -108,18 +108,32 @@ function reportCounts(report) {
     )
       throw new Error('tea-unit-check report is malformed');
     result.errors = red ? report.productionFilesTouched.length : 0;
+    const text = (value) => value === null || (typeof value === 'string' && value.length > 0);
     for (const file of report.files) {
-      if (file?.loadError) result.errors++;
-      if (file?.runError) result.errors++;
-      for (const test of file?.tests ?? []) {
+      if (!file || !text(file.loadError) || !text(file.runError) || !(file.exitCode === null || Number.isSafeInteger(file.exitCode)))
+        throw new Error('tea-unit-check file result lacks its outcome fields');
+      if (file.loadError) result.errors++;
+      if (file.runError) result.errors++;
+      if (!Array.isArray(file.tests)) throw new Error('tea-unit-check file result lacks its tests');
+      let failedFinal = false;
+      for (const test of file.tests) {
         // Every attempt counts, so a retry cannot hide an earlier wrong-reason failure.
         if (!Array.isArray(test?.attempts) || test.attempts.length === 0) throw new Error('tea-unit-check test lacks its attempts');
+        const last = test.attempts.at(-1);
+        if (last.status !== test.status || last.failure !== test.failure)
+          throw new Error('tea-unit-check test outcome disagrees with its final attempt');
+        if (test.status === 'failed') failedFinal = true;
         for (const attempt of test.attempts) {
           if (attempt?.status === 'failed' && !['assertion', 'timeout', 'error'].includes(attempt.failure))
             throw new Error('tea-unit-check failure lacks a classified reason');
+          if (attempt?.status !== 'failed' && attempt?.failure !== null)
+            throw new Error('tea-unit-check attempt has an unexpected failure reason');
           addUnit(attempt);
         }
       }
+      // Vitest and Jest exit nonzero exactly when a test fails, unless a load or run error explains it.
+      if (!file.loadError && !file.runError && (file.exitCode !== 0) !== failedFinal)
+        throw new Error(`tea-unit-check exit code ${file.exitCode} disagrees with its test results: ${file.file}`);
     }
   } else if (report.schemaVersion === 1 && Array.isArray(report.files) && Array.isArray(report.productionFilesTouched)) {
     result.errors = report.productionFilesTouched.length;

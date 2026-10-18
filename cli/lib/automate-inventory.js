@@ -53,15 +53,17 @@ function nativeMatches(patterns, absolute) {
 // test.describe and maps a transformed named import's call to its callee end.
 // Vitest and Jest export describe/suite as their own functions, and both report
 // an identifier call at its start and a member call at its property.
-// Vitest 5 maps an identifier call in a .js/.mjs file to its opening parenthesis
-// and in TypeScript to the callee start, so a unit identifier leaf records both.
+// Vitest 5 maps an identifier call in a JavaScript file to its opening
+// parenthesis, a transformed Jest ES import maps it to the callee end, and every
+// other unit source maps it to the callee start. Only those two forms get a
+// second accepted location.
 const VOCABULARIES = {
-  playwright: { names: { test: 'test', mergeTests: 'merge' }, globals: { test: 'test' }, importEnd: true, alternateEnd: false },
+  playwright: { names: { test: 'test', mergeTests: 'merge' }, globals: { test: 'test' }, importEnd: true, alternate: null },
   unit: {
     names: { test: 'test', it: 'test', describe: 'suite', suite: 'suite', vi: 'utility', jest: 'utility' },
     globals: { test: 'test', it: 'test', describe: 'suite', suite: 'suite', vi: 'utility', jest: 'utility' },
     importEnd: false,
-    alternateEnd: true,
+    alternate: null,
   },
 };
 // Modules whose exports register tests; a call rooted in any other installed package registers none.
@@ -179,7 +181,8 @@ function sourceBindings(ast, file, projectRoot, vocabulary = VOCABULARIES.playwr
           binding.assignments.some((value) => REGISTRATION_KINDS.has(resolve(value, seen)?.kind)))
       )
         throw new Error(`generated test inventory has reassigned test binding: ${file}`);
-      if (binding.kind) return { kind: binding.kind, importEnd: vocabulary.importEnd && binding.imported && !moduleSource };
+      if (binding.kind)
+        return { kind: binding.kind, importEnd: vocabulary.importEnd && binding.imported && !moduleSource, imported: binding.imported };
       const value = resolve(binding.init, seen);
       if (binding.property) return value?.kind === 'namespace' ? { kind: kindOf(binding.property) } : null;
       return value ? { kind: value.kind } : null;
@@ -223,11 +226,16 @@ function sourceBindings(ast, file, projectRoot, vocabulary = VOCABULARIES.playwr
     const point = callee.type === 'MemberExpression' ? callee.property.loc.start : binding.importEnd ? callee.loc.end : callee.loc.start;
     return { line: point.line, column: point.column + 1 };
   };
-  // The call's opening parenthesis, for an identifier callee: whitespace and line breaks may precede it.
+  // The second location an identifier call can map to: the opening parenthesis
+  // (Vitest 5 JavaScript), or the callee end of an ES import a Jest transform
+  // compiles to `(0, _globals.test)(...)` (babel-jest, ts-jest).
   const lineStarts = [0];
   for (let index = 0; index < source.length; index++) if (source[index] === '\n') lineStarts.push(index + 1);
-  const alternate = (call, callee) => {
-    if (!vocabulary.alternateEnd || callee.type !== 'Identifier') return null;
+  const alternate = (call, callee, binding) => {
+    if (callee.type !== 'Identifier') return null;
+    if (vocabulary.alternate === 'import-end')
+      return binding?.imported ? { line: callee.loc.end.line, column: callee.loc.end.column + 1 } : null;
+    if (vocabulary.alternate !== 'paren') return null;
     let offset = callee.end;
     while (offset < call.end && source[offset] !== '(') offset++;
     let line = lineStarts.length - 1;
@@ -328,8 +336,8 @@ function unitLeaves(ast, file, bindings, inventory, activations) {
           const skip = chain[0] === 'skip';
           const base = skip ? location(resolved.base, resolved.binding) : null;
           // Activation blanks `.skip`, so the activated call keeps this call's parenthesis.
-          const paren = alternate(node, node.callee);
-          const activatedParen = skip ? alternate(node, resolved.base) : null;
+          const paren = alternate(node, node.callee, resolved.binding);
+          const activatedParen = skip ? alternate(node, resolved.base, resolved.binding) : null;
           inventory.tests.push({
             file,
             titlePath: [...titles, title],
@@ -373,7 +381,9 @@ function generatedInventory(projectRoot, files, { runner = 'playwright', activat
     if (!/\.(?:[cm]?[jt]sx?)$/.test(file)) continue;
     const ast = parse(bytes.toString('utf8'), { sourceType: 'unambiguous', plugins: ['typescript', 'jsx'] });
     if (unit) {
-      unitLeaves(ast, file, sourceBindings(ast, file, projectRoot, VOCABULARIES.unit, bytes.toString('utf8')), inventory, activations);
+      const alternate = runner === 'jest' ? 'import-end' : /\.[cm]?jsx?$/.test(file) ? 'paren' : null;
+      const vocabulary = { ...VOCABULARIES.unit, alternate };
+      unitLeaves(ast, file, sourceBindings(ast, file, projectRoot, vocabulary, bytes.toString('utf8')), inventory, activations);
       continue;
     }
     const { registration, location } = sourceBindings(ast, file, projectRoot);
