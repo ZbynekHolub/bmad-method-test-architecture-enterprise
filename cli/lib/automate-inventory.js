@@ -5,6 +5,7 @@ const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { parse } = require('@babel/parser');
 const { minimatch } = require('minimatch');
+const { UNIT_CHECK_KIND, normalizeUnitReport, unitReportRunner } = require('./unit-runners');
 
 const slash = (value) => value.split(path.sep).join('/');
 const canonical = (value) => {
@@ -48,8 +49,31 @@ function nativeMatches(patterns, absolute) {
   });
 }
 
+// Registration names per runner family. Playwright registers suites through
+// test.describe and maps a transformed named import's call to its callee end.
+// Vitest and Jest export describe/suite as their own functions, and both report
+// an identifier call at its start and a member call at its property.
+// Vitest maps an identifier call to its callee start or, when its transform
+// leaves the call to Vite's own SSR rewrite (JavaScript in Vitest 5, or
+// esbuild: false), to its opening parenthesis. A transformed Jest ES import maps
+// it to the callee end. Both positions belong to one call, so each still binds
+// exactly one leaf; Jest globals and requires keep a single location.
+const VOCABULARIES = {
+  playwright: { names: { test: 'test', mergeTests: 'merge' }, globals: { test: 'test' }, importEnd: true, alternate: null },
+  unit: {
+    names: { test: 'test', it: 'test', describe: 'suite', suite: 'suite', vi: 'utility', jest: 'utility' },
+    globals: { test: 'test', it: 'test', describe: 'suite', suite: 'suite', vi: 'utility', jest: 'utility' },
+    importEnd: false,
+    alternate: null,
+  },
+};
+// Modules whose exports register tests; a call rooted in any other installed package registers none.
+const TEST_MODULES = new Set(['vitest', '@jest/globals', '@playwright/test']);
+const REGISTRATION_KINDS = new Set(['test', 'suite', 'namespace', 'merge']);
+
 // Track lexical declarations so a shadowed name cannot inherit a test binding.
-function sourceBindings(ast, file, projectRoot) {
+function sourceBindings(ast, file, projectRoot, vocabulary = VOCABULARIES.playwright, source = '') {
+  const kindOf = (name) => (typeof name === 'string' && Object.hasOwn(vocabulary.names, name) ? vocabulary.names[name] : 'other');
   const scopes = new WeakMap();
   const root = { parent: null, bindings: new Map(), functionScope: true };
   const assignments = [];
@@ -100,10 +124,11 @@ function sourceBindings(ast, file, projectRoot) {
     scopes.set(node, scope);
     if (node.type === 'ImportDeclaration')
       for (const item of node.specifiers) {
-        const imported = ['ImportNamespaceSpecifier', 'ImportDefaultSpecifier'].includes(item.type) ? 'namespace' : item.imported?.name;
+        const namespace = ['ImportNamespaceSpecifier', 'ImportDefaultSpecifier'].includes(item.type);
         scope.bindings.set(item.local.name, {
-          kind: imported === 'test' ? 'test' : imported === 'mergeTests' ? 'merge' : imported === 'namespace' ? 'namespace' : 'other',
+          kind: namespace ? 'namespace' : kindOf(item.imported?.name ?? literal(item.imported)),
           imported: true,
+          source: node.source.value,
         });
       }
     if (node.type === 'VariableDeclarator') {
@@ -143,31 +168,31 @@ function sourceBindings(ast, file, projectRoot) {
     if (!node) return null;
     if (node.type === 'Identifier') {
       const binding = findBinding(node);
-      // Bare test is retained for native ATDD/global test source inventories.
-      if (!binding) return node.name === 'test' ? { kind: 'test', importEnd: true } : null;
+      // Bare globals are retained for native ATDD and Jest/Vitest global inventories.
+      if (!binding)
+        return Object.hasOwn(vocabulary.globals, node.name)
+          ? { kind: vocabulary.globals[node.name], importEnd: vocabulary.importEnd }
+          : null;
       if (seen.has(binding)) return null;
       seen = new Set([...seen, binding]);
       if (
         binding.assignments?.length &&
-        (['test', 'namespace', 'merge'].includes(binding.kind) ||
-          ['test', 'namespace', 'merge'].includes(resolve(binding.init, seen)?.kind) ||
-          binding.assignments.some((value) => ['test', 'namespace', 'merge'].includes(resolve(value, seen)?.kind)))
+        (REGISTRATION_KINDS.has(binding.kind) ||
+          REGISTRATION_KINDS.has(resolve(binding.init, seen)?.kind) ||
+          binding.assignments.some((value) => REGISTRATION_KINDS.has(resolve(value, seen)?.kind)))
       )
         throw new Error(`generated test inventory has reassigned test binding: ${file}`);
-      if (binding.kind) return { kind: binding.kind, importEnd: binding.imported && !moduleSource };
+      if (binding.kind)
+        return { kind: binding.kind, importEnd: vocabulary.importEnd && binding.imported && !moduleSource, imported: binding.imported };
       const value = resolve(binding.init, seen);
-      if (binding.property)
-        return value?.kind === 'namespace'
-          ? { kind: binding.property === 'test' ? 'test' : binding.property === 'mergeTests' ? 'merge' : 'other' }
-          : null;
+      if (binding.property) return value?.kind === 'namespace' ? { kind: kindOf(binding.property) } : null;
       return value ? { kind: value.kind } : null;
     }
     if (node.type === 'MemberExpression') {
       const value = resolve(node.object, seen);
       if (value?.kind === 'namespace' && node.computed && memberName(node) === null)
         throw new Error(`generated test inventory has computed registration: ${file}`);
-      if (value?.kind === 'namespace')
-        return { kind: memberName(node) === 'test' ? 'test' : memberName(node) === 'mergeTests' ? 'merge' : 'other' };
+      if (value?.kind === 'namespace') return { kind: kindOf(memberName(node)) };
       return null;
     }
     if (node.type === 'CallExpression') {
@@ -189,7 +214,7 @@ function sourceBindings(ast, file, projectRoot) {
   };
   const registration = (node) => {
     const value = resolve(node);
-    if (value?.kind === 'test') return { binding: value, chain: [], base: node };
+    if (value?.kind === 'test' || value?.kind === 'suite') return { kind: value.kind, binding: value, chain: [], base: node };
     if (node?.type === 'MemberExpression') {
       const parent = registration(node.object);
       if (parent) return { ...parent, chain: [...parent.chain, memberName(node)] };
@@ -202,16 +227,152 @@ function sourceBindings(ast, file, projectRoot) {
     const point = callee.type === 'MemberExpression' ? callee.property.loc.start : binding.importEnd ? callee.loc.end : callee.loc.start;
     return { line: point.line, column: point.column + 1 };
   };
-  return { registration, location };
+  // The second location an identifier call can map to: the opening parenthesis
+  // (Vitest 5 JavaScript), or the callee end of an ES import a Jest transform
+  // compiles to `(0, _globals.test)(...)` (babel-jest, ts-jest).
+  const lineStarts = [0];
+  for (let index = 0; index < source.length; index++) if (source[index] === '\n') lineStarts.push(index + 1);
+  const alternate = (call, callee, binding) => {
+    if (callee.type !== 'Identifier') return null;
+    if (vocabulary.alternate === 'import-end')
+      return binding?.imported ? { line: callee.loc.end.line, column: callee.loc.end.column + 1 } : null;
+    if (vocabulary.alternate !== 'paren') return null;
+    let offset = callee.end;
+    while (offset < call.end && source[offset] !== '(') offset++;
+    let line = lineStarts.length - 1;
+    while (lineStarts[line] > offset) line--;
+    return { line: line + 1, column: offset - lineStarts[line] + 1 };
+  };
+  // A member call rooted at a runner utility (vi.mock, an aliased or namespaced vi) registers no test.
+  const utility = (callee) => {
+    for (let node = callee.type === 'MemberExpression' ? callee.object : null; node; node = node.object) {
+      if (resolve(node)?.kind === 'utility') return true;
+      if (node.type !== 'MemberExpression') return false;
+    }
+    return false;
+  };
+  // Nor does a member call rooted in another installed package, such as MSW's
+  // http.get(path, resolver) or an Express app built by express().
+  const packageSource = (source) =>
+    typeof source === 'string' && !/^[./]/.test(source) && !TEST_MODULES.has(source) && !source.startsWith('vitest/');
+  const external = (callee) => {
+    const seen = new Set();
+    let node = callee.type === 'MemberExpression' ? callee.object : null;
+    while (node) {
+      switch (node.type) {
+        case 'MemberExpression': {
+          node = node.object;
+          break;
+        }
+        case 'CallExpression': {
+          if (node.callee.type === 'Identifier' && node.callee.name === 'require' && !findBinding(node.callee))
+            return packageSource(literal(node.arguments[0]));
+          node = node.callee;
+          break;
+        }
+        case 'Identifier': {
+          const binding = findBinding(node);
+          if (!binding || seen.has(binding)) return false;
+          seen.add(binding);
+          if (binding.imported) return packageSource(binding.source);
+          node = binding.init;
+          break;
+        }
+        default: {
+          return false;
+        }
+      }
+    }
+    return false;
+  };
+  return { registration, location, alternate, utility, external };
 }
 
 // Enumerate registrations without executing adopter code. Runtime enumeration is
 // deliberately unmeasured: a numerical report cannot prove its missing leaves.
-function generatedInventory(projectRoot, files) {
+// Vitest and Jest share one registration grammar: test/it leaves, describe/suite
+// blocks and module-level hooks. Every form whose leaves are only known at
+// runtime is rejected, matching the Playwright inventory's strictness.
+const UNIT_LEAF_MODIFIERS = new Set(['only', 'skip', 'concurrent', 'sequential']);
+const UNIT_SUITE_MODIFIERS = new Set(['only', 'skip', 'concurrent', 'sequential', 'shuffle']);
+const UNIT_DYNAMIC = new Set(['each', 'for', 'skipIf', 'runIf', 'todo', 'fails', 'failing']);
+
+function unitLeaves(ast, file, bindings, inventory, activations) {
+  const { registration, location, alternate, utility, external } = bindings;
+  const isCallback = (arg) => ['ArrowFunctionExpression', 'FunctionExpression'].includes(arg.type);
+  const walk = (node, titles = [], dynamic = false) => {
+    if (!node || typeof node !== 'object') return;
+    if (node.type === 'CallExpression') {
+      const resolved = registration(node.callee);
+      // test.each(table)('title', fn) and its relatives register through a returned function.
+      if (!resolved && node.callee.type === 'CallExpression' && registration(node.callee.callee))
+        throw new Error(`generated test inventory has unresolved table registration: ${file}`);
+      if (
+        !resolved &&
+        !dynamic &&
+        !utility(node.callee) &&
+        !external(node.callee) &&
+        literal(node.arguments[0]) !== null &&
+        node.arguments.some(isCallback)
+      )
+        throw new Error(`generated test inventory has unresolved registration binding: ${file}`);
+      if (resolved) {
+        const { chain } = resolved;
+        if (chain.includes(null)) throw new Error(`generated test inventory has computed registration: ${file}`);
+        if (chain.some((member) => UNIT_DYNAMIC.has(member)))
+          throw new Error(`generated test inventory has unresolved table registration: ${file}`);
+        const callback = node.arguments.find(isCallback);
+        if (resolved.kind === 'suite') {
+          if (chain.length > 1 || (chain.length === 1 && !UNIT_SUITE_MODIFIERS.has(chain[0])))
+            throw new Error(`generated test inventory has unsupported registration: ${file}`);
+          const title = literal(node.arguments[0]);
+          if (title === null || !callback || dynamic) throw new Error(`generated test inventory has dynamic suite registration: ${file}`);
+          walk(callback.body, [...titles, title], false);
+          return;
+        }
+        if (chain.length === 0 || (chain.length === 1 && UNIT_LEAF_MODIFIERS.has(chain[0]))) {
+          const title = literal(node.arguments[0]);
+          if (!callback) throw new Error(`generated test inventory has unresolved callback registration: ${file}`);
+          if (title === null || dynamic) throw new Error(`generated test inventory has dynamic test registration: ${file}`);
+          const skip = chain[0] === 'skip';
+          const base = skip ? location(resolved.base, resolved.binding) : null;
+          // Activation blanks `.skip`, so the activated call keeps this call's parenthesis.
+          const paren = alternate(node, node.callee, resolved.binding);
+          const activatedParen = skip ? alternate(node, resolved.base, resolved.binding) : null;
+          inventory.tests.push({
+            file,
+            titlePath: [...titles, title],
+            ...location(node.callee, resolved.binding),
+            ...(paren ? { alternateLine: paren.line, alternateColumn: paren.column } : {}),
+            ...(skip ? { activationLine: base.line, activationColumn: base.column } : {}),
+            ...(activatedParen ? { activationAlternateLine: activatedParen.line, activationAlternateColumn: activatedParen.column } : {}),
+          });
+          // Activation deletes exactly the `.skip` member between the base and the call.
+          if (skip && activations) activations.push({ file, start: node.callee.object.end, end: node.callee.end });
+          return;
+        }
+        if (!(chain.length === 1 && chain[0] === 'extend'))
+          throw new Error(`generated test inventory has unsupported registration: ${file}`);
+      }
+    }
+    const nestedDynamic = dynamic || /(?:Function|Method|For|While|If|Conditional|Switch)/.test(node.type);
+    for (const [key, value] of Object.entries(node)) {
+      if (['loc', 'start', 'end'].includes(key)) continue;
+      if (Array.isArray(value)) for (const child of value) walk(child, titles, nestedDynamic);
+      else if (value && typeof value === 'object') walk(value, titles, nestedDynamic);
+    }
+  };
+  walk(ast.program);
+}
+
+function generatedInventory(projectRoot, files, { runner = 'playwright', activations } = {}) {
+  const unit = runner === 'vitest' || runner === 'jest';
+  if (!unit && runner !== 'playwright') throw new Error(`generated test inventory has an unsupported runner: ${runner}`);
   const inventory = {
     schemaVersion: 1,
     basis: 'post-generation source syntax',
     projectRoot: fs.realpathSync(projectRoot),
+    ...(unit ? { runner } : {}),
     files: [],
     tests: [],
   };
@@ -220,6 +381,12 @@ function generatedInventory(projectRoot, files) {
     inventory.files.push({ file, sha256: createHash('sha256').update(bytes).digest('hex') });
     if (!/\.(?:[cm]?[jt]sx?)$/.test(file)) continue;
     const ast = parse(bytes.toString('utf8'), { sourceType: 'unambiguous', plugins: ['typescript', 'jsx'] });
+    if (unit) {
+      const alternate = runner === 'jest' ? 'import-end' : 'paren';
+      const vocabulary = { ...VOCABULARIES.unit, alternate };
+      unitLeaves(ast, file, sourceBindings(ast, file, projectRoot, vocabulary, bytes.toString('utf8')), inventory, activations);
+      continue;
+    }
     const { registration, location } = sourceBindings(ast, file, projectRoot);
     const walk = (node, titles = [], dynamic = false) => {
       if (!node || typeof node !== 'object') return;
@@ -307,20 +474,29 @@ function generatedInventory(projectRoot, files) {
   return inventory;
 }
 
-function reconcileInventory(inventory, reports, { mode, reportProjectRoot = inventory.projectRoot } = {}) {
+function reportFamily(report) {
+  if (Array.isArray(report.suites)) return 'playwright';
+  if (report.kind === UNIT_CHECK_KIND) return `unit-check:${report.runner}`;
+  return unitReportRunner(report) ?? (report.schemaVersion === 1 && Array.isArray(report.files) ? 'native-atdd' : 'unrecognized');
+}
+
+function reconcileInventory(inventory, reports, { mode, runners, reportProjectRoot = inventory.projectRoot } = {}) {
   const covered = new Map();
   const projectsByFile = new Map();
-  if (reports.some((report) => Array.isArray(report.suites)) && reports.some((report) => Array.isArray(report.files)))
-    throw new Error('final execution mixes incompatible runner scope identities');
+  if (new Set(reports.map(reportFamily)).size > 1) throw new Error('final execution mixes incompatible runner scope identities');
   const identity = (leaf, project) => JSON.stringify([leaf.file, leaf.titlePath, leaf.line, leaf.column, project]);
-  const playwrightLeaves = new Map();
+  const sourceLeaves = new Map();
   const atddLeaves = new Map();
   const sourceKey = (file, titles, line, column) => JSON.stringify([file, titles, line, column]);
   const index = (map, key, leaf) => map.set(key, [...(map.get(key) ?? []), leaf]);
   for (const leaf of inventory.tests) {
-    index(playwrightLeaves, sourceKey(leaf.file, leaf.titlePath, leaf.line, leaf.column), leaf);
+    index(sourceLeaves, sourceKey(leaf.file, leaf.titlePath, leaf.line, leaf.column), leaf);
+    if (leaf.alternateLine !== undefined)
+      index(sourceLeaves, sourceKey(leaf.file, leaf.titlePath, leaf.alternateLine, leaf.alternateColumn), leaf);
     if (mode === 'red' && leaf.activationLine !== undefined)
-      index(playwrightLeaves, sourceKey(leaf.file, leaf.titlePath, leaf.activationLine, leaf.activationColumn), leaf);
+      index(sourceLeaves, sourceKey(leaf.file, leaf.titlePath, leaf.activationLine, leaf.activationColumn), leaf);
+    if (mode === 'red' && leaf.activationAlternateLine !== undefined)
+      index(sourceLeaves, sourceKey(leaf.file, leaf.titlePath, leaf.activationAlternateLine, leaf.activationAlternateColumn), leaf);
     index(atddLeaves, JSON.stringify([leaf.file, leaf.titlePath.at(-1)]), leaf);
   }
   for (const report of reports) {
@@ -368,7 +544,7 @@ function reconcileInventory(inventory, reports, { mode, reportProjectRoot = inve
         for (const spec of suite.specs ?? []) {
           const file = reportedFile(spec.file ?? suite.file ?? '');
           const titlePath = [...nextTitles, spec.title];
-          const leaves = playwrightLeaves.get(sourceKey(file, titlePath, spec.line, spec.column)) ?? [];
+          const leaves = sourceLeaves.get(sourceKey(file, titlePath, spec.line, spec.column)) ?? [];
           if (leaves.length !== 1) throw new Error(`runner result does not identify one generated test leaf: ${file} ${spec.title ?? ''}`);
           for (const test of spec.tests ?? []) {
             const project = test.projectId ?? test.projectName;
@@ -385,6 +561,63 @@ function reconcileInventory(inventory, reports, { mode, reportProjectRoot = inve
       for (const [key, count] of scopesInReport) {
         if (covered.has(key)) throw new Error('final runner reports repeat a generated test/project scope');
         covered.set(key, count);
+      }
+    } else if (report.kind === UNIT_CHECK_KIND || unitReportRunner(report)) {
+      const checked = report.kind === UNIT_CHECK_KIND;
+      const runner = checked ? report.runner : unitReportRunner(report);
+      const label = runner === 'jest' ? 'Jest' : runner === 'vitest' ? 'Vitest' : JSON.stringify(runner);
+      const declared = (runners ?? []).find((entry) => entry.runner === runner);
+      if (!declared) throw new Error(`native ${label} evidence does not match a test runner the project declares`);
+      if (inventory.runner !== runner) throw new Error(`generated test inventory was not derived for ${label}`);
+      if (!reportProjectRoot) throw new Error('native execution reconciliation requires the consuming project root');
+      const base = canonical(reportProjectRoot);
+      // Vitest's JSON reporter drops unhandled errors and the process outcome, so
+      // only tea-unit-check (which records both) establishes Vitest execution.
+      // Red needs the disposable activation only tea-unit-check proves.
+      if (!checked && (runner === 'vitest' || mode === 'red'))
+        throw new Error(
+          `raw ${label} JSON cannot establish ${mode === 'red' ? 'verified red' : 'Vitest execution'}; run tea-unit-check --mode ${mode === 'red' ? 'red' : 'expand'}`,
+        );
+      let results;
+      const red = checked && report.mode === 'red';
+      if (checked) {
+        if (report.schemaVersion !== 1 || typeof report.projectRoot !== 'string' || canonical(report.projectRoot) !== base)
+          throw new Error('tea-unit-check evidence identifies a different consuming project root');
+        if (report.mode !== mode)
+          throw new Error(`tea-unit-check evidence ran in ${JSON.stringify(report.mode)} mode for a ${mode} request`);
+        if (report.configFile !== declared.configFile) throw new Error(`tea-unit-check used a different ${label} configuration`);
+        if (!Array.isArray(report.files)) throw new Error('tea-unit-check evidence lacks file results');
+        results = report.files.map((entry) => {
+          const listed = inventory.files.find((item) => item.file === entry?.file);
+          if (!listed || listed.sha256 !== entry.sha256)
+            throw new Error(`tea-unit-check evaluated different generated bytes: ${entry?.file ?? ''}`);
+          if (!Array.isArray(entry.tests)) throw new Error(`tea-unit-check evidence lacks test results: ${entry.file}`);
+          return { file: entry.file, tests: entry.tests };
+        });
+      } else {
+        results = normalizeUnitReport(report).files.map((entry) => {
+          const relative = path.relative(base, canonical(entry.name));
+          if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative))
+            throw new Error(`native ${label} evidence identifies a different consuming project root`);
+          return { file: slash(relative), tests: entry.tests };
+        });
+      }
+      for (const { file, tests } of results) {
+        if (inventory.files.some((item) => item.file === file)) projectsByFile.set(file, new Map([[runner, 1]]));
+        for (const test of tests) {
+          if (!Array.isArray(test?.titlePath) || test.titlePath.some((title) => typeof title !== 'string'))
+            throw new Error(`native ${label} result has a malformed test identity: ${file}`);
+          if (!Number.isSafeInteger(test.line) || !Number.isSafeInteger(test.column))
+            throw new Error(`native ${label} evidence lacks test locations: ${file}`);
+          const leaves = sourceLeaves.get(sourceKey(file, test.titlePath, test.line, test.column)) ?? [];
+          if (leaves.length !== 1)
+            throw new Error(`runner result does not identify one generated test leaf: ${file} ${test.titlePath.at(-1) ?? ''}`);
+          if (red && leaves[0].activationLine === undefined)
+            throw new Error(`tea-unit-check executed a generated test that is not a skipped scaffold: ${file} ${test.titlePath.at(-1)}`);
+          const key = identity(leaves[0], runner);
+          if (covered.has(key)) throw new Error('final runner reports repeat a generated test scope');
+          covered.set(key, 1);
+        }
       }
     } else if (report.schemaVersion === 1 && Array.isArray(report.files)) {
       for (const leaf of inventory.tests) projectsByFile.set(leaf.file, new Map([['native-atdd', 1]]));

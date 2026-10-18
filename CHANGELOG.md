@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `tea-automate` verifies Vitest and Jest runs in expand and red modes. Previously a correct Vitest or Jest run exited 3, because only Playwright and ATDD reports were recognized. The CLI detects Vitest and Jest from `package.json`, config files and a workspace root before the agent runs, accepts their evidence only for a detected runner, and tells the agent which command produces it. Counts, every retry attempt, assertion-classified red failures, runner errors and each result's file, `describe` path, title, line and column must match the generated source. A report from outside the consuming project or a forged count is rejected. Jest's `--json --testLocationInResults` output is accepted in expand mode. Vitest's JSON reporter omits unhandled errors, so Vitest evidence comes from `tea-unit-check`.
+- `tea-unit-check` runs generated Vitest or Jest files one at a time with the project's runner and config. It writes the runner's results with the process outcome, including unhandled errors, to a report bound to the files by SHA-256. In red mode it copies the project, or its whole workspace, with linked dependencies, blanks only the generated leaves' `.skip` in the copy, and reports any file the run changed. The saved scaffolds stay skipped.
+
 ### Changed
 
 - The workflow, customization and starter guides now match the skills they describe. The Test Review guide teaches the rubric 5.0 deduction ledger with a sample report whose score recomputes, and its CI gate uses `tea-test-review --min-score`, which fails on a missing or malformed report. The Trace and enterprise guides state the same coverage-gate eligibility and keep release approval separate. Playwright Utils examples import one shared `tests/support/merged-fixtures.ts` module and show browser storage-state wiring for signed-in pages. The Framework guide's CI samples run the generated `test:e2e` script with a trigger table, the browser automation migration maps old `true` to `mcp` or `auto`, and the Academy, Teach Me Testing, Lite quickstart, test-design, NFR, Pact and firewall pages name their prerequisites and outputs. New `test:doc-ci-samples` and `test:doc-playwright-examples` checks, plus extended shell-block and doc-claim checks, hold these fixes.
@@ -18,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The quality workflow's artifact uploads and its coverage download retry through a GitHub artifact-service outage. A chain shard whose tests all passed had failed on artifact-service timeouts, which then failed the coverage job. Each transfer now goes through a local retrying action: four attempts with waits of 30, 90 and 180 seconds, `overwrite: true` on every upload attempt, and a last attempt that still fails the job. The new `test:artifact-retry` check fails when a transfer bypasses the action or the ladder is weakened.
 - The Test Review score summary now shows the execution mode the run resolved. It no longer prints "Parallel Execution" and an unmeasured "~60% faster than sequential" figure for every run, sequential ones included.
 - The auth-session knowledge fragment's multi-user example now picks the user with `test.use({ authOptions })` inside a `test.describe()` block. Assigning `authOptions.userIdentifier` in a test body ran after the token fixture had resolved, so the test kept the default user. `test:knowledge` now fails on such an assignment in any fragment.
 

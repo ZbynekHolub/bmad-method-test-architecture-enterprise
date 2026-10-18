@@ -1931,6 +1931,14 @@
         {
           "token": "navigationTimeout",
           "reason": "Playwright Test use option; declared by the installed @playwright/test types, outside TEA source roots"
+        },
+        {
+          "token": "skipIf",
+          "reason": "a Vitest conditional test modifier the generated-test inventory rejects as a runtime registration, not a TEA declaration"
+        },
+        {
+          "token": "runIf",
+          "reason": "a Vitest conditional test modifier the generated-test inventory rejects as a runtime registration, not a TEA declaration"
         }
       ]
     },

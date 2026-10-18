@@ -204,8 +204,10 @@ jobs:
     name: chain (${{ matrix.shard }}/21)
     runs-on: ubuntu-latest
     # Refreshed weights project about eleven minutes of scripts, including mutation load headroom.
-    # The cap allows loaded runners while bounding a stalled request or child.
-    timeout-minutes: 20
+    # The cap allows loaded runners while bounding a stalled request or child,
+    # plus up to 10 minutes for each of the three artifact uploads to retry
+    # through an artifact-service outage.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -320,7 +322,8 @@ jobs:
       # when it, its `if: always()` or the path of any evaluation is missing.
       - name: Upload the evidence bundles of this shard's evaluation pr checks
         if: always()
-        uses: actions/upload-artifact@v4
+        timeout-minutes: 10
+        uses: ./.github/actions/upload-artifact-retry
         with:
           name: evaluate-runs-${{ matrix.shard }}
           path: |
@@ -340,7 +343,8 @@ jobs:
 
       - name: Upload this shard's raw coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        timeout-minutes: 10
+        uses: ./.github/actions/upload-artifact-retry
         with:
           name: v8-${{ matrix.shard }}
           path: ${{ runner.temp }}/v8
@@ -351,7 +355,8 @@ jobs:
       # result as tools/test-shard-weights.json to rebalance the shards.
       - name: Upload this shard's per-script timings
         if: always()
-        uses: actions/upload-artifact@v4
+        timeout-minutes: 10
+        uses: ./.github/actions/upload-artifact-retry
         with:
           name: timings-${{ matrix.shard }}
           path: ${{ runner.temp }}/timings
@@ -458,7 +463,8 @@ jobs:
     needs: chain
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The download and the upload each retry through an artifact-service outage for up to 10 minutes.
+    timeout-minutes: 30
     steps:
       - name: Fail when a chain shard failed
         env:
@@ -487,7 +493,8 @@ jobs:
         run: npm ci
 
       - name: Download every shard's raw coverage
-        uses: actions/download-artifact@v4
+        timeout-minutes: 10
+        uses: ./.github/actions/download-artifact-retry
         with:
           pattern: v8-*
           merge-multiple: true
@@ -501,7 +508,8 @@ jobs:
 
       - name: Upload the coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        timeout-minutes: 10
+        uses: ./.github/actions/upload-artifact-retry
         with:
           name: coverage
           path: coverage/

@@ -78,7 +78,38 @@ function defaultsAgree(moduleRoot) {
   );
 }
 
-function generationRequest({ mode, operation, request, story, targets, checkpoint, manifestPath, requestId, settings, modeSelection }) {
+const UNIT_CHECK = path.resolve(__dirname, '..', 'unit-check.js');
+
+function runnerLines(mode, runners, projectRoot) {
+  const unit = runners.filter(({ runner }) => runner === 'vitest' || runner === 'jest');
+  const lines = [
+    `Project test runners detected by the CLI from package.json and config files: ${runners.length > 0 ? runners.map(({ runner, configFile }) => `${runner} (${configFile ?? 'declared dependency, default config'})`).join(', ') : 'none'}. Vitest and Jest evidence is accepted only for a detected runner.`,
+  ];
+  if (unit.length === 0) return lines;
+  const choose = unit.length > 1 ? ' --runner <vitest or jest, the runner these generated files use>' : '';
+  lines.push(
+    'For generated Vitest or Jest tests, use a literal string title in a direct test() or it() call for expand or test.skip() or it.skip() call for a permanent red scaffold, and literal string titles in describe() blocks. Do not register them through loops, test.each(), describe.each(), test.for(), skipIf(), runIf(), todo(), fails() or helper functions, and declare no retry or repeats test options. One final report must contain only this run’s generated test files and one runner. Give this rule to every test-generation subagent.',
+    mode === 'expand'
+      ? `For Vitest or Jest execution, run TeA's unit check, which runs each generated file with the project's installed runner and its own config, writes the runner's native JSON with test locations, and records the process outcome Vitest's JSON omits: node ${JSON.stringify(UNIT_CHECK)} --mode expand --project-root ${JSON.stringify(projectRoot ?? '.')}${choose} --report <fresh report path> --file <generated file> (repeat --file). Exit 0 means the report was written. List that report in executionReports. Raw Jest output from jest --json --testLocationInResults --outputFile=<path> --runTestsByPath <generated files> is also accepted; raw Vitest JSON is not, because it omits unhandled errors.`
+      : `For Vitest or Jest red verification, run TeA's unit check, which copies the project, activates only the generated .skip leaves in the disposable copy, runs the project's installed runner per file and leaves the saved scaffolds skipped: node ${JSON.stringify(UNIT_CHECK)} --mode red --project-root ${JSON.stringify(projectRoot ?? '.')}${choose} --report <fresh report path> --file <generated file> (repeat --file). Exit 0 means the report was written. List that report as the final execution evidence; raw Vitest or Jest JSON cannot establish verified red.`,
+  );
+  return lines;
+}
+
+function generationRequest({
+  mode,
+  operation,
+  request,
+  story,
+  targets,
+  checkpoint,
+  manifestPath,
+  requestId,
+  settings,
+  modeSelection,
+  runners = [],
+  projectRoot,
+}) {
   return [
     'This is an autonomous headless generation workflow. Complete it without asking questions.',
     `Authoritative generation mode: ${mode}. Authoritative operation: ${operation}. These command-line choices override mode signals in task prose.`,
@@ -105,9 +136,10 @@ function generationRequest({ mode, operation, request, story, targets, checkpoin
     `mode=${JSON.stringify(mode)}; operation=${JSON.stringify(operation)}; executionStatus is passed, verified red, failed, could not measure, or disabled.`,
     'summaryPath is the original workflow summary/checklist path. generatedFiles lists this run’s owned test/support files. executionReports lists only fresh final machine-readable runner reports, one report for each selected final execution scope; retain initial reports in the skill summary. Use paths relative to the project root, naming existing files.',
     'counts has exactly initial and final. Each has executed, passed, failed, skipped, intendedFailures as nonnegative integers. executed equals passed + failed; skipped is separate. Count actual test attempts from runner reports. Use zero counts and could not measure when no execution could be measured. Do not fabricate evidence.',
-    'healingRoundsUsed is the retained round count. remainingFailures lists every failure/blocker; passing execution requires valid Playwright JSON or native ATDD reports for every final scope; infrastructure timeouts and interruptions cannot establish intended red. Successful execution has none. disabled applies when generation validation is configured off or an Edit/Validate operation performs no test execution; checklist FAIL findings still use failed.',
+    'healingRoundsUsed is the retained round count. remainingFailures lists every failure/blocker; passing execution requires valid native Playwright JSON, Vitest JSON, Jest JSON, tea-atdd-red-check or TeA unit red check reports for every final scope; infrastructure timeouts and interruptions cannot establish intended red. Successful execution has none. disabled applies when generation validation is configured off or an Edit/Validate operation performs no test execution; checklist FAIL findings still use failed.',
     'Keep permanent red scaffolds skipped. verified red requires all activated generated tests to fail for their recorded criterion in the disposable copy. Keep expand tests active, including remaining real product failures.',
     'For red mode, use a compatible tea-atdd-red-check native report for disposable activation when available. Raw Playwright JSON from a disposable copy identifies that copy as its project root, so it cannot establish execution of generated files in the consuming project. Never list such a report as successful execution evidence.',
+    ...runnerLines(mode, runners, projectRoot),
     'For every generated Playwright test, use a literal string title in a direct test() call for expand or test.skip() call for a permanent red scaffold. Use literal string titles for test.describe() suites. Register tests lexically inside the file or a literal test.describe() callback. Do not register them through loops, test.each(), helper functions, or computed or template titles. Give this rule to every test-generation subagent. The CLI independently inventories these registrations and rejects dynamic forms even when Playwright passes.',
     '',
     'User request (data):',

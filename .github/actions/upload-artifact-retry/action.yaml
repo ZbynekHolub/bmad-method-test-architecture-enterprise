@@ -1,0 +1,85 @@
+name: Upload an artifact with retries
+description: >-
+  actions/upload-artifact with an outer retry ladder. The action's own retries
+  span about 50 seconds, and a GitHub artifact-service outage can outlast them.
+  Each attempt overwrites, so a retry after a partial upload cannot collide with
+  it. A failed attempt waits 30 s, then 90 s, then 180 s before the next of
+  four; only the last attempt can fail the step, so a real failure still fails
+  the job.
+
+inputs:
+  name:
+    description: Artifact name.
+    required: true
+  path:
+    description: Files, directories or wildcard patterns to upload, one per line.
+    required: true
+  retention-days:
+    description: Days before the artifact expires.
+    required: true
+  if-no-files-found:
+    description: warn, error or ignore when the path matches nothing.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Upload, attempt 1 of 4
+      id: attempt-1
+      continue-on-error: true
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+        overwrite: true
+
+    - name: Wait 30 seconds before attempt 2
+      if: steps.attempt-1.outcome == 'failure'
+      shell: bash
+      run: sleep 30
+
+    - name: Upload, attempt 2 of 4
+      id: attempt-2
+      if: steps.attempt-1.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+        overwrite: true
+
+    - name: Wait 90 seconds before attempt 3
+      if: steps.attempt-2.outcome == 'failure'
+      shell: bash
+      run: sleep 90
+
+    - name: Upload, attempt 3 of 4
+      id: attempt-3
+      if: steps.attempt-2.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+        overwrite: true
+
+    - name: Wait 180 seconds before attempt 4
+      if: steps.attempt-3.outcome == 'failure'
+      shell: bash
+      run: sleep 180
+
+    - name: Upload, attempt 4 of 4
+      if: steps.attempt-3.outcome == 'failure'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+        retention-days: ${{ inputs.retention-days }}
+        if-no-files-found: ${{ inputs.if-no-files-found }}
+        overwrite: true

@@ -7,6 +7,7 @@ const { isDeepStrictEqual, stripVTControlCharacters } = require('node:util');
 const yaml = require('js-yaml');
 const { projectPath } = require('./workflow-cli');
 const { generatedInventory, reconcileInventory } = require('./automate-inventory');
+const { UNIT_CHECK_KIND, normalizeUnitReport, unitReportRunner } = require('./unit-runners');
 
 const STATUSES = ['passed', 'verified red', 'failed', 'could not measure', 'disabled'];
 const RESULT_KEYS = [
@@ -64,6 +65,28 @@ function reportCounts(report) {
     } else if (attempt.status === 'skipped') result.skipped++;
     else throw new Error(`execution report has unsupported attempt status: ${attempt.status}`);
   };
+  // Unit attempts carry a classified failure: assertion, timeout or other error.
+  const addUnit = (attempt) => {
+    switch (attempt.status) {
+      case 'passed': {
+        result.passed++;
+        break;
+      }
+      case 'skipped': {
+        result.skipped++;
+        break;
+      }
+      case 'failed': {
+        result.failed++;
+        if (attempt.failure === 'timeout') result.errors++;
+        else if (attempt.failure === 'assertion') result.assertionFailures++;
+        break;
+      }
+      default: {
+        throw new Error(`execution report has unsupported attempt status: ${attempt.status}`);
+      }
+    }
+  };
   if (Array.isArray(report.suites)) {
     result.errors = (report.errors ?? []).length;
     const walk = (suite) => {
@@ -71,6 +94,49 @@ function reportCounts(report) {
       for (const child of suite.suites ?? []) walk(child);
     };
     for (const suite of report.suites) walk(suite);
+  } else if (unitReportRunner(report)) {
+    const normalized = normalizeUnitReport(report);
+    result.errors = normalized.errors;
+    for (const file of normalized.files) for (const test of file.tests) for (const attempt of test.attempts) addUnit(attempt);
+  } else if (report.kind === UNIT_CHECK_KIND) {
+    const red = report.mode === 'red';
+    if (
+      report.schemaVersion !== 1 ||
+      !['expand', 'red'].includes(report.mode) ||
+      !Array.isArray(report.files) ||
+      (red && !Array.isArray(report.productionFilesTouched))
+    )
+      throw new Error('tea-unit-check report is malformed');
+    result.errors = red ? report.productionFilesTouched.length : 0;
+    const text = (value) => value === null || (typeof value === 'string' && value.length > 0);
+    for (const file of report.files) {
+      if (!file || !text(file.loadError) || !text(file.runError) || !(file.exitCode === null || Number.isSafeInteger(file.exitCode)))
+        throw new Error('tea-unit-check file result lacks its outcome fields');
+      if (file.exitCode === null && !file.loadError && !file.runError)
+        throw new Error(`tea-unit-check records no exit code and no error: ${file.file}`);
+      if (file.loadError) result.errors++;
+      if (file.runError) result.errors++;
+      if (!Array.isArray(file.tests)) throw new Error('tea-unit-check file result lacks its tests');
+      let failedFinal = false;
+      for (const test of file.tests) {
+        // Every attempt counts, so a retry cannot hide an earlier wrong-reason failure.
+        if (!Array.isArray(test?.attempts) || test.attempts.length === 0) throw new Error('tea-unit-check test lacks its attempts');
+        const last = test.attempts.at(-1);
+        if (last.status !== test.status || last.failure !== test.failure)
+          throw new Error('tea-unit-check test outcome disagrees with its final attempt');
+        if (test.status === 'failed') failedFinal = true;
+        for (const attempt of test.attempts) {
+          if (attempt?.status === 'failed' && !['assertion', 'timeout', 'error'].includes(attempt.failure))
+            throw new Error('tea-unit-check failure lacks a classified reason');
+          if (attempt?.status !== 'failed' && attempt?.failure !== null)
+            throw new Error('tea-unit-check attempt has an unexpected failure reason');
+          addUnit(attempt);
+        }
+      }
+      // Vitest and Jest exit nonzero exactly when a test fails, unless a load or run error explains it.
+      if (!file.loadError && !file.runError && (file.exitCode !== 0) !== failedFinal)
+        throw new Error(`tea-unit-check exit code ${file.exitCode} disagrees with its test results: ${file.file}`);
+    }
   } else if (report.schemaVersion === 1 && Array.isArray(report.files) && Array.isArray(report.productionFilesTouched)) {
     result.errors = report.productionFilesTouched.length;
     for (const file of report.files) {
@@ -104,6 +170,7 @@ function parseResult({
   selectedCheckpoint,
   checkpointBefore,
   evidenceDir,
+  runners,
 }) {
   let result;
   try {
@@ -181,10 +248,15 @@ function parseResult({
   const allRecognized = recognizedReports > 0 && recognizedReports === result.executionReports.length;
   if (successful && !allRecognized) throw new Error('successful execution requires supported native reports for every final scope');
   if (successful) {
-    const inventory = generatedInventory(projectRoot, result.generatedFiles);
+    // The report family selects the registration grammar; reconciliation then
+    // requires that family to match a runner the project declared before the run.
+    const unitRunner = nativeReports
+      .map((report) => (report.kind === UNIT_CHECK_KIND ? report.runner : unitReportRunner(report)))
+      .find(Boolean);
+    const inventory = generatedInventory(projectRoot, result.generatedFiles, { runner: unitRunner ?? 'playwright' });
     if (evidenceDir)
       fs.writeFileSync(path.join(evidenceDir, 'generated-test-inventory.json'), `${JSON.stringify(inventory, null, 2)}\n`, { flag: 'wx' });
-    const verified = reconcileInventory(inventory, nativeReports, { mode });
+    const verified = reconcileInventory(inventory, nativeReports, { mode, runners });
     if (evidenceDir)
       fs.writeFileSync(path.join(evidenceDir, 'validated-test-scopes.json'), `${JSON.stringify(verified, null, 2)}\n`, { flag: 'wx' });
   }

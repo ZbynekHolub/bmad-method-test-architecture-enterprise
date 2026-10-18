@@ -1,0 +1,73 @@
+name: Download artifacts with retries
+description: >-
+  actions/download-artifact with the same outer retry ladder as
+  upload-artifact-retry, for the same artifact-service outages. A retry
+  downloads every matching artifact again into the same directory, so a
+  partial earlier attempt is overwritten. Only the last attempt can fail the
+  step.
+
+inputs:
+  pattern:
+    description: Artifact name pattern to download.
+    required: true
+  path:
+    description: Destination directory.
+    required: true
+  merge-multiple:
+    description: Merge every matching artifact into one directory.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Download, attempt 1 of 4
+      id: attempt-1
+      continue-on-error: true
+      uses: actions/download-artifact@v4
+      with:
+        pattern: ${{ inputs.pattern }}
+        path: ${{ inputs.path }}
+        merge-multiple: ${{ inputs.merge-multiple }}
+
+    - name: Wait 30 seconds before attempt 2
+      if: steps.attempt-1.outcome == 'failure'
+      shell: bash
+      run: sleep 30
+
+    - name: Download, attempt 2 of 4
+      id: attempt-2
+      if: steps.attempt-1.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/download-artifact@v4
+      with:
+        pattern: ${{ inputs.pattern }}
+        path: ${{ inputs.path }}
+        merge-multiple: ${{ inputs.merge-multiple }}
+
+    - name: Wait 90 seconds before attempt 3
+      if: steps.attempt-2.outcome == 'failure'
+      shell: bash
+      run: sleep 90
+
+    - name: Download, attempt 3 of 4
+      id: attempt-3
+      if: steps.attempt-2.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/download-artifact@v4
+      with:
+        pattern: ${{ inputs.pattern }}
+        path: ${{ inputs.path }}
+        merge-multiple: ${{ inputs.merge-multiple }}
+
+    - name: Wait 180 seconds before attempt 4
+      if: steps.attempt-3.outcome == 'failure'
+      shell: bash
+      run: sleep 180
+
+    - name: Download, attempt 4 of 4
+      if: steps.attempt-3.outcome == 'failure'
+      uses: actions/download-artifact@v4
+      with:
+        pattern: ${{ inputs.pattern }}
+        path: ${{ inputs.path }}
+        merge-multiple: ${{ inputs.merge-multiple }}

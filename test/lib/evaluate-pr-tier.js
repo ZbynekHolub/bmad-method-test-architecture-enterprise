@@ -161,13 +161,10 @@ function workflowProblems(workflow) {
   const chain = jobs.chain;
   if (chain === undefined) return ['quality.yaml has no chain job'];
   const upload = (chain.steps ?? []).find(
-    (step) =>
-      typeof step.uses === 'string' &&
-      step.uses.startsWith('actions/upload-artifact@') &&
-      String(step.with?.name ?? '').startsWith('evaluate-runs'),
+    (step) => step.uses === './.github/actions/upload-artifact-retry' && String(step.with?.name ?? '').startsWith('evaluate-runs'),
   );
   if (upload === undefined) {
-    problems.push('the chain job has no actions/upload-artifact step named evaluate-runs-*');
+    problems.push('the chain job has no upload-artifact-retry step named evaluate-runs-*');
   } else {
     if (upload.if !== 'always()')
       problems.push(

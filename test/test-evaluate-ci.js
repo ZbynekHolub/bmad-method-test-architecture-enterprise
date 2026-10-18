@@ -4797,10 +4797,7 @@ const packageJson = () => read(path.join(ROOT, 'package.json'));
 const chainJob = (workflow) => workflow.jobs.chain;
 const uploadStep = (workflow) =>
   chainJob(workflow).steps.find(
-    (step) =>
-      typeof step.uses === 'string' &&
-      step.uses.startsWith('actions/upload-artifact@') &&
-      String(step.with?.name).startsWith('evaluate-runs'),
+    (step) => step.uses === './.github/actions/upload-artifact-retry' && String(step.with?.name).startsWith('evaluate-runs'),
   );
 
 /** A copy of an evaluation folder in a scratch directory (its plan and baseline, none of its runs), for a revert case to edit. */
@@ -4855,7 +4852,7 @@ function checkTeaPrTier() {
     [
       'the upload step removed',
       (workflow) => (chainJob(workflow).steps = chainJob(workflow).steps.filter((step) => step !== uploadStep(workflow))),
-      /no actions\/upload-artifact step named evaluate-runs-/,
+      /no upload-artifact-retry step named evaluate-runs-/,
     ],
     [
       'the upload moved to another job',
@@ -4865,7 +4862,7 @@ function checkTeaPrTier() {
         assert.ok(workflow.jobs.coverage, 'quality.yaml has no coverage job for the moved-upload case');
         workflow.jobs.coverage.steps.push(step);
       },
-      /no actions\/upload-artifact step named evaluate-runs-/,
+      /no upload-artifact-retry step named evaluate-runs-/,
     ],
     ['the upload without if: always()', (workflow) => delete uploadStep(workflow).if, /must run if: always\(\)/],
     ['the upload on success only', (workflow) => (uploadStep(workflow).if = 'success()'), /must run if: always\(\)/],
