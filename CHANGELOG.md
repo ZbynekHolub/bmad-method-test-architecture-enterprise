@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The quality workflow's artifact uploads and its coverage download retry through a GitHub artifact-service outage. A chain shard whose tests all passed had failed on artifact-service timeouts, which then failed the coverage job. Each transfer now goes through a local retrying action: four attempts with waits of 30, 90 and 180 seconds, `overwrite: true` on every upload attempt, and a last attempt that still fails the job. The new `test:artifact-retry` check fails when a transfer bypasses the action or the ladder is weakened.
 - The Test Review score summary now shows the execution mode the run resolved. It no longer prints "Parallel Execution" and an unmeasured "~60% faster than sequential" figure for every run, sequential ones included.
 - The auth-session knowledge fragment's multi-user example now picks the user with `test.use({ authOptions })` inside a `test.describe()` block. Assigning `authOptions.userIdentifier` in a test body ran after the token fixture had resolved, so the test kept the default user. `test:knowledge` now fails on such an assignment in any fragment.
 

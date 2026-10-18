@@ -2,6 +2,7 @@
   "format:check": 112.5,
   "lint": 32.8,
   "lint:md": 31.2,
+  "test:artifact-retry": 0.2,
   "test:atdd-isolation": 3.2,
   "test:atdd-net-guard": 0.9,
   "test:atdd-scoring": 0.6,
