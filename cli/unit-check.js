@@ -175,15 +175,24 @@ function copyScope(root) {
         } catch {
           continue;
         }
-        if (inside(base, pointed) && !inside(top, pointed) && ![...linked].some((item) => inside(item, pointed))) {
-          linked.add(pointed);
-          if (fs.statSync(pointed).isDirectory()) scan(pointed);
+        if (inside(base, pointed) && !inside(top, pointed)) {
+          // A link to an ancestor of the copied tree would pull the whole repository into it.
+          if (inside(pointed, top))
+            throw new SetupError(
+              `${slash(path.relative(root, absolute))} links to an ancestor of the project; the red copy cannot isolate it`,
+            );
+          if (![...linked].some((item) => inside(item, pointed))) {
+            linked.add(pointed);
+            if (fs.statSync(pointed).isDirectory()) scan(pointed);
+          }
         }
       } else if (entry.isDirectory()) scan(absolute);
     }
   };
   scan(top);
-  return { ancestors, base, top, linked: [...linked] };
+  // Keep only the outermost targets, so no tree is copied twice whatever order the links were found in.
+  const outermost = [...linked].filter((item) => ![...linked].some((other) => other !== item && inside(other, item)));
+  return { ancestors, base, top, linked: outermost };
 }
 
 /** Digest every root of the scope, keyed by path relative to the project root. */

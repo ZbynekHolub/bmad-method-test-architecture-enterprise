@@ -912,6 +912,19 @@ async function main() {
         linked.productionFilesTouched.includes('../shared/src/index.js'),
       'a write through a link into the rest of a plain repository lands in the copy and is reported',
     );
+    // Overlapping link targets, found inner first, copy once.
+    fs.mkdirSync(path.join(repo, 'shared/src/sub'));
+    fs.symlinkSync('../index.js', path.join(repo, 'shared/src/sub/index-link.js'));
+    fs.symlinkSync('../shared/src/sub', path.join(repo, 'app/a-leaf'));
+    fs.symlinkSync('../shared', path.join(repo, 'app/z-whole'));
+    const overlapping = unitCheck(path.join(repo, 'app'), 'red', ['tests/link.test.ts']);
+    check(overlapping.run.status === 0, `overlapping link targets copy once: ${overlapping.run.stderr}`);
+    fs.symlinkSync('..', path.join(repo, 'app/up'));
+    const ancestor = unitCheck(path.join(repo, 'app'), 'red', ['tests/link.test.ts']);
+    check(
+      ancestor.run.status === 2 && /links to an ancestor of the project/.test(ancestor.run.stderr),
+      'a link to an ancestor of the project is refused',
+    );
   }
   {
     // Jest's testFailureExitCode cannot make a failing red run look like a clean exit.
