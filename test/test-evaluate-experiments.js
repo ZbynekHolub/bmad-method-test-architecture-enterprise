@@ -847,6 +847,138 @@ process.on('exit',()=>writeFile(audit,JSON.stringify({captureClosed:closed.has(c
   } finally {
     fs.rmSync(rawWorkspace.dir, { recursive: true, force: true });
   }
+  // Historical collection membership cannot establish an invocation or applied configuration.
+  const unboundRoot = path.join(scratch, 'unbound-historical');
+  const unboundCaptures = [];
+  const historicalSet = scoring.loadGroundTruth().fixtureSets[0];
+  for (const [agent, model] of [
+    ['claude', 'model-a'],
+    ['codex', 'model-b'],
+  ]) {
+    const workspace = await staging.stageWorkspace(historicalSet);
+    try {
+      unboundCaptures.push(
+        await retainSkillArtifacts({
+          artifactsDir: unboundRoot,
+          workspace,
+          caseId: historicalSet.id,
+          agent,
+          model,
+          repetition: 1,
+          attempt: 1,
+          prompt: staging.buildPrompt(historicalSet),
+          observation: {
+            exitCode: 0,
+            artifacts: {
+              design: {
+                kind: 'text',
+                value: fs.readFileSync(path.join(root, 'test/replay/test-design/seeded-correct-run/design.md'), 'utf8') + `\n${model}\n`,
+              },
+            },
+          },
+        }),
+      );
+    } finally {
+      fs.rmSync(workspace.dir, { recursive: true, force: true });
+    }
+  }
+  const historicalCases = (report) => report.descriptive.groups.flatMap((group) => group.cases);
+  for (const input of [{ saved: unboundCaptures }, { searchRoot: unboundRoot }]) {
+    const report = experiments.analyzeSaved(input).report;
+    assert.equal(report.savedInputs.length, 2);
+    assert.equal(report.cost.attempts, 2);
+    assert.equal(
+      historicalCases(report).reduce((sum, entry) => sum + entry.completed, 0),
+      2,
+    );
+    assert.equal(historicalCases(report).flatMap((entry) => entry.extraCompleted).length, 0);
+    assert.equal(
+      historicalCases(report).reduce((sum, entry) => sum + entry.distinctOutputs, 0),
+      2,
+    );
+    assert.equal(report.descriptive.configurationComparability, 'unknown');
+    assert.equal(report.descriptive.mixedIdentity, null);
+    assert.equal(report.descriptive.freshIndependentTrials, 0);
+    assert.deepEqual(
+      report.descriptive.groups.map((group) => group.requested).sort((a, b) => a.agent.localeCompare(b.agent)),
+      [
+        { agent: 'claude', model: 'model-a' },
+        { agent: 'codex', model: 'model-b' },
+      ],
+    );
+    assert.ok(report.descriptive.groups.every((group) => group.identity === null && group.observed === null));
+    assert.match(reader.renderReport(report), /configuration comparability is unknown/);
+  }
+  const unknownCaptures = unboundCaptures.map((directory, index) => {
+    const copied = path.join(scratch, 'unknown-historical', String(index));
+    fs.cpSync(directory, copied, { recursive: true });
+    const provenance = json(path.join(copied, 'provenance.json'));
+    delete provenance.agent;
+    delete provenance.requestedModel;
+    fs.writeFileSync(path.join(copied, 'provenance.json'), JSON.stringify(provenance));
+    return copied;
+  });
+  for (const input of [{ saved: unknownCaptures }, { searchRoot: path.dirname(unknownCaptures[0]) }]) {
+    const report = experiments.analyzeSaved(input).report;
+    assert.equal(
+      historicalCases(report).reduce((sum, entry) => sum + entry.completed, 0),
+      2,
+    );
+    assert.ok(report.descriptive.groups.every((group) => group.invocationId === null));
+    assert.ok(report.descriptive.groups.every((group) => group.requested.agent === null && group.requested.model === null));
+  }
+  // Recorded invocation/repetition still identifies duplicate completions; every charge remains counted.
+  const boundCaptures = [0, 1].map((index) => {
+    const copied = path.join(scratch, 'bound-historical', String(index));
+    fs.cpSync(unboundCaptures[0], copied, { recursive: true });
+    const provenance = json(path.join(copied, 'provenance.json'));
+    provenance.invocationId = 'recorded-historical-invocation';
+    provenance.cost = { currency: 'USD', components: { target: 0.01, tools: 0 } };
+    fs.writeFileSync(path.join(copied, 'provenance.json'), JSON.stringify(provenance));
+    return copied;
+  });
+  for (const input of [{ saved: boundCaptures }, { searchRoot: path.dirname(boundCaptures[0]) }]) {
+    const report = experiments.analyzeSaved(input).report;
+    assert.equal(report.cost.attempts, 2);
+    assert.equal(report.cost.taskExecution.total, 0.02);
+    assert.equal(
+      historicalCases(report).reduce((sum, entry) => sum + entry.completed, 0),
+      1,
+    );
+    assert.equal(historicalCases(report).flatMap((entry) => entry.extraCompleted).length, 1);
+    assert.equal(report.descriptive.groups[0].invocationId, 'recorded-historical-invocation');
+  }
+  const boundSecond = path.join(boundCaptures[1], 'provenance.json');
+  const changedRequested = json(boundSecond);
+  changedRequested.agent = 'codex';
+  changedRequested.requestedModel = 'model-b';
+  fs.writeFileSync(boundSecond, JSON.stringify(changedRequested));
+  const differentRequested = experiments.analyzeSaved({ saved: boundCaptures }).report;
+  assert.equal(
+    historicalCases(differentRequested).reduce((sum, entry) => sum + entry.completed, 0),
+    2,
+  );
+  assert.equal(differentRequested.descriptive.configurationComparability, 'unknown');
+  changedRequested.agent = 'claude';
+  changedRequested.requestedModel = 'model-a';
+  changedRequested.invocationId = 'different-recorded-invocation';
+  fs.writeFileSync(boundSecond, JSON.stringify(changedRequested));
+  const differentInvocations = experiments.analyzeSaved({ saved: boundCaptures }).report;
+  assert.equal(
+    historicalCases(differentInvocations).reduce((sum, entry) => sum + entry.completed, 0),
+    2,
+  );
+  assert.deepEqual(differentInvocations.descriptive.groups.map((group) => group.invocationId).sort(), [
+    'different-recorded-invocation',
+    'recorded-historical-invocation',
+  ]);
+  const verifiedRetrySaved = experiments.analyzeSaved({ saved: [retries.directory] }).report;
+  assert.equal(verifiedRetrySaved.cost.attempts, 3);
+  assert.equal(verifiedRetrySaved.cost.taskExecution.total, 0.03);
+  assert.equal(
+    historicalCases(verifiedRetrySaved).reduce((sum, entry) => sum + entry.completed, 0),
+    2,
+  );
   const maliciousCustom = path.join(scratch, 'historical/_bmad/custom');
   const genericCompanion = path.join(scratch, 'generic-selection-arm-b');
   fs.cpSync(retained, genericCompanion, { recursive: true });

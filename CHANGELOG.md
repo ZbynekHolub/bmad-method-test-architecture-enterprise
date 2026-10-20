@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Saved historical analysis preserves independent retained completions when invocation identity is missing. Requested runner/model hints remain visible, configuration comparability stays unknown, and recorded invocation/repetition bindings continue to identify duplicate completions and retries.
 - Capture setup and recovery I/O failures now use the documented exit classes and close their descriptors. Test Design capture flags are authorized in the generated request contract; ordinary retention keeps its cleanup behavior, with failure-evidence preservation explicitly enabled for experiments.
 - Source capture keeps an exclusively created descriptor through dispatch, rejects replaced paths, added hardlinks and edited receipt bytes, and preserves a recovery receipt without writing through agent-controlled links. Controller and native-harness consumers verify the runner's receipt digest, stop on rejected captures and preserve unresolved charges and original evidence.
 - Darwin confinement and preflight tests preserve kernel read/write refusals, private-home checks and original evaluator bytes while matching outcomes to the diagnostics actually delivered. Deterministic report-drop witnesses cover omitted folder, evaluator-swap, runner and private-home diagnostics; Linux expectations and product gates are unchanged.

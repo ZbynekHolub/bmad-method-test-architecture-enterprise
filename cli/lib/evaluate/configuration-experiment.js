@@ -661,6 +661,7 @@ function normalizeRow(raw, inputIndex) {
     cost: isObject(source.cost) ? { currency: source.cost.currency ?? null, components: numberMap(source.cost.components) } : null,
     latency: isObject(source.latency) ? numberMap(source.latency) : null,
     observed: clone(source.observed ?? null),
+    historicalContext: clone(source.historicalContext ?? null),
     provenance: clone(source.provenance ?? null),
     problems,
   };
@@ -1141,6 +1142,16 @@ function signatureDifferences(signatures) {
 }
 
 function identityGroupOf(row) {
+  if (row.historicalContext) {
+    // A recorded invocation/repetition still identifies retries and duplicate completions.
+    // Without that binding, each retained record is its own descriptive observation.
+    return `historical:${digestOf({
+      invocation: row.runId,
+      trial: row.runId === null ? row.attemptId : row.repetition,
+      requested: row.historicalContext,
+      observed: row.observed,
+    })}`;
+  }
   return row.observed ? digestOf(row.observed) : 'unobserved';
 }
 
@@ -1359,14 +1370,24 @@ function describeRepeatability({ declaration, rows, excluded, replay, judgeCalls
   }
   const plan = clusterPlan(declaration).filter((entry) => stageCases(declaration).includes(entry.caseId));
   const identityGroups = [...groups.entries()].map(([identity, members]) => ({
-    identity,
+    identity: members[0].historicalContext ? null : identity,
     observed: members[0].observed,
+    ...(members[0].historicalContext
+      ? {
+          configurationComparability: 'unknown',
+          invocationId: members[0].runId,
+          requested: { agent: members[0].historicalContext.agent, model: members[0].historicalContext.requestedModel },
+        }
+      : {}),
     cases: describeCases(declaration, members, plan, nativeSignature),
   }));
+  const uncertainHistorical = baselineRows.some((row) => row.historicalContext);
   return {
-    mixedIdentity: identityGroups.length > 1,
-    note:
-      identityGroups.length > 1
+    mixedIdentity: uncertainHistorical ? null : identityGroups.length > 1,
+    ...(uncertainHistorical ? { configurationComparability: 'unknown' } : {}),
+    note: uncertainHistorical
+      ? 'historical configuration comparability is unknown; observations are separated by recorded invocation/repetition or individual record, and requested runner/model hints establish no applied configuration'
+      : identityGroups.length > 1
         ? 'rows carry more than one observed identity, so statistics are kept per identity and never pooled'
         : 'total target variability across repetitions; none of it is attributed to a judge',
     freshIndependentTrials: baselineRows.filter((row) => row.status === 'completed' && row.receipt).length,
@@ -3065,8 +3086,16 @@ function renderReport(report) {
     );
     for (const group of descriptive.groups) {
       lines.push(
-        `### Identity ${group.identity === 'unobserved' ? 'not recorded' : group.identity}`,
+        group.configurationComparability === 'unknown'
+          ? `### Historical observation ${group.cases.flatMap((entry) => entry.sources).join(', ')}`
+          : `### Identity ${group.identity === 'unobserved' ? 'not recorded' : group.identity}`,
         '',
+        ...(group.configurationComparability === 'unknown'
+          ? [
+              `Configuration comparability: unknown. Recorded invocation: ${group.invocationId ?? 'unknown'}. Requested runner: ${group.requested.agent ?? 'unknown'}; requested model: ${group.requested.model ?? 'unknown'}.`,
+              '',
+            ]
+          : []),
         '| Case | Completed / planned | Success | Native signature | Differing components |',
         '| --- | --- | --- | --- | --- |',
       );

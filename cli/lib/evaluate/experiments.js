@@ -227,6 +227,7 @@ function discoverSaved({ searchRoot, saved = [], skipped = [] }) {
   )) {
     const provenance = candidate(dir, () => readJson(path.join(dir, 'provenance.json')));
     if (!provenance) continue;
+    // An unbound collection is a discovery scope only; its parent establishes no invocation identity.
     const groupId = `${path.dirname(dir)}:${provenance.evaluationId ?? provenance.invocationId ?? 'historical-unbound-siblings'}`;
     const group = retainedGroups.get(groupId) ?? { kind: 'retained', directories: [], at: 0 };
     group.directories.push(dir);
@@ -354,7 +355,7 @@ function retainedRows(directory, limitations, groundTruth) {
   return [
     {
       attemptId: directory,
-      runId: path.dirname(directory),
+      runId: provenance.evaluationId ?? provenance.invocationId ?? null,
       arm: 'A',
       stage: 'baseline',
       caseId: provenance.caseId ?? 'unknown',
@@ -369,6 +370,8 @@ function retainedRows(directory, limitations, groundTruth) {
       // Historical capture fields are copied exactly. No fresh receipt is generated while importing.
       receipt: provenance.receipt ?? null,
       observed: provenance.observed ?? null,
+      // These are provenance hints for descriptive observations, with no applied-configuration proof.
+      historicalContext: { agent: provenance.agent ?? null, requestedModel: provenance.requestedModel ?? null },
       blockId: provenance.blockId ?? null,
       usage: provenance.usage ?? null,
       cost: provenance.cost ?? null,
