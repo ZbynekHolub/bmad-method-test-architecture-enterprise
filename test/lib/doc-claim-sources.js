@@ -477,6 +477,7 @@ exports.PAIRED_CAPTURE_FIELDS = PAIRED_CAPTURE_FIELDS;
  */
 const LEDGER_NAMERS = Object.freeze([
   'test/lib/configuration-experiment.js',
+  'cli/lib/evaluate/configuration-experiment.js',
   'test/test-configuration-experiment.js',
   'test/lib/doc-claim-sources.js',
   'test/test-doc-claim-sources.js',
@@ -486,7 +487,10 @@ const LEDGER_NAMERS = Object.freeze([
 function retainedProvenanceKeys(text) {
   const match = /'provenance\.json'\),\s*`\$\{JSON\.stringify\(\{([^}]*)\}/.exec(text);
   if (!match) refuse('test/lib/retain-skill-artifacts.js no longer writes provenance.json from one object literal');
-  return match[1].split(',').map((entry) => entry.split(':')[0].trim());
+  return match[1]
+    .split(',')
+    .map((entry) => entry.split(':')[0].trim())
+    .filter((entry) => !entry.startsWith('...'));
 }
 exports.retainedProvenanceKeys = retainedProvenanceKeys;
 
@@ -533,8 +537,26 @@ function trackedScripts() {
  * docs/reference/configuration-experiment-reader.md, "Capturing these inputs is
  * manual today."
  */
-exports.PAIRED_CAPTURE_IS_MANUAL = pairedCaptureIsManual({
-  provenanceKeys: retainedProvenanceKeys(fs.readFileSync(path.join(PROJECT_ROOT, 'test', 'lib', 'retain-skill-artifacts.js'), 'utf8')),
-  testDesignSource: fs.readFileSync(path.join(PROJECT_ROOT, 'test', 'eval-test-design.js'), 'utf8'),
-  scripts: trackedScripts(),
-});
+exports.PAIRED_CAPTURE_IS_MANUAL =
+  !fs.readFileSync(path.join(PROJECT_ROOT, 'cli/lib/evaluate/experiments.js'), 'utf8').includes('reader.appendExposure') &&
+  pairedCaptureIsManual({
+    provenanceKeys: retainedProvenanceKeys(
+      fs.readFileSync(path.join(PROJECT_ROOT, 'cli', 'lib', 'evaluate', 'retain-skill-artifacts.js'), 'utf8'),
+    ),
+    testDesignSource: fs.readFileSync(path.join(PROJECT_ROOT, 'test', 'eval-test-design.js'), 'utf8'),
+    scripts: trackedScripts(),
+  });
+
+exports.OPT_IN_CAPTURE_IS_AUTOMATED = ['retainSkillArtifacts', 'reader.appendExposure', "kind: 'reserved'", "kind: 'sealed'"].every(
+  (token) => fs.readFileSync(path.join(PROJECT_ROOT, 'cli/lib/evaluate/experiments.js'), 'utf8').includes(token),
+);
+
+exports.NATIVE_EXPERIMENTS_BLOCKED = ['codex', 'claude'].every(
+  (agent) =>
+    require('../../cli/lib/evaluate/experiments')
+      .liveBlockers(agent)
+      .some((reason) => reason.includes('applied reasoning effort')) &&
+    require('../../cli/lib/evaluate/experiments')
+      .liveBlockers(agent)
+      .some((reason) => reason.includes('enforceable verified all-in USD')),
+);

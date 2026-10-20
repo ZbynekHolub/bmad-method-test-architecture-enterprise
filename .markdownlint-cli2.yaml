@@ -8,6 +8,7 @@ ignores:
   - node_modules/**
   - website/node_modules/**
   - test/fixtures/**
+  - test/.tea-*/** # Disposable evaluation workspaces can disappear during checks.
   # Original generated documents are evaluation evidence; lint the authored report.
   - test/results/codex-test-design/raw/**
   # Live Evaluate working drafts are generated under this gitignored path.

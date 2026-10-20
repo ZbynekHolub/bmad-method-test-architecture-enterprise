@@ -122,7 +122,6 @@
  */
 
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 
 const { AGENT_ADAPTERS, resolveModel } = require('../cli/lib/agent-adapters');
@@ -130,7 +129,14 @@ const { failureClassForExit } = require('../cli/test-design-runner');
 const { missingCredential } = require('./eval-test-review');
 const { loadSuiteManifest, suiteById } = require('./lib/suite-manifest');
 const { contractVersionsFor } = require('./lib/contract-versions');
-const { TEA_CONFIG_RELATIVE_PATH, TEA_KNOWLEDGE_PROMPT_LINE, stageTeaKnowledge, teaConfigToml } = require('./lib/staged-tea-config');
+const {
+  designArtifactPaths,
+  corpusMutations: nativeCorpusMutations,
+  stageWorkspace: nativeStageWorkspace,
+  assertGroundTruthAbsent: nativeAssertGroundTruthAbsent,
+  buildPrompt,
+  caseIndex,
+} = require('../cli/lib/test-design-staging');
 const {
   digest,
   digestFiles,
@@ -165,6 +171,11 @@ const { retainSkillArtifacts, captureProbe, finishSkillAttempt } = require('./li
 const PROJECT_ROOT = path.join(__dirname, '..');
 const FIXTURE_ROOT = path.join(__dirname, 'fixtures', 'test-design-eval');
 const GROUND_TRUTH = path.join(FIXTURE_ROOT, 'ground-truth.json');
+// Keep the checkout harness's injectable file-system port while installed callers use disk defaults.
+const stagingIo = { readText, writeText, groundTruth: GROUND_TRUTH };
+const stageWorkspace = (set) => nativeStageWorkspace(set, stagingIo);
+const assertGroundTruthAbsent = (directory) => nativeAssertGroundTruthAbsent(directory, stagingIo);
+
 const SKILL_ROOT = path.join(PROJECT_ROOT, 'skills', 'bmad-tea-test-design');
 const SUITE_ID = 'test-design';
 
@@ -189,33 +200,17 @@ const RUNNER_CAPABILITIES = ['scoped-artifact-writes'];
 const TEST_DESIGN_INTERFACE = 'tea-test-design-runner';
 const TEST_DESIGN_OPERATION = 'design-fixture-set';
 
-/**
-/**
- * The four priorities, strongest first, so a pair's ordering constraint is a
- * numeric comparison.
- *
- * This one list is hardcoded because it is the priority vocabulary itself rather
- * than a fixture claim. The six risk categories and the coverage levels are read
- * off the ground truth, so the fixture and the scorer cannot hold two different
- * lists of either.
- */
-const PRIORITY_RANK = { P0: 0, P1: 1, P2: 2, P3: 3 };
-
-/** The lowest and highest value the workflow's probability and impact scales admit. */
-const SCALE_MIN = 1;
-const SCALE_MAX = 3;
-
 /** Shared with the runner so its projection and this scorer parse the same rows. */
 const {
   EMPTY_DESIGN,
-  RISK_ID_PATTERN,
   parseTables,
   scoreBandOf,
-  bandFor,
   readRisks,
   readCoverage,
   readDesign,
   scoredRiskProjection,
+  bandFor,
+  RISK_ID_PATTERN,
 } = require('../cli/lib/test-design-parser');
 
 /**
@@ -259,24 +254,17 @@ const GROUND_TRUTH_ONLY_TOKENS = [
  * the thing that mattered most, which a recall floor of 0.8 over five risks cannot
  * see; and a ceiling that tolerates one extra risk is not a ceiling.
  */
-const THRESHOLDS = {
-  groundedRiskRecall: 0.8,
-  riskPrecision: 0.8,
-  scaleComplianceAccuracy: 1,
-  scoreArithmeticAccuracy: 1,
-  categoryValidityAccuracy: 1,
-  bandPlacementAccuracy: 1,
-  riskIdWellFormedAccuracy: 1,
-  riskLinkResolutionAccuracy: 1,
-  priorityOrderingAccuracy: 1,
-  coverageMappingAccuracy: 0.8,
-  maxUnscoredRiskTables: 0,
-  maxUngroundedRisks: 0,
-  maxTopSeverityMissed: 0,
-  maxRiskCeilingExcess: 0,
-  maxUnstableCases: 0,
-  maxFixtureMutations: 0,
-};
+const {
+  normalizeText,
+  matchesGroups,
+  orderedPairsFor,
+  documentMentions,
+  scoreRun,
+  signatureOf,
+  testDesignDiagnosticProjection,
+  PRIORITY_RANK,
+  THRESHOLDS,
+} = require('../cli/lib/evaluate/test-design-replay');
 
 const colors = {
   reset: '[0m',
@@ -308,6 +296,7 @@ function parseArgs(argv) {
   let model;
   let jsonPath;
   let artifactsDir;
+  let experimentCapture = false;
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     switch (arg) {
@@ -363,6 +352,10 @@ function parseArgs(argv) {
         index += 1;
         break;
       }
+      case '--experiment-capture': {
+        experimentCapture = true;
+        break;
+      }
       case '--artifacts-dir': {
         artifactsDir = argv[index + 1];
         if (!artifactsDir || artifactsDir.startsWith('--')) fatal(2, '--artifacts-dir requires a directory');
@@ -389,6 +382,7 @@ function parseArgs(argv) {
       }
     }
   }
+  if (experimentCapture && !artifactsDir) fatal(2, '--experiment-capture requires --artifacts-dir');
   if (agents.length === 0) agents.push('claude');
   if (agents.includes('custom') && !agentCmd) fatal(2, '--agent custom requires --agent-cmd');
   if (agents.includes('custom') && model) {
@@ -402,7 +396,21 @@ function parseArgs(argv) {
   if (runs < 2 && !validateOnly && !preflightOnly) {
     console.error(`${colors.yellow}note${colors.reset}: --runs ${runs} cannot measure stability; use --runs 2 or more.`);
   }
-  return { agents, sets, runs, validateOnly, preflightOnly, agentCmd, agentArgs, envPass, model, jsonPath, artifactsDir };
+  return {
+    agents,
+    sets,
+    runs,
+    validateOnly,
+    preflightOnly,
+    agentCmd,
+    agentArgs,
+    envPass,
+    model,
+    jsonPath,
+    artifactsDir,
+    experimentCapture,
+    experimentInvocationId: experimentCapture ? require('node:crypto').randomUUID() : null,
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -452,72 +460,6 @@ function selectSets(groundTruth, requested) {
     fatal(2, `--set names no fixture set: ${unmatched.join(', ')}; the corpus holds ${[...known].join(', ')}`);
   }
   return sets.filter((set) => requested.includes(set.id));
-}
-
-/** The directory one fixture set is staged under, inside the workspace. */
-function projectRootOf(set) {
-  return set.projectRoot;
-}
-
-/**
- * Where the workflow's epic-level deliverable lands for one set, relative to the
- * workspace root.
- *
- * `steps-c/step-05-generate-output.md` writes `{test_artifacts}/test-design/test-design-epic-{epic_num}.md`,
- * and the prompt resolves both placeholders against this set's staged project root.
- * Two sets therefore declare two paths, which is what lets one authorization serve
- * either without the artifact map naming a file the other run wrote.
- */
-function designArtifactPaths(set) {
-  const design = path.posix.join(projectRootOf(set), 'test-artifacts', 'test-design', `test-design-epic-${set.epicNum}.md`);
-  return { design };
-}
-
-/** Whitespace-collapsed, lowercased text, which is what every token and quote test reads. */
-function normalizeText(value) {
-  return String(value ?? '')
-    .replaceAll(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
-}
-
-/**
- * Does this text satisfy a declared matcher?
- *
- * `anyOf` is a list of groups and every group must contribute at least one token,
- * so the matcher is an AND of ORs. One distinctive word in a risk description is a
- * coincidence; two independent ones are a claim about what the description says.
- *
- * @param {string[][]} groups
- * @param {string} normalized Already through normalizeText.
- * @returns {boolean}
- */
-function matchesGroups(groups, normalized) {
-  if (!Array.isArray(groups) || groups.length === 0) return false;
-  return groups.every((group) => group.some((token) => normalized.includes(String(token).toLowerCase())));
-}
-
-/**
- * Every strictly ordered pair of material risks in one set, derived from
- * `severityRank` rather than listed.
- *
- * Derived because a hand-written pair list and a rank table are two statements of
- * one fact, and the pair list is the one nobody updates. Equal ranks produce no
- * pair, which is how the fixture says two risks are not ordered with respect to
- * each other.
- *
- * @param {object} set
- * @returns {Array<{higher: string, lower: string}>} `higher` is the more severe id.
- */
-function orderedPairsFor(set) {
-  const risks = set.materialRisks ?? [];
-  const pairs = [];
-  for (const first of risks) {
-    for (const second of risks) {
-      if (first.severityRank < second.severityRank) pairs.push({ higher: first.id, lower: second.id });
-    }
-  }
-  return pairs;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -685,244 +627,9 @@ async function validateCorpus(groundTruth) {
 /* Staging                                                                     */
 /* -------------------------------------------------------------------------- */
 
-/** Every file under a root, as workspace-relative paths, in a stable order. */
-function filesUnder(root) {
-  const found = [];
-  const walk = (directory, prefix) => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-      const absolute = path.join(directory, entry.name);
-      const relative = prefix ? path.join(prefix, entry.name) : entry.name;
-      if (entry.isDirectory()) walk(absolute, relative);
-      else if (entry.isFile()) found.push(relative);
-    }
-  };
-  if (fs.existsSync(root)) walk(root, '');
-  return found;
-}
-
-/**
- * One digest over a named set of files, so a later run can say whether the corpus
- * moved.
- *
- * A `for...of` rather than a `map`, because each file is read through the port
- * and an awaited call has nowhere to sit inside a map callback. The digest input
- * is unchanged, so the value it produces is the value it has always produced.
- */
-async function digestTree(root, relativePaths) {
-  const parts = [];
-  for (const relative of relativePaths) {
-    const read = await readText(path.join(root, relative));
-    // `fs.readFileSync` threw here and the behaviour is kept, named. Absence has
-    // to be loud: the alternative is decoding a null into the digest, so a file
-    // the walk found and the read did not would produce a digest that compares
-    // equal to nothing and reads as a mutation nobody can locate.
-    if (!read.present) {
-      throw new Error(`${relative} was listed under ${root} and could not be read, so the corpus digest cannot be taken`);
-    }
-    parts.push(`${relative}\0${read.text}`);
-  }
-  return digest(parts.join('\u0001'));
-}
-
-/**
- * The resolved TEA config one staged set gets.
- *
- * `test_artifacts` points at this workspace only, so the document the workflow
- * writes lands where the authorization's artifact map expects it and nowhere the
- * next case could read it.
- */
-function configToml() {
-  return teaConfigToml({
-    header: ['# Written by test/eval-test-design.js for one staged fixture set.'],
-    core: [
-      ['user_name', 'tea-eval-harness'],
-      ['project_name', 'field-service-platform'],
-      ['communication_language', 'English'],
-      ['document_output_language', 'English'],
-      ['output_folder', 'docs'],
-    ],
-    tea: [['test_artifacts', 'test-artifacts']],
-  });
-}
-
-/**
- * Stage one fixture set into a disposable workspace.
- *
- * Layout, with the workspace itself as the agent's working directory:
- *
- *   <projectRoot>/   the fixture set, plus a resolved _bmad/config.toml
- *   skill/           the bmad-tea-test-design workflow, copied verbatim
- *   bmod-tea/        the shared TEA knowledge base the skill reads as {tea-knowledge}
- *
- * The skill sits outside the project root on purpose. Three of its files carry worked
- * risk registers with their own R-001 rows and their own scores, and a fourth carries
- * one numbered from R-002: test-design-template.md, checklist.md,
- * resources/test-design-epic-3.example.md and
- * {tea-knowledge}/adr-quality-readiness-checklist.md. A project tree containing
- * them would let a run lift its register from the worked example and still read as an
- * analysis of the epic.
- *
- * @param {object} set
- * @returns {Promise<{dir: string, projectDir: string, corpusFiles: string[], corpusDigest: string}>}
- */
-async function stageWorkspace(set) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tea-test-design-eval-'));
-  try {
-    return await stageIntoWorkspace(dir, set);
-  } catch (error) {
-    fs.rmSync(dir, { recursive: true, force: true });
-    throw error;
-  }
-}
-
-async function stageIntoWorkspace(dir, set) {
-  const projectDir = path.join(dir, projectRootOf(set));
-  const setRoot = path.join(FIXTURE_ROOT, set.root);
-
-  for (const relative of filesUnder(setRoot)) {
-    const target = path.join(projectDir, relative);
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(path.join(setRoot, relative), target);
-  }
-  // The workflow writes its document and its progress checkpoint here. Neither set
-  // brings anything into this directory, so a run cannot inherit a checkpoint.
-  fs.mkdirSync(path.join(projectDir, 'test-artifacts'), { recursive: true });
-  fs.mkdirSync(path.join(projectDir, '_bmad'), { recursive: true });
-  await writeText(path.join(projectDir, TEA_CONFIG_RELATIVE_PATH), configToml());
-
-  for (const relative of filesUnder(SKILL_ROOT)) {
-    const target = path.join(dir, 'skill', relative);
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.copyFileSync(path.join(SKILL_ROOT, relative), target);
-  }
-  stageTeaKnowledge(dir);
-
-  // The corpus files the run must leave alone. test-artifacts and _bmad are excluded
-  // because the run legitimately writes into the first and the harness wrote the second.
-  const corpusFiles = filesUnder(projectDir).filter(
-    (relative) => !relative.startsWith(`test-artifacts${path.sep}`) && !relative.startsWith(`_bmad${path.sep}`),
-  );
-  return { dir, projectDir, corpusFiles, corpusDigest: await digestTree(projectDir, corpusFiles) };
-}
-
-/**
- * Assert the staged workspace holds no part of the ground truth.
- *
- * This is the measurement's validity, so it is checked rather than assumed: no
- * staged path is named for the ground truth, no staged file carries its bytes, and
- * no staged file carries a key that appears only in it.
- *
- * @param {string} dir Workspace root.
- * @returns {Promise<string[]>} Problems, empty when the workspace is clean.
- */
-async function assertGroundTruthAbsent(dir) {
-  const problems = [];
-  // Both existence checks are gone: each read answers absence itself. A staged
-  // file that vanished between the walk and the read used to contribute an empty
-  // string, which is the same silence one file at a time, and is reported now.
-  const groundTruthBytes = (await readText(GROUND_TRUTH)).text;
-  for (const relative of filesUnder(dir)) {
-    if (path.basename(relative) === 'ground-truth.json') {
-      problems.push(`staged workspace contains ${relative}`);
-      continue;
-    }
-    const staged = await readText(path.join(dir, relative));
-    if (!staged.present) {
-      problems.push(`staged file ${relative} disappeared between the walk and the read, so it was not checked`);
-      continue;
-    }
-    const text = staged.text;
-    if (groundTruthBytes && text === groundTruthBytes) {
-      problems.push(`staged file ${relative} carries the ground truth verbatim`);
-      continue;
-    }
-    for (const token of GROUND_TRUTH_ONLY_TOKENS) {
-      if (text.includes(token)) problems.push(`staged file ${relative} carries the ground-truth-only key "${token}"`);
-    }
-  }
-  return problems;
-}
-
 /* -------------------------------------------------------------------------- */
 /* Prompt                                                                      */
 /* -------------------------------------------------------------------------- */
-
-/**
- * The prompt one fixture set gets.
- *
- * Every path is relative to the workspace, which keeps the text identical across
- * runs and machines and makes its digest something a later run can compare with.
- *
- * It states the run's configuration and nothing about the answers: no risk is
- * named, no category is suggested, no count is given, and the epic is left to be
- * read the way step-02 reads one.
- *
- * Three values are pinned because leaving them unpinned makes the workflow ask a
- * question, and a headless run that halts on a question is an environment failure
- * rather than a measurement. `step-01-detect-mode.md` halts when the mode is
- * ambiguous and again when `epic_num` is, and its file-based fallback keys on a
- * `sprint-status.yaml` no staged workspace has.
- *
- * `designLevel` is the one configuration value a caller may flip. The harness never
- * does; the test-design contract's sensitivity witness does, because the template
- * renders it into the document's Scope line, so two prompts differing in that one
- * value are the differential that proves the command reads its standard input at
- * all. A differential between the two fixture sets would not do: their documents
- * differ because their staged epics differ, which attributes to the prompt an
- * effect the workspace produced.
- *
- * @param {object} set
- * @param {{designLevel?: string}} [options]
- * @returns {string}
- */
-function buildPrompt(set, { designLevel = 'full' } = {}) {
-  const root = projectRootOf(set);
-  return [
-    `You are running the TEA workflow \`bmad-tea-test-design\` against the project in \`${root}/\`.`,
-    '',
-    'The workflow is in `skill/`. Read `skill/instructions.md` first, then execute every step file it',
-    'names in order, in full, without skipping or reordering. The step files are under `skill/steps-c/`.',
-    '',
-    '----- run configuration -----',
-    'Take mode C (Create). Resolve the workflow placeholders to these values:',
-    '',
-    `- \`{project-root}\`: \`${root}\``,
-    `- TEA config (\`[core]\` and \`[modules.tea]\`): \`${root}/_bmad/config.toml\``,
-    `- \`{test_artifacts}\`: \`${root}/test-artifacts\``,
-    '- `{skill-root}`: `skill`',
-    TEA_KNOWLEDGE_PROMPT_LINE,
-    '- `mode`: `epic-level`',
-    '- `run_scope`: `epic`',
-    `- \`epic_num\`: \`${set.epicNum}\``,
-    `- \`run_key\`: \`epic-${set.epicNum}\``,
-    `- \`design_level\`: \`${designLevel}\``,
-    '- `tea_execution_mode`: `sequential`',
-    '- `tea_capability_probe`: `false`',
-    '',
-    `The epic is the one document under \`${root}/docs/epics/\`. It is the only requirements source for this`,
-    'run; there is no PRD, no architecture document and no sprint status file, and none is missing.',
-    '',
-    '----- what to produce -----',
-    'Write the one deliverable epic-level mode declares:',
-    '',
-    `- \`${root}/test-artifacts/test-design/test-design-epic-${set.epicNum}.md\`, from \`skill/test-design-template.md\`, carrying`,
-    '  the risk assessment and the test coverage plan the template lays out, with each risk row stating its',
-    '  category, probability, impact and score, and each coverage row naming its test level and the risk it',
-    '  covers.',
-    '',
-    `Do not add, edit, or delete any file under \`${root}/docs/\`. This workflow does not change its inputs,`,
-    'and it does not generate tests.',
-    '',
-    'Do not stop to ask a question. Every value the workflow would otherwise ask for is stated above.',
-    '',
-    'When you are done, print one line naming the file you wrote. Nothing else you print is read.',
-  ].join('\n');
-}
-
-/** Every case with the exact prompt it is sent. */
-function caseIndex(sets) {
-  return sets.map((set) => ({ id: set.id, prompt: buildPrompt(set) }));
-}
 
 /**
  * The ids of the cases this suite scores: one per fixture set, which is one staged
@@ -943,264 +650,6 @@ async function caseIds() {
 /* Scoring                                                                     */
 /* -------------------------------------------------------------------------- */
 
-/** Material vocabulary is document-wide; excluded risks count only in scored rows above the 1–3 guard band. */
-function documentMentions(set, design) {
-  const normalized = normalizeText(design.text);
-  const mentions = {};
-  for (const risk of set.materialRisks ?? []) {
-    mentions[risk.id] = matchesGroups(risk.anyOf, normalized);
-  }
-  for (const risk of set.unsupportedRisks ?? []) {
-    mentions[risk.id] = design.risks.some((row) => row.score > 3 && matchesGroups(risk.anyOf, normalizeText(row.description)));
-  }
-  return mentions;
-}
-
-/**
- * How many of a set's most severe material risks went unreported.
- *
- * Severity rank is an ordering, so the most severe risks are the ones sharing the
- * lowest rank. A set with no material risk has none to miss.
- *
- * @param {object} set
- * @param {string[]} missed Ids the run did not report.
- * @returns {number}
- */
-function topSeverityMissed(set, missed) {
-  const material = set.materialRisks ?? [];
-  if (material.length === 0) return 0;
-  const top = Math.min(...material.map((risk) => risk.severityRank));
-  return material.filter((risk) => risk.severityRank === top && missed.includes(risk.id)).length;
-}
-
-/**
- * Score one produced document against one fixture set.
- *
- * The result is the scored object reduced to what a reader can check by hand, which
- * is what the replay corpus stores: per-group counts, and the identity of every
- * check that did not pass. Nothing here reads the clock, the filesystem or the
- * agent, so the same document always scores the same way.
- *
- * @param {object} set
- * @param {object} design From readDesign.
- * @param {Set<string>} categories The six the workflow declares.
- * @returns {object}
- */
-function scoreRun(set, design, categories) {
-  const { risks, coverage } = design;
-
-  // -- shape: the checks that need no fixture at all ------------------------
-  const seenIds = new Set();
-  const shape = { rows: risks.length, wellFormedIds: 0, validCategories: 0, inScale: 0, arithmeticOk: 0, banded: 0, bandOk: 0 };
-  const shapeFailures = [];
-  for (const risk of risks) {
-    if (RISK_ID_PATTERN.test(risk.id) && !seenIds.has(risk.id)) shape.wellFormedIds += 1;
-    else shapeFailures.push({ id: risk.rawId, check: seenIds.has(risk.id) ? 'duplicate-risk-id' : 'risk-id-format' });
-    seenIds.add(risk.id);
-
-    if (categories.has(risk.category)) shape.validCategories += 1;
-    else shapeFailures.push({ id: risk.rawId, check: 'category', actual: risk.category });
-
-    const inScale = [risk.probability, risk.impact].every((value) => Number.isInteger(value) && value >= SCALE_MIN && value <= SCALE_MAX);
-    if (inScale) shape.inScale += 1;
-    else shapeFailures.push({ id: risk.rawId, check: 'scale', probability: risk.probability, impact: risk.impact });
-
-    // Arithmetic is only a question once both factors are on the scale. A row
-    // whose probability is missing has already been counted as a scale defect,
-    // and counting it twice would report one wrong row as two.
-    if (inScale) {
-      if (risk.score === risk.probability * risk.impact) shape.arithmeticOk += 1;
-      else shapeFailures.push({ id: risk.rawId, check: 'arithmetic', expected: risk.probability * risk.impact, actual: risk.score });
-    }
-
-    // The band the row is filed under is the document's own second statement about
-    // that row's score, and the two have to agree. A register that bands nothing
-    // leaves this denominator empty, which reports as unmeasurable rather than as a
-    // pass: the template declares three bands and a document that dropped them has
-    // dropped the structure the check reads.
-    // Every row is checked, and a row under a heading that declares no range is a
-    // band failure. Counting only the rows that sat under a declared range let a
-    // single rangeless heading exempt them: `### Medium/Low-Priority Risks`, the
-    // literal heading test-design-qa-template.md ships, took the denominator to
-    // zero and a score-9 risk filed beneath it scored a clean 100%. `banded` is
-    // therefore `rows` and the question is how many of them were placed correctly.
-    shape.banded += 1;
-    const placed = bandFor(risk.headings);
-    if (placed && Number.isInteger(risk.score) && risk.score >= placed.band.min && risk.score <= placed.band.max) shape.bandOk += 1;
-    else {
-      shapeFailures.push({
-        id: risk.rawId,
-        check: 'band',
-        score: risk.score,
-        heading: placed ? placed.heading : null,
-        reason: placed ? 'the score falls outside the range its heading declares' : 'no enclosing heading declares a score range',
-      });
-    }
-  }
-  // Rows the scale rejected are outside the arithmetic denominator, for the reason
-  // above: one wrong row is one failure.
-  const arithmeticTotal = shape.inScale;
-
-  // -- risk links resolve ---------------------------------------------------
-  const declaredIds = new Set(risks.map((risk) => risk.id));
-  const links = { total: 0, resolved: 0, dangling: [] };
-  for (const row of coverage) {
-    for (const id of row.riskIds) {
-      links.total += 1;
-      if (declaredIds.has(id)) links.resolved += 1;
-      else links.dangling.push(id);
-    }
-  }
-
-  // -- grounding ------------------------------------------------------------
-  // Material risks are matched first and a matched row is consumed, so a row that
-  // names a real risk in words an exclusion also uses is never counted twice.
-  const material = set.materialRisks ?? [];
-  // Maximum matching over the eligible pairs, by augmenting path, rather than
-  // first-come assignment in declaration order. One prose row can satisfy two
-  // declared risks: "uncapped retry storms during a large backlog sync blow the 30
-  // second budget" is eligible for both the retry risk and the backlog risk. Taking
-  // the first row per risk let the earlier declaration claim it and left the later
-  // one unmatched, so a run that reported both risks correctly scored one of them.
-  const eligible = material.map((declared) => {
-    const admitted = new Set(declared.categories ?? []);
-    return risks
-      .map((risk, index) => ({ risk, index }))
-      .filter(({ risk }) => admitted.has(risk.category) && matchesGroups(declared.anyOf, normalizeText(risk.description)))
-      .map(({ index }) => index);
-  });
-  const rowToRisk = new Map();
-  const augment = (declaredIndex, seen) => {
-    for (const rowIndex of eligible[declaredIndex]) {
-      if (seen.has(rowIndex)) continue;
-      seen.add(rowIndex);
-      const held = rowToRisk.get(rowIndex);
-      if (held === undefined || augment(held, seen)) {
-        rowToRisk.set(rowIndex, declaredIndex);
-        return true;
-      }
-    }
-    return false;
-  };
-  for (const [declaredIndex] of material.entries()) augment(declaredIndex, new Set());
-
-  const riskToRow = new Map([...rowToRisk].map(([rowIndex, declaredIndex]) => [declaredIndex, rowIndex]));
-  const matches = [];
-  const missed = [];
-  for (const [declaredIndex, declared] of material.entries()) {
-    const rowIndex = riskToRow.get(declaredIndex);
-    if (rowIndex === undefined) missed.push(declared.id);
-    else matches.push({ riskId: declared.id, rowId: risks[rowIndex].id });
-  }
-
-  // Scored rows above the 1–3 guard band are tested against the exclusions,
-  // including a row that matched a material risk. A row asserting the unencrypted
-  // queue and a cross-tenant leak in one sentence must count both claims.
-  const ungrounded = [];
-  for (const risk of risks) {
-    if (risk.score === null || risk.score <= 3) continue;
-    const invented = (set.unsupportedRisks ?? []).find((entry) => matchesGroups(entry.anyOf, normalizeText(risk.description)));
-    if (invented) ungrounded.push({ unsupportedId: invented.id, rowId: risk.rawId });
-  }
-
-  // -- the risk ceiling -----------------------------------------------------
-  // Every set declares one, and the threshold on the excess is zero. It was on the
-  // clean control alone, which left over-reporting on the seeded set unbounded:
-  // four risks the fixture never anticipated could be appended to a correct run and
-  // every threshold still passed, because precision counts only the rows matching a
-  // risk the epic rules out in as many words and says nothing about invention the
-  // fixture did not foresee.
-  const ceiling = typeof set.maxRisks === 'number' ? { maxRisks: set.maxRisks, excess: Math.max(0, risks.length - set.maxRisks) } : null;
-
-  // -- coverage mapping -----------------------------------------------------
-  // Evaluated over the material risks that were actually reported. A risk the run
-  // never named is already a recall miss, and failing its coverage as well would
-  // score one omission twice.
-  const rowIdFor = new Map(matches.map((entry) => [entry.riskId, entry.rowId]));
-  const coverageChecks = [];
-  for (const declared of material) {
-    const rowId = rowIdFor.get(declared.id);
-    if (rowId === undefined) continue;
-    const levels = coverage.filter((row) => row.riskIds.includes(rowId)).map((row) => row.level);
-    const admitted = new Set((declared.acceptableCoverage ?? []).map((level) => level.toLowerCase()));
-    const ok = levels.some((level) => admitted.has(level.toLowerCase()));
-    coverageChecks.push({
-      riskId: declared.id,
-      rowId,
-      ok,
-      levels,
-      reason: ok ? null : levels.length === 0 ? 'no coverage row links this risk' : 'no linked row uses an admitted level',
-    });
-  }
-
-  // -- priority ordering ----------------------------------------------------
-  // The strongest priority any coverage row gives a risk. A risk covered at both P0
-  // and P2 is being treated as P0 work, and reading the weakest instead would fail
-  // a run for a thorough coverage plan.
-  const priorityFor = (rowId) => {
-    const ranks = coverage.filter((row) => row.riskIds.includes(rowId) && row.priority !== null).map((row) => PRIORITY_RANK[row.priority]);
-    return ranks.length === 0 ? null : Math.min(...ranks);
-  };
-  // A plan that files every risk at one priority satisfies `higher <= lower` on every
-  // pair without ordering anything, so the constraint set is trivially met. Two or
-  // more risks reaching a priority, all of them the same one, is an answer the metric
-  // cannot read, and it is reported unmeasurable rather than as a perfect score.
-  const orderingChecks = [];
-  for (const pair of orderedPairsFor(set)) {
-    const higherRow = rowIdFor.get(pair.higher);
-    const lowerRow = rowIdFor.get(pair.lower);
-    const higher = higherRow === undefined ? null : priorityFor(higherRow);
-    const lower = lowerRow === undefined ? null : priorityFor(lowerRow);
-    if (higher === null || lower === null) {
-      // Unresolvable, so it leaves the denominator rather than passing for free.
-      orderingChecks.push({ higher: pair.higher, lower: pair.lower, resolvable: false, ok: null });
-      continue;
-    }
-    orderingChecks.push({
-      higher: pair.higher,
-      lower: pair.lower,
-      resolvable: true,
-      ok: higher <= lower,
-      higherPriority: `P${higher}`,
-      lowerPriority: `P${lower}`,
-    });
-  }
-
-  const resolvedPriorities = new Set(
-    material
-      .map((declared) => rowIdFor.get(declared.id))
-      .filter((rowId) => rowId !== undefined)
-      .map((rowId) => priorityFor(rowId))
-      .filter((rank) => rank !== null),
-  );
-  const flattened = resolvedPriorities.size === 1 && orderingChecks.some((check) => check.resolvable);
-
-  return {
-    set: set.id,
-    mentions: documentMentions(set, design),
-    shape: { ...shape, arithmeticTotal },
-    shapeFailures,
-    links,
-    grounding: {
-      declared: material.length,
-      matched: matches.length,
-      matches,
-      missed,
-      // The recall floor is 0.8 and the seeded set declares five material risks, so
-      // "four of five" clears it and nothing distinguished a miss of the least
-      // severe risk from a miss of the most severe one. The highest-ranked risk in
-      // a set is reported or the run fails, whatever recall comes to.
-      topSeverityMissed: topSeverityMissed(set, missed),
-    },
-    ungrounded,
-    ceiling,
-    coverageChecks,
-    orderingChecks,
-    flattenedPriorities: flattened,
-    unscoredRiskTables: design.unscoredTables ?? [],
-  };
-}
-
 /**
  * The string main() compares across repetitions to call a case stable.
  *
@@ -1208,93 +657,6 @@ function scoreRun(set, design, categories) {
  * in. Two runs of one set sign identically exactly when their results are identical,
  * and a counted fixture mutation always changes the signature.
  */
-function signatureOf(scored, mutations) {
-  return JSON.stringify([
-    scored.set,
-    scored.mentions,
-    scored.shape,
-    scored.shapeFailures,
-    scored.links,
-    scored.grounding,
-    scored.ungrounded,
-    scored.ceiling,
-    scored.coverageChecks,
-    scored.orderingChecks,
-    scored.flattenedPriorities,
-    scored.unscoredRiskTables,
-    mutations,
-  ]);
-}
-
-function testDesignDiagnosticProjection(scored, mutations) {
-  const ordering = scored.orderingChecks.filter((check) => check.resolvable);
-  return {
-    groundedRiskRecall: {
-      expected: scored.grounding.declared,
-      numerator: scored.grounding.matched,
-      denominator: scored.grounding.declared,
-      threshold: THRESHOLDS.groundedRiskRecall,
-    },
-    riskPrecision: {
-      numerator: scored.shape.rows - scored.ungrounded.length,
-      denominator: scored.shape.rows,
-      threshold: THRESHOLDS.riskPrecision,
-    },
-    scaleComplianceAccuracy: {
-      numerator: scored.shape.inScale,
-      denominator: scored.shape.rows,
-      threshold: THRESHOLDS.scaleComplianceAccuracy,
-    },
-    scoreArithmeticAccuracy: {
-      numerator: scored.shape.arithmeticOk,
-      denominator: scored.shape.arithmeticTotal,
-      threshold: THRESHOLDS.scoreArithmeticAccuracy,
-    },
-    categoryValidityAccuracy: {
-      numerator: scored.shape.validCategories,
-      denominator: scored.shape.rows,
-      threshold: THRESHOLDS.categoryValidityAccuracy,
-    },
-    bandPlacementAccuracy: {
-      numerator: scored.shape.bandOk,
-      denominator: scored.shape.banded,
-      threshold: THRESHOLDS.bandPlacementAccuracy,
-    },
-    riskIdWellFormedAccuracy: {
-      numerator: scored.shape.wellFormedIds,
-      denominator: scored.shape.rows,
-      threshold: THRESHOLDS.riskIdWellFormedAccuracy,
-    },
-    riskLinkResolutionAccuracy: {
-      numerator: scored.links.resolved,
-      denominator: scored.links.total,
-      threshold: THRESHOLDS.riskLinkResolutionAccuracy,
-    },
-    priorityOrderingAccuracy: {
-      expected: scored.orderingChecks.length,
-      numerator: scored.flattenedPriorities ? 0 : ordering.filter((check) => check.ok).length,
-      denominator: scored.flattenedPriorities ? 0 : ordering.length,
-      threshold: THRESHOLDS.priorityOrderingAccuracy,
-    },
-    coverageMappingAccuracy: {
-      expected: scored.coverageChecks.length,
-      numerator: scored.coverageChecks.filter((check) => check.ok).length,
-      denominator: scored.coverageChecks.length,
-      threshold: THRESHOLDS.coverageMappingAccuracy,
-    },
-    ungroundedRisks: scored.ungrounded.length,
-    maxUngroundedRisks: THRESHOLDS.maxUngroundedRisks,
-    unscoredRiskTables: scored.unscoredRiskTables.length,
-    maxUnscoredRiskTables: THRESHOLDS.maxUnscoredRiskTables,
-    topSeverityMissed: scored.grounding.topSeverityMissed,
-    maxTopSeverityMissed: THRESHOLDS.maxTopSeverityMissed,
-    riskCeilingExcess: scored.ceiling?.excess ?? 0,
-    maxRiskCeilingExcess: THRESHOLDS.maxRiskCeilingExcess,
-    fixtureMutations: mutations,
-    maxFixtureMutations: THRESHOLDS.maxFixtureMutations,
-    maxUnstableCases: THRESHOLDS.maxUnstableCases,
-  };
-}
 
 function testDesignDiagnosticClassifier(diagnostics) {
   const variants = new Map();
@@ -1351,38 +713,17 @@ function runnerOptions(options) {
   if (options.model) option.model = options.model;
   if (options.agentArgs.length > 0) option['agent-arg'] = [...options.agentArgs];
   if (options.envPass.length > 0) option['env-pass'] = [...options.envPass];
+  if (options.experimentCapture) option['capture-path'] = 'source-capture.json';
   return option;
 }
 
-/**
- * One complete test-design run of one fixture set in a fresh workspace, through
- * eval-quality's command-line adapter.
- *
- * The staged workspace is the authorization's working directory, so the policy is
- * what confines the run rather than a convention, and the document is read off the
- * observation rather than by path. Three outcomes are told apart on the way back,
- * and none of them is a score: a thrown fault carries the class the port's own code
- * derives, a non-zero exit carries the class the runner spelled it as, and a
- * document the run never wrote is `absent` and a missing artifact.
- *
- * @returns {Promise<{ok: true, scored: object, mutations: number}|{ok: false, failureClass: string, reason: string}>}
- */
 /**
  * Corpus files the run changed, plus files it added outside `test-artifacts/` and
  * `_bmad/`. The workflow states that it does not change its inputs, so a run that
  * edited the epic has moved the benchmark, and the next run would be measured
  * against a corpus this one rewrote.
  */
-async function corpusMutations(workspace) {
-  const changed = (await digestTree(workspace.projectDir, workspace.corpusFiles)) === workspace.corpusDigest ? 0 : 1;
-  const added = filesUnder(workspace.projectDir).filter(
-    (relative) =>
-      !relative.startsWith(`test-artifacts${path.sep}`) &&
-      !relative.startsWith(`_bmad${path.sep}`) &&
-      !workspace.corpusFiles.includes(relative),
-  );
-  return changed + added.length;
-}
+const corpusMutations = (workspace) => nativeCorpusMutations(workspace, stagingIo);
 
 /** Run one isolated live attempt and preserve its evidence before cleanup. */
 async function runCase(set, options, agent, runIndex, categories) {
@@ -1390,8 +731,44 @@ async function runCase(set, options, agent, runIndex, categories) {
   let lastAttempt = 1;
   let rawObservation;
   let runError;
-  const retain = () =>
-    retainSkillArtifacts({
+  const retainOnce = async () => {
+    let provenance = {};
+    let sourceVerification = null;
+    if (options.experimentCapture) {
+      sourceVerification = require('../cli/lib/evaluate/experiments').runnerSource(workspace, rawObservation ?? {});
+      if (sourceVerification.status === 'verified') {
+        const source = sourceVerification.source;
+        provenance = {
+          evaluationId: options.experimentInvocationId,
+          label: 'native',
+          status: source.status,
+          originalWorkspace: source.workspace,
+          receipt: source.endedAt
+            ? {
+                kind: 'fresh-workspace',
+                workspaceId: source.workspaceId,
+                startedAt: source.startedAt,
+                endedAt: source.endedAt,
+                artifactSha256: source.artifactSha256 ?? null,
+              }
+            : null,
+          observed: {
+            fixed: {
+              suiteDigest: (await readJson(path.join(PROJECT_ROOT, 'cli/lib/evaluate/test-design-corpus/native-identity.json'))).value
+                .suiteDigest,
+            },
+            arm: {
+              model: { requested: source.requested.model, resolved: source.observed.resolvedModel },
+              effort: { requested: null, applied: source.observed.appliedEffort },
+            },
+          },
+          usage: source.usage,
+          cost: source.cost,
+          latency: source.endedAt ? { wallMs: Date.parse(source.endedAt) - Date.parse(source.startedAt) } : null,
+        };
+      }
+    }
+    const retained = await retainSkillArtifacts({
       artifactsDir: options.artifactsDir,
       workspace,
       caseId: set.id,
@@ -1401,7 +778,41 @@ async function runCase(set, options, agent, runIndex, categories) {
       attempt: lastAttempt,
       prompt: buildPrompt(set),
       observation: rawObservation,
+      provenance,
+      preserveOnFailure: options.experimentCapture,
     });
+    if (sourceVerification && sourceVerification.status !== 'verified') {
+      if (retained) fs.writeFileSync(path.join(retained, 'runner-source-result.json'), `${JSON.stringify(sourceVerification, null, 2)}\n`);
+      throw new Error(
+        `Source capture integrity ${sourceVerification.status}; preserve original ${workspace.dir} and partial archive ${retained}`,
+      );
+    }
+    if (options.experimentCapture && retained) {
+      const text = rawObservation?.artifacts?.design?.value;
+      const read = typeof text === 'string' ? readDesign({ kind: 'text', value: text }) : null;
+      const scored = read?.ok ? scoreRun(set, read.design, categories) : null;
+      const diagnostic = {
+        caseId: set.id,
+        repetition: runIndex + 1,
+        attempt: lastAttempt,
+        completionState: provenance.status ?? 'invalid',
+        signature: scored ? signatureOf(scored, await corpusMutations(workspace)) : null,
+        metricContributions: scored ? numericContributions(testDesignDiagnosticProjection(scored, await corpusMutations(workspace))) : {},
+      };
+      fs.writeFileSync(path.join(retained, 'diagnostic.json'), `${JSON.stringify(diagnostic, null, 2)}\n`);
+      require('../cli/lib/evaluate/experiments').sealAttemptArchive(retained);
+    }
+    return retained;
+  };
+  let retentionWorkspace;
+  let retention;
+  const retain = () => {
+    if (retentionWorkspace !== workspace.dir) {
+      retentionWorkspace = workspace.dir;
+      retention = retainOnce();
+    }
+    return retention;
+  };
   try {
     const treeBefore = workingTreeState(PROJECT_ROOT);
     const portForAttempt = async (attempt) => {
@@ -1470,12 +881,14 @@ async function runCase(set, options, agent, runIndex, categories) {
       };
     }
 
-    return await interpretObservation(set, observation, workspace, categories);
+    if (options.experimentCapture && require('../cli/lib/evaluate/experiments').runnerSource(workspace, observation).status !== 'verified')
+      throw new Error('Source capture integrity is unverified');
+    return await interpretObservation(set, observation, workspace, categories, { captureVerified: options.experimentCapture });
   } catch (error) {
     runError = error;
     throw error;
   } finally {
-    await finishSkillAttempt({ retain, workspace, runError });
+    await finishSkillAttempt({ retain, workspace, runError, preserveOnFailure: options.experimentCapture });
   }
 }
 
@@ -1489,7 +902,7 @@ async function runCase(set, options, agent, runIndex, categories) {
  * @param {{dir: string, projectDir: string}} workspace The staged workspace the run used.
  * @param {Set<string>} categories
  */
-async function interpretObservation(set, observation, workspace, categories) {
+async function interpretObservation(set, observation, workspace, categories, { captureVerified = false } = {}) {
   // No design at the resolved path while the test-design folder holds one under
   // another run key is a run that resolved the wrong scope. That is the run's
   // answer, so it is scored as a design with no risk row, and the file it did
@@ -1512,7 +925,7 @@ async function interpretObservation(set, observation, workspace, categories) {
     }
   }
 
-  const design = readObservedDesign(observation.artifacts.design, observation.stdout);
+  const design = readObservedDesign(observation.artifacts.design, observation.stdout, { captureVerified });
   if (!design.ok) return design;
 
   return {
@@ -1549,13 +962,20 @@ function referenceExclusionNote(referenceTables) {
  * @param {object} artifact The tagged design artifact off the observation.
  * @param {object} projection The tagged stdout off the observation.
  */
-function readObservedDesign(artifact, projection) {
+function readObservedDesign(artifact, projection, { captureVerified = false } = {}) {
   const design = readDesign(artifact);
   if (!design.ok) return design;
   if (!projection || projection.kind === 'absent') {
     return { ok: false, failureClass: 'environment-missing-artifact', reason: 'no scored-risk projection was returned' };
   }
-  if (projection.kind !== 'json' || JSON.stringify(projection.value) !== JSON.stringify(scoredRiskProjection(design.design))) {
+  const expected = scoredRiskProjection(design.design);
+  const projected =
+    projection.kind === 'json'
+      ? captureVerified
+        ? Object.fromEntries(Object.keys(expected).map((key) => [key, projection.value?.[key]]))
+        : projection.value
+      : null;
+  if (JSON.stringify(projected) !== JSON.stringify(expected)) {
     return { ok: false, failureClass: 'environment-parser', reason: 'the scored-risk projection disagrees with the design document' };
   }
   return design;
@@ -2107,6 +1527,8 @@ if (require.main === module) {
 }
 
 module.exports = {
+  bandFor,
+  RISK_ID_PATTERN,
   runnerRecord,
   measurementFailures,
   parseArgs,
@@ -2125,7 +1547,6 @@ module.exports = {
   caseIds,
   parseTables,
   scoreBandOf,
-  bandFor,
   readRisks,
   readCoverage,
   readDesign,
@@ -2138,7 +1559,6 @@ module.exports = {
   testDesignDiagnosticProjection,
   testDesignDiagnosticClassifier,
   PRIORITY_RANK,
-  RISK_ID_PATTERN,
   RUNNER_CAPABILITIES,
   THRESHOLDS,
   SUITE_ID,

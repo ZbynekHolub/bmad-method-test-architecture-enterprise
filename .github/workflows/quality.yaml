@@ -311,6 +311,7 @@ jobs:
       - name: Hold the shard plan to the npm test chain and this matrix
         run: npm run test:shards
 
+      # test:evaluate-experiments runs in this chain, including its installed-package native double and offline launch prohibition.
       - name: Run this shard of the npm test chain under coverage
         run: node tools/test-shards.js --shard ${{ matrix.shard }}/21 --coverage-dir "$RUNNER_TEMP/v8" --timings "$RUNNER_TEMP/timings/shard-${{ matrix.shard }}.json"
 

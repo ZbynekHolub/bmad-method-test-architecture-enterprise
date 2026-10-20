@@ -2169,21 +2169,21 @@
         },
         {
           "file": "docs/how-to/evaluate/measure-repeatability-and-compare-a-configuration.md",
-          "key": "Capturing these inputs is manual today",
+          "key": "The opt-in controller currently captures and seals per-attempt source records for labeled deterministic process doubles",
           "settles": {
             "module": "test/lib/doc-claim-sources.js",
-            "export": "PAIRED_CAPTURE_IS_MANUAL"
+            "export": "OPT_IN_CAPTURE_IS_AUTOMATED"
           },
-          "reason": "test/lib/retain-skill-artifacts.js writes none of receipt, blockId, observed, usage, cost or latency into provenance.json, test/eval-test-design.js gives no usage property a non-null value, and no tracked script outside the configuration experiment reader, its test and the doc-claims sources names appendExposure"
+          "reason": "The shipped experiment controller invokes source capture, retention, sealing and appendExposure; dedicated tests exercise the real native runner and inspect the records."
         },
         {
           "file": "docs/reference/configuration-experiment-reader.md",
-          "key": "Capturing these inputs is manual today",
+          "key": "The opt-in controller currently captures and seals per-attempt source records for labeled deterministic process doubles",
           "settles": {
             "module": "test/lib/doc-claim-sources.js",
-            "export": "PAIRED_CAPTURE_IS_MANUAL"
+            "export": "OPT_IN_CAPTURE_IS_AUTOMATED"
           },
-          "reason": "test/lib/retain-skill-artifacts.js writes none of receipt, blockId, observed, usage, cost or latency into provenance.json, test/eval-test-design.js gives no usage property a non-null value, and no tracked script outside the configuration experiment reader, its test and the doc-claims sources names appendExposure"
+          "reason": "The shipped experiment controller invokes source capture, retention, sealing and appendExposure; dedicated tests exercise the real native runner and inspect the records."
         },
         {
           "file": "docs/reference/configuration.md",
@@ -2271,6 +2271,15 @@
             "subject": "test/probes/expected-strength.json",
             "hash": "659281e9f56c21b350120e338006b25d3796cae5f4919bede4c6441953b8662e"
           }
+        },
+        {
+          "file": "docs/explanation/how-evaluate-works.md",
+          "key": "Native adapters currently lack required telemetry and enforcement",
+          "settles": {
+            "module": "test/lib/doc-claim-sources.js",
+            "export": "NATIVE_EXPERIMENTS_BLOCKED"
+          },
+          "reason": "The opt-in controller blocks native execution when applied effort and enforceable all-in money bounds are unavailable; dedicated tests assert zero dispatch."
         }
       ]
     }

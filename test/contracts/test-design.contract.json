@@ -1430,7 +1430,17 @@
             },
             "option": {
               "requiredKeys": ["agent", "design-path"],
-              "permittedKeys": ["agent", "agent-cmd", "agent-arg", "design-path", "env-pass", "model", "timeout-ms"],
+              "permittedKeys": [
+                "agent",
+                "agent-cmd",
+                "agent-arg",
+                "design-path",
+                "env-pass",
+                "model",
+                "timeout-ms",
+                "capture-path",
+                "capture-test-double"
+              ],
               "types": {
                 "agent": "string",
                 "agent-cmd": "string",
@@ -1438,7 +1448,9 @@
                 "design-path": "string",
                 "env-pass": "string",
                 "model": "string",
-                "timeout-ms": "string"
+                "timeout-ms": "string",
+                "capture-path": "string",
+                "capture-test-double": "boolean"
               }
             },
             "environment": {
