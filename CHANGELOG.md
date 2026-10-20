@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-20
+
 ### Added
 
 - Evaluate has an explicit opt-in experiment route for saved native Test Design consistency analysis and bounded configuration proposals. The installed `tea-evaluate experiment` command discovers legacy reader directories, retained attempts and sealed experiment records, prepares the reader inputs and reports missing identity, diagnostics or resources. Ordinary evaluation, clean/mutated trials, comparison and baseline authority retain their existing behavior.
