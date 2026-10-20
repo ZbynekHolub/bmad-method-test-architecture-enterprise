@@ -7,7 +7,7 @@ description: 'Commands, exit codes, a platform checklist and a command sequence 
 
 `tea-evaluate` is the runtime behind the Evaluate skill (`bmad-tea-evaluate`).
 It validates an evaluation folder, qualifies each seeded probe in a disposable workspace, runs every arm a probe needs as sealed trial sets, scores them through `eval-quality score`, compares the result with a committed baseline and runs the checks of one CI tier from the evaluation's own plan.
-Eight subcommands cover those jobs.
+Eight subcommands cover those jobs. A ninth, opt-in `experiment` command analyzes supported saved Test Design records or prepares a bounded proposal.
 TEA also ships `tea-skill-runner`, the command an evaluation registers to run a skill.
 
 | Command                   | What it does                                                                      | Exit codes                           |
@@ -30,6 +30,10 @@ Four companion reference pages hold the detail behind the commands, and a link t
 - <a id="a-subscription-login-under-confinement"></a>[tea-evaluate Confinement](/docs/reference/tea-evaluate-confinement.md): what a confined target can read, write and reach on macOS and Linux, the audit, egress and subscription logins.
 - <a id="judge-calibration-labels"></a><a id="the-rubric-judge"></a><a id="the-evaluation-layer"></a><a id="qualifying-a-sealed-brief-agent"></a>[tea-evaluate Evaluators](/docs/reference/tea-evaluate-evaluators.md): the evaluation layer, the rubric judge, judge calibration labels and sealed-brief agent qualification.
 - <a id="the-run-directory"></a><a id="paths-in-the-records"></a><a id="run-wide-strength-aggregate"></a>[tea-evaluate Evidence](/docs/reference/tea-evaluate-evidence.md): the run directory, the path forms in the records and the run-wide strength aggregate.
+
+## Experiment
+
+`tea-evaluate experiment --saved <directory> --out <new-directory>` reads saved Test Design evidence. Use `--search-root <directory>` for latest-record discovery, `--propose <agent-prepared-declaration.json>` for a proposal, or `--recover <experiment-directory>` for unresolved reservation reports. No `--evaluation` is required for this separate opt-in route. It preserves the eight existing command paths and makes no model call during saved analysis. Native live execution is blocked by telemetry and enforceable-budget gaps. See [supported records and limits](/docs/reference/configuration-experiment-reader.md#the-opt-in-evaluate-controller).
 
 ## Prerequisites
 

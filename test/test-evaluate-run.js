@@ -4163,19 +4163,16 @@ function useWrappedEvaluator(folder) {
  * - the reference's section, read under its exact heading, names each
  *   platform's mechanism and what an opted-out run records.
  */
-async function checkConfinedEvaluationFolder() {
+async function checkConfinedEvaluationFolder({ observer = null, requireOmitted = false } = {}) {
   const refusal = /^refused (EPERM|EACCES|ENOENT|EROFS)$/;
   const probed = makeProject('confinement-probe', { toolchain: true });
   const contractBytes = fs.readFileSync(path.join(probed.folder, 'contract.json'));
   const probedRun = evaluate(['run', '--evaluation', probed.folder], {
     ...probed.env,
+    ...(observer === null ? {} : { [LOG_ENV]: observer }),
     VERDICT_WHEN: 'trial-clean-1',
     VERDICT_DO: 'probe-confinement',
   });
-  check(
-    refusesMounts(probedRun),
-    `a confined run whose target probed the evaluation folder exited ${probedRun.status}; expected 3 with the mounts its trials opened\n${probedRun.output}`,
-  );
   const probedDirectory = runDirectoryOf(probed.folder);
   const probedOut = trialStdout(probedDirectory, 'clean', 1);
   const contractRead = /contract-read: (.*)/.exec(probedOut)?.[1];
@@ -4209,16 +4206,29 @@ async function checkConfinedEvaluationFolder() {
   );
   const realFolder = fs.realpathSync(probed.folder);
   const probedMounts = observedMountsOf(probedDirectory, 'P-001') ?? [];
-  checkReport(
-    [path.join(realFolder, 'contract.json'), path.join(realFolder, 'runs', 'tamper.txt')]
-      .map((entry) => mountOf(entry, probed))
-      .every((entry) => probedMounts.includes(entry)),
-    `the audit did not report the evaluation folder's paths the target reached for: ${JSON.stringify(probedMounts)}`,
+  const attemptedMounts = [path.join(realFolder, 'contract.json'), path.join(realFolder, 'runs', 'tamper.txt')].map((entry) =>
+    mountOf(entry, probed),
   );
+  const expectedMounts = process.platform === 'darwin' ? attemptedMounts.filter((entry) => probedMounts.includes(entry)) : attemptedMounts;
+  const expectedExit = expectedMounts.length === 0 && process.platform === 'darwin' ? 0 : 3;
+  check(
+    expectedExit === 0 ? probedRun.status === 0 : refusesMounts(probedRun, expectedMounts),
+    `a confined run did not preserve the observed diagnostic outcome (exit ${probedRun.status}, expected ${expectedExit}): ${probedRun.output}`,
+  );
+  checkMounts(probedMounts, expectedMounts, "the confined folder's actually observed diagnostics");
+  if (requireOmitted) {
+    check(process.platform === 'darwin' && probedMounts.length === 0, 'the diagnostic-drop witness retained confined-folder diagnostics');
+    const channel = readJson(path.join(probedDirectory, 'run.json')).observedMountsChannel;
+    checkReport(
+      channel.every((entry) => entry.canariesDelivered === entry.canariesSent && !entry.logReportedLoss),
+      `the folder diagnostic-drop witness also dropped canaries: ${JSON.stringify(channel)}`,
+    );
+  }
   const probedScore = evaluate(['score', '--evaluation', probed.folder], probed.env);
-  checkReport(
-    probedScore.status === 3 && probedScore.output.includes('mount outside allowlist: <evaluation-folder>/contract.json'),
-    `score over a target that reached for the contract exited ${probedScore.status}; expected 3 with the isolation violation\n${probedScore.output}`,
+  check(
+    probedScore.status === expectedExit &&
+      expectedMounts.every((entry) => probedScore.output.includes(`mount outside allowlist: ${entry}`)),
+    `score did not preserve the confined folder's observed diagnostic outcome (expected ${expectedExit}): ${probedScore.output}`,
   );
   check(
     !probedScore.output.includes('opted out of file-system confinement'),
@@ -6349,7 +6359,7 @@ async function checkLeftoverProcess() {
 }
 
 /** A leftover process that swaps a tracked evaluator/ file while the evaluator launches, and has it put itself back (Story 1.31). */
-async function checkEvaluatorSwap() {
+async function checkEvaluatorSwap({ observer = null, requireOmitted = false } = {}) {
   for (const confined of [true, false]) {
     const label = confined ? 'confinement-swap' : 'confinement-swap-open';
     const project = makeProject(label, { unconfined: !confined, toolchain: true, edit: ({ folder }) => useWrappedEvaluator(folder) });
@@ -6361,6 +6371,7 @@ async function checkEvaluatorSwap() {
     try {
       ran = evaluate(['run', '--evaluation', project.folder], {
         ...project.env,
+        ...(confined && observer !== null ? { [LOG_ENV]: observer } : {}),
         VERDICT_WHEN: 'trial-clean-1',
         VERDICT_DO: 'swap-evaluator',
         VERDICT_TOUCH: marker,
@@ -6376,10 +6387,6 @@ async function checkEvaluatorSwap() {
     const namespaced = confined && process.platform === 'linux';
     // The refused swap is an observed mount, which the run refuses (exit 3). Under Bubblewrap (verified in the CI image) the swapper ends with the target's process namespace before it swaps, so no mount is observed and the run exits 0.
     check(
-      confined && !namespaced ? refusesMounts(ran) : ran.status === 0,
-      `${label}: run exited ${ran.status}; expected ${confined && !namespaced ? 3 : 0}\n${ran.output}`,
-    );
-    check(
       confined
         ? /^swap: refused (EPERM|EACCES|ENOENT|EROFS)$/.test(reported ?? '') || (namespaced && reported === null)
         : reported === 'swap: allowed',
@@ -6389,6 +6396,14 @@ async function checkEvaluatorSwap() {
     const answered =
       runDirectory === null ? null : readJson(path.join(runDirectory, 'trials', 'clean', 'trial-1.json')).evaluator?.answer?.rows?.[0];
     const record = runDirectory === null ? {} : readJson(path.join(runDirectory, 'trial-sets', 'P-001', 'record-1.json'));
+    const mounts = observedMountsOf(runDirectory, 'P-001') ?? [];
+    const omittedDiagnostic = confined && process.platform === 'darwin' && mounts.length === 0;
+    const expectedExit = confined && !namespaced && !omittedDiagnostic ? 3 : 0;
+    check(
+      expectedExit === 3 ? refusesMounts(ran) : ran.status === 0,
+      `${label}: run exited ${ran.status}; expected ${expectedExit} for its observed diagnostics\n${ran.output}`,
+    );
+
     // The row-converting evaluator's trials record their audit channel as the deterministic evaluator's do (Story 1.81).
     const channel = runDirectory === null ? undefined : readJson(path.join(runDirectory, 'run.json')).observedMountsChannel;
     if (confined) checkChannelRecords(channel, auditedTrials(), { lossless: false });
@@ -6409,10 +6424,22 @@ async function checkEvaluatorSwap() {
       check(record.findings?.length === 0, `a confined run's clean control carries findings: ${JSON.stringify(record.findings)}`);
       // The row-converting evaluator's trials carry the audit's observed mounts too: the refused swap is one.
       const swapped = mountOf(path.join(fs.realpathSync(project.folder), 'evaluator', 'impl.js'), project);
-      const mounts = observedMountsOf(runDirectory, 'P-001') ?? [];
       checkReport(
-        namespaced || mounts.includes(swapped),
+        namespaced || omittedDiagnostic || mounts.includes(swapped),
         `a confined run's P-001 does not list the swap it refused as an observed mount: ${JSON.stringify(mounts)}`,
+      );
+      if (requireOmitted) {
+        check(omittedDiagnostic, 'the diagnostic-drop witness retained evaluator-swap diagnostics');
+        checkReport(
+          channel.every((entry) => entry.canariesDelivered === entry.canariesSent && !entry.logReportedLoss),
+          `the swap diagnostic-drop witness also dropped canaries: ${JSON.stringify(channel)}`,
+        );
+      }
+      const scored = evaluate(['score', '--evaluation', project.folder], project.env);
+      check(
+        scored.status === expectedExit &&
+          (omittedDiagnostic || namespaced || scored.output.includes(`mount outside allowlist: ${swapped}`)),
+        `${label}: score did not preserve its observed diagnostic outcome: ${scored.output}`,
       );
     } else {
       // The control: unconfined, the swapped bytes run and put the original back, so the layer reads the same afterwards.
@@ -6432,6 +6459,24 @@ async function checkEvaluatorSwap() {
  * directory inside the evaluation folder, and an evaluation folder or temp
  * directory whose path no profile can carry.
  */
+async function checkDroppedBoundaryReports() {
+  if (process.platform !== 'darwin') {
+    skipCase('dropped folder and evaluator diagnostics', 'this regression exercises the macOS kernel boundary');
+    return;
+  }
+  for (const [dropped, body] of [
+    ['confinement-probe', checkConfinedEvaluationFolder],
+    ['confinement-swap', checkEvaluatorSwap],
+  ]) {
+    const stub = dropLogStub(dropped, 0);
+    try {
+      await body({ observer: stub.executable, requireOmitted: true });
+    } finally {
+      stub.end();
+    }
+  }
+}
+
 async function checkConfinementRefusals() {
   const refusedWith = (label, result, expected) => {
     check(
@@ -22312,6 +22357,7 @@ const CASES = [
   { name: 'the confined evaluation folder', body: checkConfinedEvaluationFolder, group: 'confinement', lossy: true },
   { name: 'the observed mounts', body: checkObservedMounts, group: 'confinement', lossy: true },
   { name: 'the dropped read reports', body: checkDroppedReadReports, group: 'confinement', lossy: true },
+  { name: 'the dropped folder and swap diagnostics', body: checkDroppedBoundaryReports, group: 'confinement', lossy: true },
   { name: 'the platform refusal', body: checkPlatformRefusal, group: 'confinement' },
   { name: 'the leftover process', body: checkLeftoverProcess, group: 'confinement' },
   { name: 'the evaluator swap', body: checkEvaluatorSwap, group: 'confinement', lossy: true },

@@ -367,6 +367,26 @@ function buildProgram(run) {
     .option('--evaluation <path>', 'the evaluation folder, or its evaluation.json')
     .option('--tier <tier>', 'pr, merge, scheduled or release')
     .action((options) => run(ciCommand, options));
+  program
+    .command('experiment')
+    .description('Opt-in saved Test Design consistency analysis or a bounded experiment proposal; no automatic adoption.')
+    .option('--saved <path>', 'exact saved run, retained attempt or experiment directory')
+    .option('--search-root <path>', 'find the latest compatible saved Test Design records')
+    .option('--propose <path>', 'prepare a proposal from an agent-owned declaration')
+    .option('--agent <name>', 'native execution adapter', 'codex')
+    .option('--max-usd <amount>', 'proposed spending cap; verified enforcement remains required')
+    .option('--recover <path>', 'inspect unresolved reservations without rerunning anything')
+    .option('--out <path>', 'new report or proposal directory')
+    .action((options) =>
+      run(async (opts) => {
+        try {
+          return await require('./lib/evaluate/experiments').experimentCommand(opts);
+        } catch (error) {
+          process.stderr.write(`${NAME} experiment: ${escapeUnprintable(error.message)}\n`);
+          return error.code === 'EXPERIMENT_USAGE' ? EXIT_CODES.usage : EXIT_CODES.authoring;
+        }
+      }, options),
+    );
   return program;
 }
 

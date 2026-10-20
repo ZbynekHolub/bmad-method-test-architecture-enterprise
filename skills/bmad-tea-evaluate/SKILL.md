@@ -21,6 +21,17 @@ You will continue to operate with your given name, identity, and communication_s
 - `{skill-name}` resolves to the skill directory's basename.
 - Resolve sibling files such as `references/...` and `assets/...` from `{skill-root}`.
 
+## Execution Authority
+
+Resolve intent before activation, customization resolution or any hook. Ordinary evaluation keeps its current workflow unchanged. Native clean/mutated trials, run comparison and baseline acceptance retain their existing authority and meaning.
+
+An explicit native compare/accept request keeps that command's authority, including a request that mentions consistency while comparing saved runs. Saved-result consistency is an experiment route only when the user asks to analyze variability in existing results. Resolve contextual words such as “these results” from the conversation before choosing a route.
+
+- Saved-result consistency or explicitly requested offline experiment analysis: load `references/configuration-experiments.md` and take its offline route directly. Suppress prepend, append and completion hooks. Do not run configuration resolver scripts, model calls, judge calls or fresh trials. Return after reporting the saved evidence.
+- Fresh repeatability or a one-factor configuration experiment: load `references/configuration-experiments.md` directly. Suppress prepend, append and completion hooks throughout this route. No hook can grant execution or spending authority.
+- “Is it repeatable?” without a saved/fresh choice: clarify saved records versus fresh runs before executing anything.
+- Ordinary evaluation, ordinary offline record evaluation or native compare/accept (including comparing saved runs): proceed with On Activation below. Do not load the experiment guide, analyze experiments or add trials after the normal result.
+
 ## On Activation
 
 Before resolving customizations or running hooks, inspect `{project-root}/_bmad/custom/` for `bmad-testarch-evaluate.toml` and `bmad-testarch-evaluate.user.toml`. If either exists, stop and tell the user to run `npx --package=bmad-method-test-architecture-enterprise@3 tea-migrate-customizations --project-root {project-root}`. Resolve any reported manual merge, then start a fresh chat. Do not continue with default settings while legacy overrides remain.

@@ -452,13 +452,13 @@ check('PAIRED_CAPTURE_IS_MANUAL matches what retainSkillArtifacts actually write
     const written = JSON.parse(run.stdout);
     assert.deepStrictEqual(
       written,
-      source.retainedProvenanceKeys(fs.readFileSync(path.join(__dirname, 'lib', 'retain-skill-artifacts.js'), 'utf8')),
+      source.retainedProvenanceKeys(fs.readFileSync(path.join(__dirname, '..', 'cli/lib/evaluate/retain-skill-artifacts.js'), 'utf8')),
     );
     assert.ok(
       source.PAIRED_CAPTURE_FIELDS.every((field) => !written.includes(field)),
       `the writer now records ${written.join(', ')}`,
     );
-    assert.strictEqual(source.PAIRED_CAPTURE_IS_MANUAL, true);
+    assert.strictEqual(source.PAIRED_CAPTURE_IS_MANUAL, false);
   } finally {
     fs.rmSync(scratch, { recursive: true, force: true });
   }

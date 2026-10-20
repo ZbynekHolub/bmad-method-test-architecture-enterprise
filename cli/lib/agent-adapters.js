@@ -710,11 +710,57 @@ function bridgedArgsRefused(agent, extra = []) {
   return extra.filter((arg) => locked.some((flag) => arg === flag || arg.startsWith(`${flag}=`)));
 }
 
+/** Capture keeps partial native telemetry and parse errors without discarding raw streams. */
+function agentCaptureTelemetry(agent, stdout, stderr) {
+  let parsed = { stdout: agentAnswerText(agent, stdout), usage: null };
+  const errors = [];
+  try {
+    parsed = agentReplyAndUsage(agent, stdout, stderr);
+  } catch (error) {
+    errors.push(error.message);
+    // Preserve independently present fields; absent or invalid money stays unknown.
+    try {
+      const report = agent === 'claude' ? JSON.parse(stdout) : null;
+      const usage = report?.usage;
+      if (usage) {
+        parsed.usage = {};
+        const input = usage.input_tokens + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0);
+        if (Number.isFinite(input) && input >= 0) parsed.usage.inputTokens = input;
+        if (Number.isFinite(usage.output_tokens) && usage.output_tokens >= 0) parsed.usage.outputTokens = usage.output_tokens;
+      }
+      if (Number.isFinite(report?.total_cost_usd) && report.total_cost_usd >= 0) (parsed.usage ??= {}).costUsd = report.total_cost_usd;
+    } catch {
+      // Raw streams and parsing errors remain available even for malformed reports.
+    }
+  }
+  if (agent === 'codex' && parsed.usage === null) {
+    for (const line of stdout.split(/\r?\n/).filter(Boolean)) {
+      try {
+        const event = JSON.parse(line);
+        if (event.type !== 'turn.completed') continue;
+        const available = {};
+        if (Number.isSafeInteger(event.usage?.input_tokens) && event.usage.input_tokens >= 0)
+          available.inputTokens = event.usage.input_tokens;
+        if (Number.isSafeInteger(event.usage?.output_tokens) && event.usage.output_tokens >= 0)
+          available.outputTokens = event.usage.output_tokens;
+        if (Object.keys(available).length > 0) {
+          parsed.usage = available;
+          errors.push('codex verified money usage is unavailable; native token fields are retained');
+        }
+      } catch {
+        /* The raw event and any strict parsing error remain available. */
+      }
+    }
+  }
+  return { stdout: parsed.stdout, resolvedModel: resolvedModelFromAnswer(agent, stdout), appliedEffort: null, usage: parsed.usage, errors };
+}
+
 module.exports = {
   AGENT_ADAPTERS,
   AGENT_VERSION_CEILING_MS,
   AGENT_VERSION_TIMEOUT_MS,
   agentReplyAndUsage,
+  agentCaptureTelemetry,
   resolvedModelFromAnswer,
   agentAnswerText,
   bridgedArgsRefused,

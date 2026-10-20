@@ -33,7 +33,7 @@ const READER = path.join(__dirname, 'lib', 'configuration-experiment.js');
 const RAW = path.join(__dirname, 'results', 'codex-test-design', 'raw');
 const EXAMPLES = path.join(__dirname, 'fixtures', 'configuration-experiment');
 const PAIRED = path.join(EXAMPLES, 'paired-example');
-const DOC = path.join(PROJECT_ROOT, 'docs', 'how-to', 'evaluate', 'measure-repeatability-and-compare-a-configuration.md');
+const DOC = path.join(PROJECT_ROOT, 'docs', 'reference', 'configuration-experiment-fixtures.md');
 const REFERENCE_DOC = path.join(PROJECT_ROOT, 'docs', 'reference', 'configuration-experiment-reader.md');
 
 const colors = { reset: '\u001B[0m', red: '\u001B[31m', green: '\u001B[32m' };
@@ -2269,7 +2269,7 @@ function checkAcceptance10() {
   check(snapshot() === beforeTree, 'reading changes nothing under test/results');
 
   // Static guards on the module.
-  const source = fs.readFileSync(READER, 'utf8');
+  const source = fs.readFileSync(path.join(PROJECT_ROOT, 'cli/lib/evaluate/configuration-experiment.js'), 'utf8');
   check(
     !/node:(child_process|net|http|https|dns|tls|worker_threads|cluster)/.test(source),
     'the reader requires no subprocess or network module',

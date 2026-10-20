@@ -12,6 +12,7 @@ export default [
       'coverage/**',
       '**/*.min.js',
       'test/fixtures/**',
+      'test/.tea-*/**', // Disposable evaluation workspaces can disappear during checks.
       'test/fixtures/**/*.yaml',
       // Stored GitHub Actions workflow files the ci eval replay corpus scores.
       // Their extension is `.yml` because GitHub requires it at

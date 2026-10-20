@@ -2077,7 +2077,7 @@ function checkLossyLegAudit() {
   }
 }
 
-function checkRunnerOutsideAllowlist() {
+function checkRunnerOutsideAllowlist({ observer = null, requireOmitted = false } = {}) {
   const kernelReads = process.platform === 'darwin';
   const refusal = (output) => {
     // The runner's own files are the paths it names; the first three of the sorted list, in the form the records use.
@@ -2110,9 +2110,8 @@ function checkRunnerOutsideAllowlist() {
 
   // The ungranted bare name: Linux traces the loaded runner; Darwin blocks it before its verdict can pass.
   const bare = copyFixture(PREFLIGHT_FIXTURE, STUB_PROJECT, { grantRunner: false });
-  const refused = runPreflight(bare);
+  const refused = runPreflight(bare, { env: observer === null ? {} : { TEA_EVALUATE_AUDIT_LOG: observer } });
   check(refused.status === 3, `preflight over the bare runner name exited ${refused.status}; expected 3\n${refused.output}`);
-  refusal(refused.output);
   const directory = runDirectoryOf(bare);
   check(directory !== null, 'the refused preflight wrote no run directory');
   if (directory !== null) {
@@ -2124,11 +2123,27 @@ function checkRunnerOutsideAllowlist() {
       `the engine's verdict was ${verdict?.passed ?? 'missing'}; expected ${!kernelReads} after ${kernelReads ? 'kernel refusal of runner data' : 'successful traced runner reads'}`,
     );
     const recorded = readJson(path.join(directory, 'run.json')).outcome;
+    // Darwin can omit a denied-read diagnostic while the kernel still refuses the runner. The failed engine verdict remains binding.
+    const omittedDiagnostic = kernelReads && recorded?.stage === 'verdict';
     check(
-      recorded?.exitCode === 3 && recorded?.stage === 'leg',
-      `run.json records ${JSON.stringify(recorded)}; expected exit 3 at the leg stage`,
+      recorded?.exitCode === 3 && (recorded?.stage === 'leg' || omittedDiagnostic),
+      `run.json records ${JSON.stringify(recorded)}; expected exit 3 from the observed denial or failed engine verdict`,
     );
+    if (omittedDiagnostic) {
+      const observations = filesUnder(path.join(directory, 'observations'))
+        .filter((file) => file.endsWith('.json'))
+        .map((file) => readJson(file).observation);
+      check(
+        observations.length >= 2 &&
+          observations.every(
+            (entry) => entry?.exitCode !== 0 && /EPERM|EACCES|operation not permitted|permission denied/i.test(entry?.stderr?.value ?? ''),
+          ),
+        `the runner lacked denial diagnostics without a kernel refusal in every leg: ${JSON.stringify(observations)}`,
+      );
+    } else refusal(refused.output);
+    if (requireOmitted) check(omittedDiagnostic, 'the dropped-denial witness retained a common runner denial');
   }
+  if (requireOmitted) return;
 
   // Linux seals refused trials for score. Darwin blocks the runner during its verdict and seals no trials.
   const bareRun = copyFixture(PREFLIGHT_FIXTURE, STUB_PROJECT, { grantRunner: false });
@@ -2566,7 +2581,7 @@ function observedStdouts(runDirectory) {
  * writes nothing in the host's home, the directory the private home sits in, the evaluation folder or its `runs/`; the
  * run removes the home. A registry entry that passes `HOME` still sees the private one, and an opt-out run sees the host's.
  */
-function checkPrivateHome() {
+function checkPrivateHome({ observer = null, requireOmitted = false } = {}) {
   const hostHome = fs.realpathSync(tempDir('home-host'));
   const temp = privateTemp('home-temp');
   const run = (confinement, keys) => {
@@ -2594,21 +2609,33 @@ function checkPrivateHome() {
         ].join(' ');
       }
     });
-    const result = runPreflight(folder, { env: { ...temp.env, HOME: hostHome } });
-    // The agent's attempts at the evaluation folder and the host's home are mounts outside the allowlist, which a confined preflight
-    // refuses as `score` would (exit 3) once the engine's verdict passed; an opted-out run audits nothing.
-    const expected = confinement ? 3 : 0;
+    const result = runPreflight(folder, {
+      env: { ...temp.env, HOME: hostHome, ...(confinement && observer !== null ? { TEA_EVALUATE_AUDIT_LOG: observer } : {}) },
+    });
+    // A common observed path outside the allowlist refuses the preflight. Darwin may omit denial reports; kernel access checks below remain mandatory.
+    const directory = runDirectoryOf(folder);
+    const recorded = directory === null ? null : readJson(path.join(directory, 'run.json')).outcome;
+    const omittedDiagnostic = confinement && process.platform === 'darwin' && recorded?.stage === 'verdict' && recorded?.exitCode === 0;
+    const expected = confinement && !omittedDiagnostic ? 3 : 0;
     check(
       result.status === expected,
       `preflight whose agent keeps state under HOME (confinement ${confinement}, environmentKeys ${JSON.stringify(keys)}) exited ${result.status}; expected ${expected}\n${result.output}`,
     );
-    if (confinement) {
+    if (confinement && !omittedDiagnostic) {
       check(
         result.output.includes('mount outside allowlist: '),
         `the refusal does not name the paths the agent tried to reach:\n${result.output}`,
       );
     }
-    return observedStdouts(runDirectoryOf(folder));
+    if (confinement) {
+      const verdictFile = directory === null ? null : path.join(directory, 'preflight-verdict.json');
+      check(
+        verdictFile !== null && fs.existsSync(verdictFile) && readJson(verdictFile).passed === true,
+        'the private-home fixture lost its passing engine verdict',
+      );
+      if (requireOmitted) check(omittedDiagnostic, 'the dropped-denial witness retained a common private-home denial');
+    }
+    return observedStdouts(directory);
   };
   const field = (stdout, name) => new RegExp(`^${name}: (.*)$`, 'm').exec(stdout)?.[1];
 
@@ -2669,6 +2696,28 @@ function checkPrivateHome() {
       field(open[1], 'home') === '[redacted]',
     `an unconfined agent did not see the host's HOME: ${JSON.stringify(open.map((stdout) => field(stdout, 'home-shape')))}`,
   );
+}
+
+/** Dropped Darwin denial reports leave kernel refusals and private-home state guarantees intact. */
+function checkDroppedPreflightDiagnostics() {
+  if (process.platform !== 'darwin') return;
+  const pids = tempDir('dropped-denial-pids');
+  const executable = path.join(tempDir('dropped-denials'), 'log');
+  fs.writeFileSync(
+    executable,
+    `#!/bin/sh\nexec "${process.execPath}" "${path.join(FIXTURES, 'drop-log.cjs')}" ' deny' 0 "${pids}" "$@"\n`,
+    { mode: 0o755 },
+  );
+  try {
+    checkRunnerOutsideAllowlist({ observer: executable, requireOmitted: true });
+    checkPrivateHome({ observer: executable, requireOmitted: true });
+  } finally {
+    for (const name of fs.readdirSync(pids)) {
+      const pid = Number(fs.readFileSync(path.join(pids, name), 'utf8'));
+      const command = spawnSync('ps', ['-p', String(pid), '-o', 'args='], { encoding: 'utf8' }).stdout;
+      if (command.includes('/usr/bin/log stream') && (command.includes('tea-evaluate-audit-') || command.includes('Sandbox: '))) reap(pid);
+    }
+  }
 }
 
 /**
@@ -3228,6 +3277,7 @@ async function main() {
     checkRefusals();
     checkEnvironmentValuesStayOut();
     checkPrivateHome();
+    checkDroppedPreflightDiagnostics();
     checkSubscriptionLogin();
     checkCopyAndRunsIgnore();
     checkCopyContents();

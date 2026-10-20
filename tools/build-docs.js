@@ -98,6 +98,7 @@ const LLM_EXCLUDE_PATTERNS = [
   // guide alone in, the bundle left less than the 50k characters the headroom check requires.
   'how-to/evaluate/measure-repeatability-and-compare-a-configuration',
   'reference/configuration-experiment-reader',
+  'reference/configuration-experiment-fixtures',
   // The tea-automate CLI reference (about 14k characters): every flag, the accepted runner evidence per
   // Playwright, Vitest and Jest, and the unit red check, with the same one-command lookup use as the
   // references above, so llms.txt links it under "Command-line references". With it in, the bundle left
@@ -285,6 +286,7 @@ function buildLlmsTxt() {
     `- **[Knowledge Base](${SITE_URL}/reference/knowledge-base)**: The knowledge fragments by category and the tea-index.csv manifest that selects them`,
     `- **[Execution Targets](${SITE_URL}/reference/execution-targets)**: Which test technologies TEA supports, at what depth, and what you supply for the rest`,
     `- **[Live Verification Results](${SITE_URL}/reference/live-verification-results)**: The JSON file trace reads when a requirement was verified by running the system: schema, coverage rules and limits`,
+    `- **[Configuration Experiment Fixtures](${SITE_URL}/reference/configuration-experiment-fixtures)**: Historical reader fixture commands and their illustrative report`,
     `- **[Configuration Experiment Reader](${SITE_URL}/reference/configuration-experiment-reader)**: Commands, declaration and evidence fields, verification rules and decision order of the offline repeatability and configuration-comparison reader`,
     '',
     '## Contributing',

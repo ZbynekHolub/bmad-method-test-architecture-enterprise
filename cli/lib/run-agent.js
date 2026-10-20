@@ -36,7 +36,14 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
-const { AGENT_ADAPTERS, DEFAULT_CAPABILITIES, RUNNER_CAPABILITIES, bridgedArgsRefused, resolveModel } = require('./agent-adapters');
+const {
+  AGENT_ADAPTERS,
+  DEFAULT_CAPABILITIES,
+  RUNNER_CAPABILITIES,
+  bridgedArgsRefused,
+  resolveModel,
+  agentCaptureTelemetry,
+} = require('./agent-adapters');
 const { launchPrefix } = require('./isolation-primitives');
 const { neutralizeWorkflowCommands } = require('./safe-log');
 
@@ -334,7 +341,16 @@ function agentAnswer({ outcome, stdout, stderr }, { command: spawned, agentComma
 function runAgent(prompt, options = {}) {
   const invocation = agentInvocation(prompt, options);
   try {
-    return runInvocation(invocation);
+    const result = runInvocation(invocation);
+    if (!options.captureTelemetry) return result;
+    const { stdout, ...telemetry } = agentCaptureTelemetry(options.agent ?? 'claude', result.stdout, result.stderr);
+    return {
+      ...result,
+      stdout,
+      sourceStdout: result.stdout,
+      sourceStderr: result.stderr,
+      telemetry,
+    };
   } finally {
     invocation.settle();
   }

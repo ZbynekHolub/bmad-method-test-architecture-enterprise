@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Evaluate has an explicit opt-in experiment route for saved native Test Design consistency analysis and bounded configuration proposals. The installed `tea-evaluate experiment` command discovers legacy reader directories, retained attempts and sealed experiment records, prepares the reader inputs and reports missing identity, diagnostics or resources. Ordinary evaluation, clean/mutated trials, comparison and baseline authority retain their existing behavior.
+- The experiment controller freezes input/scorer identities, gates, schedules and approval; reserves money before dispatch; captures and seals every process-double attempt; and retains charges, originals and unresolved reservations after interruption or archival failure. Installed-package tests exercise the real native runner with labeled deterministic external-process doubles. Native paid execution remains blocked by applied-identity and enforceable-budget gaps. The two-case corpus cannot support unseen confirmation, and no configuration is automatically adopted.
+
+### Fixed
+
+- Source capture keeps an exclusively created descriptor through dispatch, rejects replaced paths, added hardlinks and edited receipt bytes, and preserves a recovery receipt without writing through agent-controlled links. Controller and native-harness consumers verify the runner's receipt digest, stop on rejected captures and preserve unresolved charges and original evidence.
+- Darwin confinement and preflight tests preserve kernel read/write refusals, private-home checks and original evaluator bytes while matching outcomes to the diagnostics actually delivered. Deterministic report-drop witnesses cover omitted folder, evaluator-swap, runner and private-home diagnostics; Linux expectations and product gates are unchanged.
+- Formatting and linting skip disposable `test/.tea-*` workspaces, preventing missing-file failures while evaluation suites create and clean their artifacts.
+
 ## [3.2.0] - 2026-10-18
 
 ### Added

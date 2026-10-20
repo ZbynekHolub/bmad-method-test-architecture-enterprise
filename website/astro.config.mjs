@@ -208,6 +208,7 @@ export default defineConfig({
             { label: 'Knowledge Base', slug: 'reference/knowledge-base' },
             { label: 'Live Verification Results', slug: 'reference/live-verification-results' },
             { label: 'Configuration Experiment Reader', slug: 'reference/configuration-experiment-reader' },
+            { label: 'Configuration Experiment Fixtures', slug: 'reference/configuration-experiment-fixtures' },
             { label: 'tea-evaluate CLI', slug: 'reference/tea-evaluate-cli' },
             { label: 'tea-evaluate Manifest', slug: 'reference/tea-evaluate-manifest' },
             { label: 'tea-evaluate Confinement', slug: 'reference/tea-evaluate-confinement' },
