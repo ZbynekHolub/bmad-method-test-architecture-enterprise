@@ -160,6 +160,9 @@ function main(argv) {
   if (!Object.hasOwn(AGENT_ADAPTERS, options.agent)) {
     fail('environment-configuration', `unknown agent "${options.agent}"; expected one of ${Object.keys(AGENT_ADAPTERS).join(', ')}`);
   }
+  if (options.captureTestDouble && options.agent !== 'custom') {
+    fail('usage', '--capture-test-double requires --agent custom');
+  }
   // Tested on the raw string before the parse. Number.parseInt truncates, so
   // `--timeout-ms 20abc` became 20 and every run then timed out at twenty
   // milliseconds, and `--timeout-ms 1e9` became 1.

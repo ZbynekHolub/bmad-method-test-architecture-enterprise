@@ -175,6 +175,35 @@ if(process.argv.includes('--fail-first')){const state=process.argv[process.argv.
     assert.ok(generatedRequest.permittedKeys.includes(key));
   }
   assert.equal(generatedRequest.types['capture-test-double'], 'boolean');
+  const forbiddenNative = path.join(scratch, 'forbidden-native.cjs');
+  fs.writeFileSync(
+    forbiddenNative,
+    '#!/usr/bin/env node\nrequire("node:fs").writeFileSync("provider-launched", "yes");console.log("{}");\n',
+    { mode: 0o755 },
+  );
+  for (const agent of ['claude', 'codex']) {
+    for (const capture of [false, true]) {
+      const dir = path.join(scratch, `native-double-flag-${agent}-${capture}`);
+      fs.mkdirSync(dir);
+      const refused = spawnSync(
+        process.execPath,
+        [
+          path.join(root, 'cli/test-design-runner.js'),
+          '--agent',
+          agent,
+          '--agent-cmd',
+          forbiddenNative,
+          '--capture-test-double',
+          ...(capture ? ['--capture-path', 'source-capture.json'] : []),
+        ],
+        { cwd: dir, input: 'deterministic pre-dispatch boundary', encoding: 'utf8' },
+      );
+      assert.equal(refused.status, 2, refused.stderr);
+      assert.match(refused.stderr, /--capture-test-double requires --agent custom/);
+      assert.equal(fs.existsSync(path.join(dir, 'provider-launched')), false);
+      assert.equal(fs.existsSync(path.join(dir, 'source-capture.json')), false);
+    }
+  }
   for (const [name, options, exit] of [
     ['missing-parent', ['--capture-path', 'missing/source.json'], 2],
     ['invalid-model', ['--capture-path', 'source-capture.json', '--model', 'bad model'], 3],
