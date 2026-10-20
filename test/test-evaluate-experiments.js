@@ -167,6 +167,48 @@ if(process.argv.includes('--fail-first')){const state=process.argv[process.argv.
     { mode: 0o755 },
   );
   const td = double(command);
+  const runnerKeys = require('../cli/test-design-runner').TEST_DESIGN_REQUEST_KEYS;
+  const generatedRequest = json(path.join(root, 'test/contracts/test-design.contract.json')).permittedInterfaces[0].operations[0]
+    .requestShape.option;
+  for (const key of ['capture-path', 'capture-test-double']) {
+    assert.ok(runnerKeys.option.permitted.includes(key));
+    assert.ok(generatedRequest.permittedKeys.includes(key));
+  }
+  assert.equal(generatedRequest.types['capture-test-double'], 'boolean');
+  for (const [name, options, exit] of [
+    ['missing-parent', ['--capture-path', 'missing/source.json'], 2],
+    ['invalid-model', ['--capture-path', 'source-capture.json', '--model', 'bad model'], 3],
+  ]) {
+    const dir = path.join(scratch, `setup-${name}`);
+    fs.mkdirSync(dir);
+    const failedSetup = spawnSync(
+      process.execPath,
+      [path.join(root, 'cli/test-design-runner.js'), '--agent', 'custom', '--agent-cmd', process.execPath, ...options],
+      { cwd: dir, input: 'deterministic setup boundary', encoding: 'utf8' },
+    );
+    assert.equal(failedSetup.status, exit, failedSetup.stderr);
+    assert.doesNotMatch(failedSetup.stderr, /\n\s+at /);
+    assert.equal(fs.existsSync(path.join(dir, 'source-capture.json')), false);
+  }
+  const leaked = freeze('ground-truth-leak', { testDouble: td });
+  approve(leaked);
+  const originalStage = staging.stageWorkspace;
+  const originalLeakCheck = staging.assertGroundTruthAbsent;
+  let leakedDirectory;
+  staging.stageWorkspace = async (...args) => {
+    const workspace = await originalStage(...args);
+    leakedDirectory = workspace.dir;
+    return workspace;
+  };
+  staging.assertGroundTruthAbsent = async () => ['synthetic ground-truth leak'];
+  try {
+    await assert.rejects(experiments.executePlan(leaked.directory, { testDouble: td }), /synthetic ground-truth leak/);
+  } finally {
+    staging.stageWorkspace = originalStage;
+    staging.assertGroundTruthAbsent = originalLeakCheck;
+  }
+  assert.equal(fs.existsSync(leakedDirectory), false);
+  assert.equal(experiments.readJournal(leaked.directory).filter((entry) => ['reserved', 'dispatch'].includes(entry.kind)).length, 0);
   const forgedDouble = { ...td, args: ['--forge-capture'] };
   const forged = freeze('forged-capture', { testDouble: forgedDouble });
   approve(forged);
@@ -288,25 +330,29 @@ if(process.argv.includes('--fail-first')){const state=process.argv[process.argv.
   ]) {
     const ordinarySet = scoring.loadGroundTruth().fixtureSets[0];
     const ordinaryWorkspace = await staging.stageWorkspace(ordinarySet);
-    const ordinaryDeliverable = spawnSync(
-      process.execPath,
-      [
-        path.join(root, 'cli/test-design-runner.js'),
-        '--agent',
-        'custom',
-        '--agent-cmd',
-        command,
-        '--agent-arg',
-        args[0],
-        '--design-path',
-        staging.designArtifactPaths(ordinarySet).design,
-      ],
-      { cwd: ordinaryWorkspace.dir, input: staging.buildPrompt(ordinarySet), encoding: 'utf8' },
-    );
-    assert.equal(ordinaryDeliverable.status, 0, ordinaryDeliverable.stderr);
-    if (name === 'absent') assert.equal(ordinaryDeliverable.stdout, '');
-    else assert.match(JSON.parse(ordinaryDeliverable.stdout).design, /Unparseable native design/);
-    assert.equal(fs.existsSync(path.join(ordinaryWorkspace.dir, 'source-capture.json')), false);
+    try {
+      const ordinaryDeliverable = spawnSync(
+        process.execPath,
+        [
+          path.join(root, 'cli/test-design-runner.js'),
+          '--agent',
+          'custom',
+          '--agent-cmd',
+          command,
+          '--agent-arg',
+          args[0],
+          '--design-path',
+          staging.designArtifactPaths(ordinarySet).design,
+        ],
+        { cwd: ordinaryWorkspace.dir, input: staging.buildPrompt(ordinarySet), encoding: 'utf8' },
+      );
+      assert.equal(ordinaryDeliverable.status, 0, ordinaryDeliverable.stderr);
+      if (name === 'absent') assert.equal(ordinaryDeliverable.stdout, '');
+      else assert.match(JSON.parse(ordinaryDeliverable.stdout).design, /Unparseable native design/);
+      assert.equal(fs.existsSync(path.join(ordinaryWorkspace.dir, 'source-capture.json')), false);
+    } finally {
+      fs.rmSync(ordinaryWorkspace.dir, { recursive: true, force: true });
+    }
     const decl = declaration();
     decl.design.maxAttempts = 2;
     decl.frozen = { digest: reader.declarationDigest(decl) };
@@ -327,32 +373,36 @@ if(process.argv.includes('--fail-first')){const state=process.argv[process.argv.
     }
   }
   const malformedWorkspace = await staging.stageWorkspace(scoring.loadGroundTruth().fixtureSets[0]);
-  const malformed = spawnSync(
-    process.execPath,
-    [
-      path.join(root, 'cli/test-design-runner.js'),
-      '--agent',
-      'custom',
-      '--agent-cmd',
-      command,
-      '--agent-arg',
-      '--malformed-telemetry',
-      '--agent-arg',
-      '--fail',
-      '--capture-test-double',
-      '--capture-path',
-      'source-capture.json',
-    ],
-    { cwd: malformedWorkspace.dir, input: staging.buildPrompt(scoring.loadGroundTruth().fixtureSets[0]), encoding: 'utf8' },
-  );
-  assert.equal(malformed.status, 4, malformed.stderr);
-  const malformedSource = json(path.join(malformedWorkspace.dir, 'source-capture.json'));
-  assert.equal(malformedSource.status, 'failed');
-  assert.ok(malformedSource.endedAt);
-  assert.equal(malformedSource.cost, null);
-  assert.match(malformedSource.providerStderr, /bad-json/);
-  assert.match(malformedSource.telemetryErrors.join(';'), /telemetry unavailable/);
-  assert.equal(JSON.parse(malformed.stdout).sourceCapture.status, 'verified');
+  try {
+    const malformed = spawnSync(
+      process.execPath,
+      [
+        path.join(root, 'cli/test-design-runner.js'),
+        '--agent',
+        'custom',
+        '--agent-cmd',
+        command,
+        '--agent-arg',
+        '--malformed-telemetry',
+        '--agent-arg',
+        '--fail',
+        '--capture-test-double',
+        '--capture-path',
+        'source-capture.json',
+      ],
+      { cwd: malformedWorkspace.dir, input: staging.buildPrompt(scoring.loadGroundTruth().fixtureSets[0]), encoding: 'utf8' },
+    );
+    assert.equal(malformed.status, 4, malformed.stderr);
+    const malformedSource = json(path.join(malformedWorkspace.dir, 'source-capture.json'));
+    assert.equal(malformedSource.status, 'failed');
+    assert.ok(malformedSource.endedAt);
+    assert.equal(malformedSource.cost, null);
+    assert.match(malformedSource.providerStderr, /bad-json/);
+    assert.match(malformedSource.telemetryErrors.join(';'), /telemetry unavailable/);
+    assert.equal(JSON.parse(malformed.stdout).sourceCapture.status, 'verified');
+  } finally {
+    fs.rmSync(malformedWorkspace.dir, { recursive: true, force: true });
+  }
   const defaultAttemptsDecl = declaration();
   delete defaultAttemptsDecl.design.maxAttempts;
   defaultAttemptsDecl.frozen = { digest: reader.declarationDigest(defaultAttemptsDecl) };
@@ -370,6 +420,61 @@ else if(mode==='in-place')fs.writeFileSync('source-capture.json','changed receip
 else {fs.unlinkSync('source-capture.json');if(mode==='symlink')fs.symlinkSync(outside,'source-capture.json');else fs.linkSync(outside,'source-capture.json');}
 fs.writeFileSync('design.md','# Deterministic document\\n');`,
   );
+  const captureFault = path.join(scratch, 'capture-io-fault.cjs');
+  fs.writeFileSync(
+    captureFault,
+    String.raw`
+const fs=require('node:fs');const mode=process.env.TEA_CAPTURE_FAULT_MODE;const audit=process.env.TEA_CAPTURE_AUDIT;
+const open=fs.openSync,close=fs.closeSync,writeFile=fs.writeFileSync,write=fs.writeSync,stat=fs.fstatSync;let captureFd=null,recoveryFd=null;const closed=new Set();
+fs.openSync=function(file,flags,...args){if(typeof file==='string'&&file.includes('source-capture-recovery-')&&mode==='recovery-open')throw new Error('injected recovery open failure');const fd=open(file,flags,...args);if(typeof file==='string'&&file.endsWith('source-capture.json')&&flags==='wx+')captureFd=fd;if(typeof file==='string'&&file.includes('source-capture-recovery-'))recoveryFd=fd;return fd;};
+fs.closeSync=function(fd){const value=close(fd);closed.add(fd);return value;};
+fs.fstatSync=function(fd,...args){if(fd===captureFd&&mode==='initial-stat')throw new Error('injected capture stat failure');return stat(fd,...args);};
+fs.writeSync=function(fd,...args){if(fd===captureFd&&mode==='initial-write')throw new Error('injected capture write failure');return write(fd,...args);};
+fs.writeFileSync=function(file,...args){if(file===recoveryFd&&mode==='recovery-write')throw new Error('injected recovery write failure');return writeFile(file,...args);};
+process.on('exit',()=>writeFile(audit,JSON.stringify({captureClosed:closed.has(captureFd),recoveryClosed:recoveryFd===null||closed.has(recoveryFd)})));
+`,
+  );
+  for (const mode of ['initial-stat', 'initial-write', 'recovery-open', 'recovery-write']) {
+    const dir = path.join(scratch, `capture-io-${mode}`);
+    fs.mkdirSync(dir);
+    const audit = path.join(scratch, `capture-io-${mode}.json`);
+    const fault = spawnSync(
+      process.execPath,
+      [
+        '--require',
+        captureFault,
+        path.join(root, 'cli/test-design-runner.js'),
+        '--agent',
+        'custom',
+        '--agent-cmd',
+        process.execPath,
+        '--agent-arg',
+        captureTamper,
+        '--agent-arg',
+        'in-place',
+        '--agent-arg',
+        path.join(scratch, 'unused-outside'),
+        '--capture-path',
+        'source-capture.json',
+      ],
+      {
+        cwd: dir,
+        input: 'deterministic capture I/O fault',
+        encoding: 'utf8',
+        env: { ...process.env, TEA_CAPTURE_FAULT_MODE: mode, TEA_CAPTURE_AUDIT: audit },
+      },
+    );
+    assert.equal(fault.status, 3, fault.stderr);
+    assert.doesNotMatch(fault.stderr, /\n\s+at /);
+    assert.deepEqual(json(audit), { captureClosed: true, recoveryClosed: true });
+    if (mode.startsWith('recovery')) {
+      assert.match(fault.stderr, /source capture bytes changed.*recovery receipt could not be preserved.*injected recovery/);
+      assert.equal(JSON.parse(fault.stdout).sourceCapture.status, 'unverified');
+    } else {
+      assert.match(fault.stderr, /could not initialize source capture.*injected capture/);
+      assert.equal(fs.existsSync(path.join(dir, 'design.md')), false);
+    }
+  }
   for (const mode of ['symlink', 'replacement-hardlink', 'extra-hardlink', 'in-place']) {
     const workspace = path.join(scratch, `capture-${mode}`);
     fs.mkdirSync(workspace);
@@ -737,6 +842,7 @@ fs.writeFileSync('design.md','# Deterministic document\\n');`,
     prompt: staging.buildPrompt(scoring.loadGroundTruth().fixtureSets[0]),
     observation: { exitCode: 0, artifacts: { design: { kind: 'text', value: '# historical document' } } },
   });
+  fs.rmSync(rawWorkspace.dir, { recursive: true, force: true });
   const maliciousCustom = path.join(scratch, 'historical/_bmad/custom');
   const genericCompanion = path.join(scratch, 'generic-selection-arm-b');
   fs.cpSync(retained, genericCompanion, { recursive: true });
@@ -887,6 +993,7 @@ fs.writeFileSync('design.md','# Deterministic document\\n');`,
   await assert.rejects(
     finishSkillAttempt({
       workspace,
+      preserveOnFailure: true,
       retain: async () => {
         throw new Error('archival failure');
       },
@@ -894,6 +1001,50 @@ fs.writeFileSync('design.md','# Deterministic document\\n');`,
     /archival failure/,
   );
   assert.ok(fs.existsSync(workspace.dir));
+  const ordinaryFailedWorkspace = { dir: fs.mkdtempSync(path.join(scratch, 'ordinary-retain-failed-')) };
+  await assert.rejects(
+    finishSkillAttempt({
+      workspace: ordinaryFailedWorkspace,
+      retain: async () => {
+        throw new Error('ordinary archival failure');
+      },
+    }),
+    /ordinary archival failure/,
+  );
+  assert.equal(fs.existsSync(ordinaryFailedWorkspace.dir), false);
+  const originalCopy = fs.cpSync;
+  for (const preserveOnFailure of [false, true]) {
+    const artifacts = path.join(scratch, `partial-retention-${preserveOnFailure}`);
+    let partial;
+    fs.cpSync = () => {
+      throw new Error('injected copy failure');
+    };
+    try {
+      await assert.rejects(
+        retainSkillArtifacts({
+          artifactsDir: artifacts,
+          workspace,
+          caseId: 'cleanup',
+          agent: 'custom',
+          repetition: 1,
+          attempt: 1,
+          prompt: 'cleanup boundary',
+          preserveOnFailure,
+        }),
+        (error) => {
+          partial = error.partialArchive;
+          return /injected copy failure/.test(error.message);
+        },
+      );
+    } finally {
+      fs.cpSync = originalCopy;
+    }
+    if (preserveOnFailure) assert.ok(fs.existsSync(partial));
+    else {
+      assert.equal(partial, undefined);
+      assert.deepEqual(fs.readdirSync(artifacts), []);
+    }
+  }
   const mixed = path.join(scratch, 'mixed');
   fs.mkdirSync(mixed);
   fs.cpSync(successful.directory, path.join(mixed, 'older-experiment'), { recursive: true });

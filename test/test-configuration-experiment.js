@@ -2292,10 +2292,10 @@ function checkAcceptance10() {
     'the reader names no model provider or credential',
   );
   const pkg = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, 'package.json'), 'utf8'));
-  check(!JSON.stringify(pkg.bin ?? {}).includes('experiment'), 'no new public command is registered');
+  check(pkg.bin?.['tea-evaluate'] === 'cli/evaluate.js', 'the experiment subcommand uses the existing shipped tea-evaluate executable');
   check(
-    !fs.existsSync(path.join(PROJECT_ROOT, 'cli', 'lib', 'configuration-experiment.js')),
-    'the reader lives under test/, not in the shipped CLI',
+    require('./lib/configuration-experiment') === require('../cli/lib/evaluate/configuration-experiment'),
+    'the checkout compatibility wrapper re-exports the shipped reader module',
   );
 }
 

@@ -911,6 +911,7 @@ async function executePlan(directory, { testDouble = null, archive = null, after
   const executable = path.resolve(testDouble.command);
   if (sha(fs.readFileSync(executable)) !== testDouble.executableSha256) throw new Error('Test double executable identity mismatch');
   const { createRegistry, probeRequest } = require('./registry');
+  const { gitAccessOf } = require('./workspace');
   const { retainSkillArtifacts } = require('./retain-skill-artifacts');
   const registry = createRegistry(
     [
@@ -944,7 +945,10 @@ async function executePlan(directory, { testDouble = null, archive = null, after
       if (!set) throw new Error(`Unsupported native Test Design case ${slot.caseId}`);
       const workspace = await staging.stageWorkspace(set);
       const leaked = await staging.assertGroundTruthAbsent(workspace.dir);
-      if (leaked.length > 0) throw new Error(leaked.join('; '));
+      if (leaked.length > 0) {
+        fs.rmSync(workspace.dir, { recursive: true, force: true });
+        throw new Error(leaked.join('; '));
+      }
       const attemptId = `${slot.caseId}/${slot.repetition}/${slot.arm}/${attempt}`;
       appendJournal(directory, { kind: 'reserved', attemptId, boundUsd: testDouble.boundUsd, originalWorkspace: workspace.dir });
       if (plan.declaration.scope.candidate && !ledger.some((entry) => entry.caseId === slot.caseId)) {
@@ -969,7 +973,11 @@ async function executePlan(directory, { testDouble = null, archive = null, after
       const prompt = staging.buildPrompt(set);
       let observation;
       try {
-        const { port } = await registry.createProbePort({ cwd: workspace.dir });
+        const { port } = await registry.createProbePort({
+          cwd: workspace.dir,
+          git: gitAccessOf(workspace),
+          privateRoot: registry.privateRoot,
+        });
         observation = await port.probe(
           probeRequest({
             probeId: attemptId.toLowerCase().replaceAll('/', '-'),
@@ -1004,6 +1012,7 @@ async function executePlan(directory, { testDouble = null, archive = null, after
         let partialArchive = null;
         try {
           partialArchive = await (archive ?? retainSkillArtifacts)({
+            preserveOnFailure: true,
             artifactsDir: attemptRoot,
             workspace,
             caseId: slot.caseId,
@@ -1101,6 +1110,7 @@ async function executePlan(directory, { testDouble = null, archive = null, after
       let retained;
       try {
         retained = await (archive ?? retainSkillArtifacts)({
+          preserveOnFailure: true,
           artifactsDir: attemptRoot,
           workspace,
           caseId: slot.caseId,

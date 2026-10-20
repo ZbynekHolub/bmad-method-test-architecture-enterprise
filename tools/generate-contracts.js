@@ -4482,7 +4482,11 @@ async function buildRoutingContract(spec) {
  * rather than transcribed here, the same rule the other three follow.
  */
 const TEST_DESIGN_REQUEST_SHAPE = Object.fromEntries(
-  Object.entries(TEST_DESIGN_REQUEST_KEYS).map(([channel, keys]) => [channel, stringShape(keys.required, keys.permitted)]),
+  Object.entries(TEST_DESIGN_REQUEST_KEYS).map(([channel, keys]) => {
+    const shape = stringShape(keys.required, keys.permitted);
+    Object.assign(shape.types, keys.types ?? {});
+    return [channel, shape];
+  }),
 );
 
 function testDesignStepId(set) {

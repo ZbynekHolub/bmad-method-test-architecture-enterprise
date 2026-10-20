@@ -82,7 +82,8 @@ const TEST_DESIGN_REQUEST_KEYS = {
   argument: { required: [], permitted: [] },
   option: {
     required: ['agent', 'design-path'],
-    permitted: ['agent', 'agent-cmd', 'agent-arg', 'design-path', 'env-pass', 'model', 'timeout-ms'],
+    permitted: ['agent', 'agent-cmd', 'agent-arg', 'design-path', 'env-pass', 'model', 'timeout-ms', 'capture-path', 'capture-test-double'],
+    types: { 'capture-test-double': 'boolean' },
   },
   environment: { required: [], permitted: vendorEnvironmentNames() },
   stdin: { required: ['prompt'], permitted: ['prompt'] },
@@ -216,15 +217,38 @@ function main(argv) {
       const recovery = path.join(process.cwd(), `source-capture-recovery-${randomUUID()}.json`);
       source.captureIntegrityViolation = { reason: integrityFailure, originalPath: captureFile, agentStatus: source.status };
       source.status = 'failed';
-      const recoveryFd = fs.openSync(recovery, 'wx', 0o600);
       const recoveryBytes = Buffer.from(`${JSON.stringify(source, null, 2)}\n`);
+      let recoveryFd = null;
+      let recoveryFailure = null;
       try {
+        recoveryFd = fs.openSync(recovery, 'wx', 0o600);
         fs.writeFileSync(recoveryFd, recoveryBytes);
         fs.fsyncSync(recoveryFd);
+      } catch (error) {
+        recoveryFailure = error;
       } finally {
-        fs.closeSync(recoveryFd);
-        fs.closeSync(captureFd);
+        for (const fd of [recoveryFd, captureFd]) {
+          if (fd === null) continue;
+          try {
+            fs.closeSync(fd);
+          } catch (error) {
+            recoveryFailure ??= error;
+          }
+        }
         captureFd = null;
+      }
+      if (recoveryFailure) {
+        captureResult = {
+          status: 'unverified',
+          reason: integrityFailure,
+          recoveryError: recoveryFailure.message,
+          path: path.basename(recovery),
+        };
+        reportCapture();
+        fail(
+          'environment-configuration',
+          `${integrityFailure}; recovery receipt could not be preserved at ${recovery}: ${recoveryFailure.message}`,
+        );
       }
       captureResult = {
         status: 'rejected',
@@ -275,32 +299,54 @@ function main(argv) {
       fail('usage', '--capture-path must stay inside the workspace');
     captureFile = path.join(process.cwd(), relative);
     if (fs.existsSync(captureFile)) fail('usage', '--capture-path already exists');
-    if (fs.realpathSync(path.dirname(captureFile)) !== fs.realpathSync(process.cwd()))
-      fail('usage', '--capture-path must be directly inside the workspace');
+    let captureParent;
+    let workspaceRoot;
+    try {
+      captureParent = fs.realpathSync(path.dirname(captureFile));
+      workspaceRoot = fs.realpathSync(process.cwd());
+    } catch (error) {
+      fail('usage', `--capture-path parent cannot be resolved: ${error.message}`);
+    }
+    if (captureParent !== workspaceRoot) fail('usage', '--capture-path must be directly inside the workspace');
+    let requestedModel;
+    try {
+      requestedModel = options.captureTestDouble ? (options.model ?? null) : resolveModel(options.agent, options.model, options.agentArg);
+    } catch (error) {
+      fail(classOfAgentError(error), error.message);
+    }
     try {
       captureFd = fs.openSync(captureFile, 'wx+', 0o600);
       captureIdentity = fs.fstatSync(captureFd);
+      source = {
+        kind: 'test-design-source-capture',
+        label: options.captureTestDouble ? 'deterministic-test-double' : 'native',
+        workspaceId: randomUUID(),
+        workspace: process.cwd(),
+        requested: {
+          agent: options.agent,
+          model: requestedModel,
+        },
+        inputSha256: `sha256:${createHash('sha256').update(prompt).digest('hex')}`,
+        startedAt: new Date().toISOString(),
+        endedAt: null,
+        status: 'dispatched',
+        observed: { resolvedModel: null, appliedEffort: null },
+        usage: null,
+        cost: null,
+      };
+      saveCapture();
     } catch (error) {
-      fail('environment-configuration', `could not exclusively create source capture: ${error.message}`);
+      let message = error.message;
+      if (captureFd !== null) {
+        try {
+          fs.closeSync(captureFd);
+        } catch (closeError) {
+          message += `; capture close failed: ${closeError.message}`;
+        }
+        captureFd = null;
+      }
+      fail('environment-configuration', `could not initialize source capture: ${message}`);
     }
-    source = {
-      kind: 'test-design-source-capture',
-      label: options.captureTestDouble ? 'deterministic-test-double' : 'native',
-      workspaceId: randomUUID(),
-      workspace: process.cwd(),
-      requested: {
-        agent: options.agent,
-        model: options.captureTestDouble ? (options.model ?? null) : resolveModel(options.agent, options.model, options.agentArg),
-      },
-      inputSha256: `sha256:${createHash('sha256').update(prompt).digest('hex')}`,
-      startedAt: new Date().toISOString(),
-      endedAt: null,
-      status: 'dispatched',
-      observed: { resolvedModel: null, appliedEffort: null },
-      usage: null,
-      cost: null,
-    };
-    saveCapture();
   }
   try {
     const answer = runAgent(prompt, {

@@ -30,6 +30,7 @@ async function retainSkillArtifacts({
   prompt,
   observation,
   provenance = {},
+  preserveOnFailure = false,
 }) {
   if (!artifactsDir) return null;
   const root = path.resolve(artifactsDir);
@@ -47,13 +48,15 @@ async function retainSkillArtifacts({
     process.stderr.write(`retained skill artifacts: ${destination}\n`);
     return destination;
   } catch (error) {
-    error.retainedWorkspace = workspace.dir;
-    error.partialArchive = destination;
+    if (preserveOnFailure) {
+      error.retainedWorkspace = workspace.dir;
+      error.partialArchive = destination;
+    } else fs.rmSync(destination, { recursive: true, force: true });
     throw error;
   }
 }
-/** Always clean an attempt while preserving its original run failure. */
-async function finishSkillAttempt({ retain, workspace, runError, remove = fs.rmSync }) {
+/** Clean the attempt; explicit experiment capture preserves it when retention fails. */
+async function finishSkillAttempt({ retain, workspace, runError, remove = fs.rmSync, preserveOnFailure = false }) {
   let failure = runError;
   let retained = false;
   try {
@@ -64,7 +67,7 @@ async function finishSkillAttempt({ retain, workspace, runError, remove = fs.rmS
     else failure = error;
   } finally {
     try {
-      if (retained) remove(workspace.dir, { recursive: true, force: true });
+      if (retained || !preserveOnFailure) remove(workspace.dir, { recursive: true, force: true });
     } catch (error) {
       if (failure) process.stderr.write(`attempt cleanup failed: ${error.message}\n`);
       else failure = error;

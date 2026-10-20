@@ -4220,7 +4220,9 @@ async function checkConfinedEvaluationFolder({ observer = null, requireOmitted =
     check(process.platform === 'darwin' && probedMounts.length === 0, 'the diagnostic-drop witness retained confined-folder diagnostics');
     const channel = readJson(path.join(probedDirectory, 'run.json')).observedMountsChannel;
     checkReport(
-      channel.every((entry) => entry.canariesDelivered === entry.canariesSent && !entry.logReportedLoss),
+      channel.every(
+        (entry) => entry.completeness === 'complete' && entry.canariesDelivered === entry.canariesSent && !entry.logReportedLoss,
+      ),
       `the folder diagnostic-drop witness also dropped canaries: ${JSON.stringify(channel)}`,
     );
   }
@@ -6431,7 +6433,9 @@ async function checkEvaluatorSwap({ observer = null, requireOmitted = false } = 
       if (requireOmitted) {
         check(omittedDiagnostic, 'the diagnostic-drop witness retained evaluator-swap diagnostics');
         checkReport(
-          channel.every((entry) => entry.canariesDelivered === entry.canariesSent && !entry.logReportedLoss),
+          channel.every(
+            (entry) => entry.completeness === 'complete' && entry.canariesDelivered === entry.canariesSent && !entry.logReportedLoss,
+          ),
           `the swap diagnostic-drop witness also dropped canaries: ${JSON.stringify(channel)}`,
         );
       }
@@ -9489,7 +9493,7 @@ function checkProbePortGitAccess() {
       );
     }
   }
-  check(calls === 9, `found ${calls} createProbePort call(s) in cli/lib/evaluate; expected 9`);
+  check(calls === 10, `found ${calls} createProbePort call(s) in cli/lib/evaluate; expected 10`);
 }
 
 /**
@@ -9518,6 +9522,8 @@ function checkPrivateDirectorySources() {
     // `compare --accept` stages the new baseline under `runs/.compare-staging/` in the evaluation folder (already withheld from every
     // target, and on the file system `baseline/` is on so each rename stays atomic); the command starts no process of the layer.
     'compare.js': 1,
+    // Per-attempt retained archives are created under the caller's evidence directory after dispatch has ended.
+    'retain-skill-artifacts.js': 1,
   };
   const found = {};
   for (const name of fs.readdirSync(directory).filter((entry) => entry.endsWith('.js'))) {

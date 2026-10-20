@@ -779,6 +779,7 @@ async function runCase(set, options, agent, runIndex, categories) {
       prompt: buildPrompt(set),
       observation: rawObservation,
       provenance,
+      preserveOnFailure: options.experimentCapture,
     });
     if (sourceVerification && sourceVerification.status !== 'verified') {
       if (retained) fs.writeFileSync(path.join(retained, 'runner-source-result.json'), `${JSON.stringify(sourceVerification, null, 2)}\n`);
@@ -887,7 +888,7 @@ async function runCase(set, options, agent, runIndex, categories) {
     runError = error;
     throw error;
   } finally {
-    await finishSkillAttempt({ retain, workspace, runError });
+    await finishSkillAttempt({ retain, workspace, runError, preserveOnFailure: options.experimentCapture });
   }
 }
 

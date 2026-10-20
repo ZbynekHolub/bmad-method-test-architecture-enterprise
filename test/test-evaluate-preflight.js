@@ -2615,7 +2615,20 @@ function checkPrivateHome({ observer = null, requireOmitted = false } = {}) {
     // A common observed path outside the allowlist refuses the preflight. Darwin may omit denial reports; kernel access checks below remain mandatory.
     const directory = runDirectoryOf(folder);
     const recorded = directory === null ? null : readJson(path.join(directory, 'run.json')).outcome;
-    const omittedDiagnostic = confinement && process.platform === 'darwin' && recorded?.stage === 'verdict' && recorded?.exitCode === 0;
+    const stdouts = observedStdouts(directory);
+    const kernelRefused =
+      stdouts.length >= 2 &&
+      stdouts.every(
+        (stdout) =>
+          /^try-read: \S*contract\.json refused (EPERM|EACCES|ENOENT)$/m.test(stdout) &&
+          ['real-home.txt', 'beside-home.txt', 'runs/planted.txt'].every((name) =>
+            new RegExp(`^try-write: \\S*${name} refused (EPERM|EACCES|EROFS${name.startsWith('runs/') ? '|ENOENT' : ''})$`, 'm').test(
+              stdout,
+            ),
+          ),
+      );
+    const omittedDiagnostic =
+      confinement && process.platform === 'darwin' && recorded?.stage === 'verdict' && recorded?.exitCode === 0 && kernelRefused;
     const expected = confinement && !omittedDiagnostic ? 3 : 0;
     check(
       result.status === expected,
@@ -2635,7 +2648,7 @@ function checkPrivateHome({ observer = null, requireOmitted = false } = {}) {
       );
       if (requireOmitted) check(omittedDiagnostic, 'the dropped-denial witness retained a common private-home denial');
     }
-    return observedStdouts(directory);
+    return stdouts;
   };
   const field = (stdout, name) => new RegExp(`^${name}: (.*)$`, 'm').exec(stdout)?.[1];
 
