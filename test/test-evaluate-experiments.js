@@ -831,18 +831,22 @@ process.on('exit',()=>writeFile(audit,JSON.stringify({captureClosed:closed.has(c
   assert.equal(experiments.readJournal(confirmation.directory).filter((e) => e.kind === 'dispatch').length, 0);
   // Retention-shaped import and deterministic scorer replay must work with every launch forbidden.
   const rawWorkspace = await staging.stageWorkspace(scoring.loadGroundTruth().fixtureSets[0]);
-  const retained = await retainSkillArtifacts({
-    artifactsDir: path.join(scratch, 'historical'),
-    workspace: rawWorkspace,
-    caseId: scoring.loadGroundTruth().fixtureSets[0].id,
-    agent: 'custom',
-    model: null,
-    repetition: 1,
-    attempt: 1,
-    prompt: staging.buildPrompt(scoring.loadGroundTruth().fixtureSets[0]),
-    observation: { exitCode: 0, artifacts: { design: { kind: 'text', value: '# historical document' } } },
-  });
-  fs.rmSync(rawWorkspace.dir, { recursive: true, force: true });
+  let retained;
+  try {
+    retained = await retainSkillArtifacts({
+      artifactsDir: path.join(scratch, 'historical'),
+      workspace: rawWorkspace,
+      caseId: scoring.loadGroundTruth().fixtureSets[0].id,
+      agent: 'custom',
+      model: null,
+      repetition: 1,
+      attempt: 1,
+      prompt: staging.buildPrompt(scoring.loadGroundTruth().fixtureSets[0]),
+      observation: { exitCode: 0, artifacts: { design: { kind: 'text', value: '# historical document' } } },
+    });
+  } finally {
+    fs.rmSync(rawWorkspace.dir, { recursive: true, force: true });
+  }
   const maliciousCustom = path.join(scratch, 'historical/_bmad/custom');
   const genericCompanion = path.join(scratch, 'generic-selection-arm-b');
   fs.cpSync(retained, genericCompanion, { recursive: true });
